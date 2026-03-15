@@ -37,15 +37,15 @@ La veracidad de la información utilizada se encuentra ligada mayormente al cont
 | Nombre | Estado | Url | Glosario |
 | ------ | ------ | --- | -------- |
 | Archivo de la Memoria de San Martín | Pendiente | https://sitiosale.cdn.prismic.io/sitiosale/Z9luiTiBA97GimGK_M_ArchivodeMemoria-1-.pdf | |
-| Base de datos - Parque de la memoria | Procesado | https://basededatos.parquedelamemoria.org.ar/registros/ | [](/docs/base_de_datos/parque_de_la_memoria.md) |
+| Base de datos - Parque de la memoria | Procesado | https://basededatos.parquedelamemoria.org.ar/registros/ | [Ver glosario](/docs/base_de_datos/parque_de_la_memoria.md) |
 | Niños desaparecidos. Jóvenes localizados 1975 - 2015 | Pendiente | https://www.unq.edu.ar/wp-content/uploads/migracion/documentos/5594327fb5347.pdf | |
-| Nietas y nietos - Abuelas de Plaza de Mayo | Procesado | https://www.abuelas.org.ar/nietas-y-nietos/buscador | [](/docs/base_de_datos/nietos_y_nietas.md) |
+| Nietas y nietos - Abuelas de Plaza de Mayo | Procesado | https://www.abuelas.org.ar/nietas-y-nietos/buscador | [Ver glosario](/docs/base_de_datos/nietos_y_nietas.md) |
 | Centros clandestinos de detención | Pendiente | https://es.wikipedia.org/wiki/Centro_clandestino_de_detenci%C3%B3n_(Argentina) | |
-| Listado de Centros Clandestinos de Detención | Procesado | https://www.argentina.gob.ar/sites/default/files/6._anexo_v_listado_de_ccd-investigacion_ruvte-ilid.pdf | [](/docs/base_de_datos/ccds.md) |
+| Listado de Centros Clandestinos de Detención | Procesado | https://www.argentina.gob.ar/sites/default/files/6._anexo_v_listado_de_ccd-investigacion_ruvte-ilid.pdf | [Ver glosario](/docs/base_de_datos/ccds.md) |
 | Listado de casos sin denuncia formal | Pendiente | https://www.argentina.gob.ar/sites/default/files/3._anexo_ii_listado_de_casos_sin_dcia_formal-investigacion_ruvte-ilid.pdf | |
 | Registro Unificado de Víctimas del Terrorismo de Estado (RUVTE) | Pendiente | https://www.argentina.gob.ar/derechoshumanos/ANM/ruvte/2015 | |
 | Centros Clandestinos de Detención durante la dictadura cívico-militar entre 1976 y 1982 | Pendiente | https://observatorioconurbano.ungs.edu.ar/?p=5392 | |
-| Paquete R - presentes | Procesado | https://diegokoz.github.io/presentes/ | [](/docs/base_de_datos/paquete_r_presentes.md) |
+| Paquete R - presentes | Procesado | https://diegokoz.github.io/presentes/ | [Ver glosario](/docs/base_de_datos/paquete_r_presentes.md) |
 | Documentos desclasificados EE.UU. | Pendiente |https://desclasificados.org.ar/ | |
 | Datos de represores y victimas | Pendiente | https://derechoshumanos.mjus.gba.gob.ar/imputado/33-balmaceda-roberto-armando/ | |
 | Imputados | Pendiente | https://www.mpf.gob.ar/plan-condor/imputados/zona-iv-santiago-omar-riveros/ | |
