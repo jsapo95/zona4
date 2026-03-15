@@ -2,13 +2,15 @@
 
 ## Objetivos
 
-* Recopilar datos públicos de distintas fuentes y en distintos formatos.
-* Limpiar, procesar, normalizar y estructurar los datos recopilados.
-* Poder vincular documentación parecida y duplicada.
-* Integrar modelos de lenguaje (LLMs) en los sistemas para ingeniería de datos y búsqueda de información.
-* Realizar modelos de aprendizaje automático para automatizar la clasificación de entidades y relaciones en textos.
-* Analizar y visualizar los datos obtenidos.
-* Crear documentación de cada proceso para que puedan ser replicados y mejorados.
+| Objetivo | Descripción | Estado |
+| -------- | ----------- | ------ |
+| Ingeniería de datos | Recopilación, limpieza, procesamiento y normalización de datos sobre la dictadura. Para esto utilizamos bases de datos públicas y también extracción de datos a partir de documentación pública digitalizada. | En proceso |
+|Creación de bases de datos | Crear bases de datos tabulares y de grafos de conomiento para poder realizar distintos tipos de análisis e investigaciones. | En proceso |
+| Disponibilización pública de información | Disponibilizar las bases de datos que hagamos en conjunto con desarrollos de técnicas, procesos y programas propios que permitan mejorar la investigación en estos temas. | Pendiente |
+| Chatbot Graph-RAG | Desarrollo de herramientas de búsqueda de información sobre la dictadura y sobre nuestras bases de datos, usando inteligencia artificial. | Pendiente |
+| Resolución de identidades | Investigación y desarrollo de modelos analíticos predictivos que ayuden en la resolución de identidades. Esto es: tratar de determinar probabilísticamente si descripciones parciales de personas corresponden a una misma persona. Por ejemplo, si hay sobrevivientes que vieron a otrx secuestrado pero no saben quién fue, queremos ver si encontramos la forma de analizar las descripciones y saber quien era esa persona. Es algo que tenemos que investigar por un pedido que nos hicieron desde Abuelas. |
+| Transcripción de archivos desclasificados | Desarrollo de técnicas para la transcripción de archivos desclasificados de EEUU durante la dictadura que fueron digitalizados. | Pendiente |
+| Dashboard sobre la dictadura | Realización de dashboard con métricas y gráficos utilizando nuestras bases de datos. | Pendiente |
 
 
 ## Recopilación y análisis inicial de documentación
@@ -32,28 +34,31 @@ La veracidad de la información utilizada se encuentra ligada mayormente al cont
 
 ### Fuentes de datos
 
-* [Archivo de la Memoria de San Martín](https://sitiosale.cdn.prismic.io/sitiosale/Z9luiTiBA97GimGK_M_ArchivodeMemoria-1-.pdf)
-* [Base de datos - Parque de la memoria](https://basededatos.parquedelamemoria.org.ar/registros/)
-* [Niños desaparecidos. Jóvenes localizados 1975 - 2015](https://www.unq.edu.ar/wp-content/uploads/migracion/documentos/5594327fb5347.pdf)
-* [Nietas y nietos - Abuelas de Plaza de Mayo](https://www.abuelas.org.ar/nietas-y-nietos/buscador)
-* [Centros clandestinos de detención](https://es.wikipedia.org/wiki/Centro_clandestino_de_detenci%C3%B3n_(Argentina))
-* [Listado de Centros Clandestinos de Detención](https://www.argentina.gob.ar/sites/default/files/6._anexo_v_listado_de_ccd-investigacion_ruvte-ilid.pdf)
-* [Listado de casos sin denuncia formal](https://www.argentina.gob.ar/sites/default/files/3._anexo_ii_listado_de_casos_sin_dcia_formal-investigacion_ruvte-ilid.pdf)
-* [Registro Unificado de Víctimas del Terrorismo de Estado (RUVTE)](https://www.argentina.gob.ar/derechoshumanos/ANM/ruvte/2015)
-* [Centros Clandestinos de Detención durante la dictadura cívico-militar entre 1976 y 1982](https://observatorioconurbano.ungs.edu.ar/?p=5392)
-* [Paquete R - presentes](https://diegokoz.github.io/presentes/)
-* [Documentos desclasificados EE.UU.](https://desclasificados.org.ar/)
-* [Datos de represores y victimas](https://derechoshumanos.mjus.gba.gob.ar/imputado/33-balmaceda-roberto-armando/)
-* [Imputados](https://www.mpf.gob.ar/plan-condor/imputados/zona-iv-santiago-omar-riveros/)
-* [Archivo provincial de la memoria](https://apm.gov.ar/presentes/detalle/2716)
-* [Semblanza de las dictaduras civico-militares del 55' al 83'](https://robertobaschetti.com/)
-* [Leyes de la dictadura](https://www.lasleyesdeladictadura.com.ar/index.php?a=PublicView&name=LeyesPublic)
-* [Condor Atlanta](https://condor-atlanta.org/)
-* [Juicios de Lesa Humanidad](http://www.juiciosdelesahumanidad.ar/)
-* [Nizkor](https://www.derechos.org/nizkor/arg/)
-* [Fiscales juicios](https://www.fiscales.gob.ar/lesa-humanidad/?tipo-entrada=agenda)
-* [Webinar IA y DDHH](https://www.cipdh.gob.ar/inteligencia-artificial-y-derechos-humanos/)
-* [Juicios](https://www.mpf.gob.ar/lesa/jurisprudencia/)
+| Nombre | Estado | Url | Glosario |
+| ------ | ------ | --- | -------- |
+| Archivo de la Memoria de San Martín | Pendiente | https://sitiosale.cdn.prismic.io/sitiosale/Z9luiTiBA97GimGK_M_ArchivodeMemoria-1-.pdf | |
+| Base de datos - Parque de la memoria | Procesado | https://basededatos.parquedelamemoria.org.ar/registros/ | [](/docs/base_de_datos/parque_de_la_memoria.md) |
+| Niños desaparecidos. Jóvenes localizados 1975 - 2015 | Pendiente | https://www.unq.edu.ar/wp-content/uploads/migracion/documentos/5594327fb5347.pdf | |
+| Nietas y nietos - Abuelas de Plaza de Mayo | Procesado | https://www.abuelas.org.ar/nietas-y-nietos/buscador | [](/docs/base_de_datos/nietos_y_nietas.md) |
+| Centros clandestinos de detención | Pendiente | https://es.wikipedia.org/wiki/Centro_clandestino_de_detenci%C3%B3n_(Argentina) | |
+| Listado de Centros Clandestinos de Detención | Procesado | https://www.argentina.gob.ar/sites/default/files/6._anexo_v_listado_de_ccd-investigacion_ruvte-ilid.pdf | [](/docs/base_de_datos/ccds.md) |
+| Listado de casos sin denuncia formal | Pendiente | https://www.argentina.gob.ar/sites/default/files/3._anexo_ii_listado_de_casos_sin_dcia_formal-investigacion_ruvte-ilid.pdf | |
+| Registro Unificado de Víctimas del Terrorismo de Estado (RUVTE) | Pendiente | https://www.argentina.gob.ar/derechoshumanos/ANM/ruvte/2015 | |
+| Centros Clandestinos de Detención durante la dictadura cívico-militar entre 1976 y 1982 | Pendiente | https://observatorioconurbano.ungs.edu.ar/?p=5392 | |
+| Paquete R - presentes | Procesado | https://diegokoz.github.io/presentes/ | [](/docs/base_de_datos/paquete_r_presentes.md) |
+| Documentos desclasificados EE.UU. | Pendiente |https://desclasificados.org.ar/ | |
+| Datos de represores y victimas | Pendiente | https://derechoshumanos.mjus.gba.gob.ar/imputado/33-balmaceda-roberto-armando/ | |
+| Imputados | Pendiente | https://www.mpf.gob.ar/plan-condor/imputados/zona-iv-santiago-omar-riveros/ | |
+| Archivo provincial de la memoria | Pendiente | https://apm.gov.ar/presentes/detalle/2716 | |
+| Semblanza de las dictaduras civico-militares del 55' al 83' | Pendiente | https://robertobaschetti.com/ | |
+| Leyes de la dictadura | Reprocesar | https://www.lasleyesdeladictadura.com.ar/index.php?a=PublicView&name=LeyesPublic | |
+| Condor Atlanta | Pendiente | https://condor-atlanta.org/ | |
+| Juicios de Lesa Humanidad | Pendiente | http://www.juiciosdelesahumanidad.ar/ | |
+| Nizkor | Pendiente | https://www.derechos.org/nizkor/arg/ | |
+| Fiscales juicios | Pendiente | https://www.fiscales.gob.ar/lesa-humanidad/?tipo-entrada=agenda | |
+| Webinar IA y DDHH | Pendiente | https://www.cipdh.gob.ar/inteligencia-artificial-y-derechos-humanos/ | |
+| Juicios | Pendiente | https://www.mpf.gob.ar/lesa/jurisprudencia/ | |
+| Juicios PBA | Pendiente | https://derechoshumanos.mjus.gba.gob.ar/lesa-humanidad/ | |
 
 
 ## Procesamiento de los datos
