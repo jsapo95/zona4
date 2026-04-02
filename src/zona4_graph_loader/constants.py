@@ -1,0 +1,76 @@
+from __future__ import annotations
+
+ALIAS_ROOT_PARENT_KEY = "__ROOT__"
+BATCH_SIZE = 500
+
+SPANISH_MONTHS = {
+    "enero": 1,
+    "febrero": 2,
+    "marzo": 3,
+    "abril": 4,
+    "mayo": 5,
+    "junio": 6,
+    "julio": 7,
+    "agosto": 8,
+    "septiembre": 9,
+    "setiembre": 9,
+    "octubre": 10,
+    "noviembre": 11,
+    "diciembre": 12,
+}
+
+REL_MAP = {
+    "madre": "MADRE",
+    "padre": "PADRE",
+    "hermanx": "HERMANO",
+    "hermano": "HERMANO",
+    "hermana": "HERMANO",
+    "abuela materna": "ABUELA_MATERNA",
+    "abuela paterna": "ABUELA_PATERNA",
+    "esposo": "PAREJA",
+    "esposa": "PAREJA",
+    "conyuge": "PAREJA",
+    "pareja": "PAREJA",
+    "ex esposo": "PAREJA",
+    "ex esposa": "PAREJA",
+    "companero": "PAREJA",
+    "companera": "PAREJA",
+    "novio": "PAREJA",
+    "novia": "PAREJA",
+    "hijo": "HIJO",
+    "hija": "HIJO",
+}
+
+UNKNOWN_PLACE_VALUES = {
+    "SE DESCONOCE",
+    "NO HAY INFORMACION",
+    "SIN DATOS",
+    "DESCONOCIDO",
+}
+
+EQUIV_CITIES = {
+    "CAPITAL FEDERAL": ("CIUDAD", "CIUDAD AUTONOMA DE BUENOS AIRES", None),
+    "CABA": ("CIUDAD", "CIUDAD AUTONOMA DE BUENOS AIRES", None),
+    "CIUDAD DE BS AS": ("CIUDAD", "CIUDAD AUTONOMA DE BUENOS AIRES", None),
+    "CIUDAD DE BUENOS AIRES": ("CIUDAD", "CIUDAD AUTONOMA DE BUENOS AIRES", None),
+    "CORDOBA CAPITAL": ("CIUDAD", "CORDOBA", "CORDOBA"),
+    "MENDOZA CAPITAL": ("CIUDAD", "MENDOZA", "MENDOZA"),
+    "SAN MIGUEL DE TUCUMAN": ("CIUDAD", "SAN MIGUEL DE TUCUMAN", "TUCUMAN"),
+}
+
+PROVINCE_ABBR = {
+    "BS AS": "BUENOS AIRES",
+    "BUENOS AIRES": "BUENOS AIRES",
+    "BSA": "BUENOS AIRES",
+    "SANTA FE": "SANTA FE",
+    "TUCUMAN": "TUCUMAN",
+    "CORDOBA": "CORDOBA",
+    "MENDOZA": "MENDOZA",
+}
+
+DIRECTIONAL_TOKENS = {
+    "ESTE",
+    "OESTE",
+    "NORTE",
+    "SUR",
+}
