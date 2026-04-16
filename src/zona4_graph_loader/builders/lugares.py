@@ -144,8 +144,12 @@ def _is_safe_city_merge_name(name_a: str, name_b: str) -> tuple[bool, float, str
     tokens_b = name_b.split()
     dirs_a = {t for t in tokens_a if t in DIRECTIONAL_TOKENS}
     dirs_b = {t for t in tokens_b if t in DIRECTIONAL_TOKENS}
-    if dirs_a != dirs_b:
-        return (False, 0.0, "direccion_distinta")
+    # Directional markers are protected tokens: conflicting or missing direction is unsafe.
+    if dirs_a and dirs_b and dirs_a != dirs_b:
+        return (False, 0.0, "direccion_conflictiva")
+    if bool(dirs_a) != bool(dirs_b):
+        return (False, 0.0, "direccion_incompleta")
+    direction_bonus = 0.02 if dirs_a == dirs_b and dirs_a else 0.0
 
     if len(tokens_a) != len(tokens_b):
         return (False, 0.0, "estructura_distinta")
@@ -159,7 +163,7 @@ def _is_safe_city_merge_name(name_a: str, name_b: str) -> tuple[bool, float, str
     if token_score < 0.8 or full_score < 0.9:
         return (False, full_score, "diferencia_no_tipografica")
 
-    return (True, full_score, "typo_un_token")
+    return (True, min(1.0, full_score + direction_bonus), "typo_un_token")
 
 
 def build_safe_place_merge_rows(lugar_layer: Dict[str, List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
