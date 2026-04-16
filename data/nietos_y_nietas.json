@@ -5397,7 +5397,8 @@
       },
       {
         "relacion": "Padre",
-        "nombre_completo_relacion": "Ernesto Claudio Logares"
+        "nombre_completo_relacion": "Ernesto Claudio Logares",
+        "id_persona": 5215
       },
       {
         "relacion": "Hermanx",
