@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import argparse
+from pathlib import Path
 from typing import LiteralString, cast
 
 from neo4j import GraphDatabase, Query
 
 from zona4_graph_loader.builders.candidatos import build_v3_candidate_rows
 from zona4_graph_loader.builders.casos import build_nietx_rows
+from zona4_graph_loader.builders.ccds import build_ccd_rows
 from zona4_graph_loader.builders.eventos import build_detalles_event_rows, build_nietx_event_rows
 from zona4_graph_loader.builders.listado import build_listado_links_rows, build_listado_paginas_rows
 from zona4_graph_loader.builders.lugares import build_lugar_layer_rows, build_safe_place_merge_rows
@@ -39,12 +41,13 @@ from zona4_graph_loader.db.cypher import (
 )
 from zona4_graph_loader.db.qa import run_qa_report
 from zona4_graph_loader.db.writer import run_batches
-from zona4_graph_loader.io.files import DETALLES_PATH, LISTADO_PAGINAS_PATH, NIETXS_PATH, read_json
+from zona4_graph_loader.io.files import CCDS_PATH, DETALLES_PATH, LISTADO_PAGINAS_PATH, NIETXS_PATH, read_json
 
 
 def run_load(args: argparse.Namespace) -> None:
     detalles = read_json(DETALLES_PATH)
     nietxs = read_json(NIETXS_PATH)
+    ccds = read_json(CCDS_PATH)
     listado_paginas = read_json(LISTADO_PAGINAS_PATH) if not args.skip_listado_paginas else []
 
     detalles_personas = build_detalles_rows(detalles)
@@ -55,11 +58,16 @@ def run_load(args: argparse.Namespace) -> None:
     rel_simult = build_detalles_simult_rows(detalles)
     eventos_detalles = build_detalles_event_rows(detalles)
     eventos_nietx = build_nietx_event_rows(nietxs)
-    eventos = eventos_detalles + eventos_nietx
     paginas_listado = build_listado_paginas_rows(listado_paginas)
     links_listado = build_listado_links_rows(listado_paginas)
     lugar_layer = (
-        build_lugar_layer_rows(detalles)
+        build_lugar_layer_rows(
+            detalles,
+            use_georef=not args.disable_georef_resolver,
+            georef_catalog_path=Path(args.georef_catalog_path),
+            georef_min_score=args.georef_min_score,
+            georef_ambiguity_delta=args.georef_ambiguity_delta,
+        )
         if not args.skip_lugares
         else {
             "lugares": [],
@@ -69,6 +77,22 @@ def run_load(args: argparse.Namespace) -> None:
             "evento_links": [],
         }
     )
+
+    ccd_layer = build_ccd_rows(
+        detalles,
+        ccds,
+        existing_lugar_keys={row["lugar_key"] for row in lugar_layer["lugares"]},
+        use_georef=not args.disable_georef_resolver,
+        georef_catalog_path=Path(args.georef_catalog_path),
+        georef_min_score=args.georef_min_score,
+        georef_ambiguity_delta=args.georef_ambiguity_delta,
+    )
+    eventos = eventos_detalles + eventos_nietx + ccd_layer["eventos"]
+
+    if not args.skip_lugares:
+        lugar_layer["lugares"].extend(ccd_layer["lugares"])
+        lugar_layer["parents"].extend(ccd_layer["parents"])
+        lugar_layer["evento_links"].extend(ccd_layer["evento_links"])
     safe_place_merges = (
         build_safe_place_merge_rows(lugar_layer)
         if (not args.skip_lugares and args.apply_safe_place_merges)

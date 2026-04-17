@@ -9,6 +9,7 @@ DATA_DIR = ROOT / "data"
 LISTADO_PAGINAS_PATH = DATA_DIR / "listado_paginas.json"
 DETALLES_PATH = DATA_DIR / "parque_de_la_memoria.json"
 NIETXS_PATH = DATA_DIR / "nietos_y_nietas.json"
+CCDS_PATH = DATA_DIR / "ccds.json"
 
 
 def read_json(path: Path) -> Any:

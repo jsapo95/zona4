@@ -6,7 +6,7 @@ from zona4_graph_loader.pipeline.load_graph import run_load
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Carga y normalizacion de datos en Neo4j Aura")
+    parser = argparse.ArgumentParser(description="Carga y normalizacion de datos en Neo4j")
     parser.add_argument(
         "--clean-project",
         action="store_true",
@@ -41,6 +41,28 @@ def parse_args() -> argparse.Namespace:
         "--apply-safe-place-merges",
         action="store_true",
         help="Aplica merges automaticos conservadores de nodos Lugar tipo CIUDAD (solo typos/variantes seguras).",
+    )
+    parser.add_argument(
+        "--disable-georef-resolver",
+        action="store_true",
+        help="Desactiva la desambiguacion jerarquica basada en catalogo Georef local.",
+    )
+    parser.add_argument(
+        "--georef-catalog-path",
+        default="data/georef_catalog.json",
+        help="Ruta al catalogo Georef local (JSON consolidado).",
+    )
+    parser.add_argument(
+        "--georef-min-score",
+        type=float,
+        default=0.76,
+        help="Score minimo para aceptar una resolucion georeferenciada.",
+    )
+    parser.add_argument(
+        "--georef-ambiguity-delta",
+        type=float,
+        default=0.02,
+        help="Diferencia minima entre mejor y segundo candidato para evitar ambiguedades.",
     )
 
     args = parser.parse_args()

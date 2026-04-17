@@ -59,11 +59,21 @@ Nodo para hechos historicos y de trazabilidad del proceso de restitucion.
 
 Propiedades recomendadas:
 - `evento_key` (string, unique)
-- `tipo` (string): `SECUESTRO`, `ASESINATO`, `ADN`, `RESTITUCION`
+- `tipo` (string): `SECUESTRO`, `ASESINATO`, `ADN`, `RESTITUCION`, `SECUESTRO_CCD`, `PARTO_CAUTIVERIO_CCD`, `EVENTO_CCD`
 - `fecha` (date/string ISO, opcional)
+- `fecha_inicio` (date/string ISO, opcional): inicio de rango cuando la fuente no tiene dia exacto
+- `fecha_fin` (date/string ISO, opcional): fin de rango cuando la fuente informa rango
+- `fecha_precision` (string, opcional): `DAY`, `MONTH`, `YEAR` o `RANGE`
+- `anio` (int, opcional): anio efectivo para agregaciones rapidas
+- `anio_inicio` (int, opcional): anio del inicio de rango
+- `anio_fin` (int, opcional): anio del fin de rango
 - `lugar` (string, opcional)
 - `descripcion_raw` (string, opcional)
 - `fuente` (string)
+- `id_ccd` (string, opcional)
+- `ccd_relacion` (string, opcional)
+- `ccd_certeza` (string, opcional)
+- `ccd_denominacion` (string, opcional)
 
 ### `(:PaginaListado)`
 Representa una pagina del index de Parque de la Memoria (`listado_paginas.json`).
@@ -100,6 +110,27 @@ La persona protagonista usa `persona_key = 'nietx:' + id_nietx` para evitar coli
 Reglas v2:
 - Desde `detalles_personas`, se crea evento `SECUESTRO` y/o `ASESINATO` por persona cuando hay fecha y/o lugar.
 - Desde `nietxs_relacion`, se crea evento `ADN` y/o `RESTITUCION` cuando hay fecha en `restituido`.
+
+Reglas v2.1 (ccds):
+- Desde `parque_de_la_memoria.json.ccds`, se crea un evento por referencia CCD (`SECUESTRO_CCD` o `PARTO_CAUTIVERIO_CCD`).
+- Si `fecha` tiene una sola marca parcial (por ejemplo `1976`, `1976/08`), se materializa como rango (`fecha_inicio`, `fecha_fin`) y `fecha` toma el inicio del rango para mantener consultas cronologicas simples.
+- Si `fecha` trae dos valores, se interpreta como rango y se guarda en `fecha_inicio`/`fecha_fin` con `fecha_precision='RANGE'`.
+- `certeza` de la fuente se conserva en `Evento.ccd_certeza`.
+
+Reglas de lugar para CCD:
+- Se crea `(:Lugar {tipo:'CCD'})` por cada `id_ccd` presente en `ccds.json`.
+- Se preservan coordenadas `lat`/`lon` del CCD en el nodo `Lugar` y se enlaza el evento con `(:Evento)-[:OCURRIO_EN]->(:Lugar)` usando el `id_ccd` de la referencia.
+- Se intenta resolver por coordenadas a un `Lugar` geografico ya existente para reutilizar nodos y evitar fragmentacion de ubicaciones.
+- Cuando hay match, el `Lugar` CCD se conserva como entidad de sitio y se conecta por jerarquia (`PARTE_DE`) al lugar geografico reutilizado.
+
+## Criterios de escalabilidad analitica
+
+Para soportar analitica de relacion entre personas, hotspots de eventos y conciliacion:
+- Mantener eventos como hechos atomicos (`:Evento`) y nunca incrustar listas historicas en `:Persona`.
+- Usar fechas en dos niveles: `fecha` (punto) + `fecha_inicio/fecha_fin` (rango) + columnas derivadas (`anio*`) para agregaciones masivas.
+- Reutilizar `:Lugar` por identidad canonica y coordinar CCD como capa semantica encima del lugar geografico.
+- Preservar trazabilidad en relaciones (`fuente`, `campo_fuente`, `ccd_certeza`, `id_ccd`) para auditar conciliaciones.
+- Priorizar conciliacion asistida para personas/lugares ambiguos y merges automaticos solo en casos seguros.
 
 ### Reconciliacion asistida (v3)
 - `(:Persona {es_placeholder:true})-[:CANDIDATO_MERGE {metodo, score, confianza, slug, fuente}]->(:Persona {registro IS NOT NULL})`
@@ -185,6 +216,26 @@ Para `Lugar/AliasLugar` se aplica una normalizacion de identidad conservadora an
 Objetivo:
 - mantener idempotencia por scope (`alias_norm`, `tipo`, `parent_key`).
 - reducir fragmentacion de nodos `INDETERMINADO` causada por texto narrativo, sin forzar merges agresivos.
+
+### 6.1 Resolucion jerarquica con Georef (v5)
+
+Se agrega una etapa opcional (activa por default si existe `data/georef_catalog.json`) para desambiguar `Lugar` con jerarquia geografica:
+- orden de evidencia: `provincia -> departamento -> municipio -> localidad`.
+- se priorizan coincidencias de mayor especificidad y mayor longitud de n-grama.
+- si no hay provincia explicita, se usa un prior debil por ranking poblacional de provincia como desempate.
+- si la diferencia entre primer y segundo candidato es menor al delta de ambiguedad, no se fuerza resolucion y cae en `INDETERMINADO`.
+
+Comando para generar el catalogo local:
+
+```bash
+PYTHONPATH=src .venv/bin/python scripts/download_georef_catalog.py --output data/georef_catalog.json
+```
+
+Flags del loader relacionadas:
+- `--disable-georef-resolver`
+- `--georef-catalog-path`
+- `--georef-min-score`
+- `--georef-ambiguity-delta`
 
 ## Constraints e indices
 

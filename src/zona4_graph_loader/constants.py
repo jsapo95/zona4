@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 ALIAS_ROOT_PARENT_KEY = "__ROOT__"
 BATCH_SIZE = 500
 
@@ -74,3 +76,35 @@ DIRECTIONAL_TOKENS = {
     "NORTE",
     "SUR",
 }
+
+GEOREF_CATALOG_PATH = Path("data/georef_catalog.json")
+GEOREF_MIN_SCORE = 0.76
+GEOREF_AMBIGUITY_DELTA = 0.02
+
+# Approximate ranking by population (largest to smallest) used only as weak tie-break fallback.
+PROVINCE_PRIORITY = [
+    "BUENOS AIRES",
+    "CORDOBA",
+    "SANTA FE",
+    "CIUDAD AUTONOMA DE BUENOS AIRES",
+    "MENDOZA",
+    "TUCUMAN",
+    "ENTRE RIOS",
+    "SALTA",
+    "MISIONES",
+    "CHACO",
+    "CORRIENTES",
+    "SANTIAGO DEL ESTERO",
+    "SAN JUAN",
+    "JUJUY",
+    "RIO NEGRO",
+    "NEUQUEN",
+    "FORMOSA",
+    "CHUBUT",
+    "SAN LUIS",
+    "CATAMARCA",
+    "LA RIOJA",
+    "LA PAMPA",
+    "SANTA CRUZ",
+    "TIERRA DEL FUEGO",
+]

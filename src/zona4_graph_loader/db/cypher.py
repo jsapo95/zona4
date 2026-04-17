@@ -10,10 +10,17 @@ CONSTRAINTS = [
     "CREATE CONSTRAINT alias_lugar_scope_unique IF NOT EXISTS FOR (a:AliasLugar) REQUIRE (a.alias_norm, a.tipo, a.parent_key) IS UNIQUE",
     "CREATE INDEX persona_registro_idx IF NOT EXISTS FOR (p:Persona) ON (p.registro)",
     "CREATE INDEX persona_nombre_idx IF NOT EXISTS FOR (p:Persona) ON (p.nombre_completo)",
+    "CREATE INDEX persona_estado_idx IF NOT EXISTS FOR (p:Persona) ON (p.estado_desaparicion)",
     "CREATE INDEX evento_tipo_idx IF NOT EXISTS FOR (e:Evento) ON (e.tipo)",
     "CREATE INDEX evento_fecha_idx IF NOT EXISTS FOR (e:Evento) ON (e.fecha)",
+    "CREATE INDEX evento_anio_idx IF NOT EXISTS FOR (e:Evento) ON (e.anio)",
+    "CREATE INDEX evento_tipo_anio_idx IF NOT EXISTS FOR (e:Evento) ON (e.tipo, e.anio)",
+    "CREATE INDEX evento_tipo_inicio_idx IF NOT EXISTS FOR (e:Evento) ON (e.tipo, e.fecha_inicio)",
+    "CREATE INDEX evento_ccd_idx IF NOT EXISTS FOR (e:Evento) ON (e.id_ccd)",
     "CREATE INDEX pagina_listado_num_idx IF NOT EXISTS FOR (pg:PaginaListado) ON (pg.pagina)",
     "CREATE INDEX lugar_nombre_tipo_idx IF NOT EXISTS FOR (l:Lugar) ON (l.nombre_canonico, l.tipo)",
+    "CREATE INDEX lugar_tipo_ccd_idx IF NOT EXISTS FOR (l:Lugar) ON (l.tipo, l.id_ccd)",
+    "CREATE INDEX lugar_geo_idx IF NOT EXISTS FOR (l:Lugar) ON (l.geo_point)",
     "CREATE INDEX alias_lugar_norm_idx IF NOT EXISTS FOR (a:AliasLugar) ON (a.alias_norm)",
 ]
 
@@ -120,9 +127,40 @@ UNWIND $rows AS row
 MERGE (e:Evento {evento_key: row.evento_key})
 SET e.tipo = row.tipo,
     e.fecha = coalesce(row.fecha, e.fecha),
+    e.fecha_inicio = coalesce(row.fecha_inicio, e.fecha_inicio),
+    e.fecha_fin = coalesce(row.fecha_fin, e.fecha_fin),
+    e.fecha_precision = coalesce(row.fecha_precision, e.fecha_precision),
+    e.anio = coalesce(
+        row.anio,
+        e.anio,
+        CASE WHEN coalesce(row.fecha, e.fecha) IS NOT NULL
+             THEN toInteger(substring(coalesce(row.fecha, e.fecha), 0, 4))
+             ELSE NULL
+        END
+    ),
+    e.anio_inicio = coalesce(
+        row.anio_inicio,
+        e.anio_inicio,
+        CASE WHEN coalesce(row.fecha_inicio, row.fecha, e.fecha_inicio, e.fecha) IS NOT NULL
+             THEN toInteger(substring(coalesce(row.fecha_inicio, row.fecha, e.fecha_inicio, e.fecha), 0, 4))
+             ELSE NULL
+        END
+    ),
+    e.anio_fin = coalesce(
+        row.anio_fin,
+        e.anio_fin,
+        CASE WHEN coalesce(row.fecha_fin, row.fecha, e.fecha_fin, e.fecha) IS NOT NULL
+             THEN toInteger(substring(coalesce(row.fecha_fin, row.fecha, e.fecha_fin, e.fecha), 0, 4))
+             ELSE NULL
+        END
+    ),
     e.lugar = coalesce(row.lugar, e.lugar),
     e.descripcion_raw = coalesce(row.descripcion_raw, e.descripcion_raw),
-    e.fuente = row.fuente
+    e.fuente = row.fuente,
+    e.id_ccd = coalesce(row.id_ccd, e.id_ccd),
+    e.ccd_relacion = coalesce(row.ccd_relacion, e.ccd_relacion),
+    e.ccd_certeza = coalesce(row.ccd_certeza, e.ccd_certeza),
+    e.ccd_denominacion = coalesce(row.ccd_denominacion, e.ccd_denominacion)
 """
 
 CYPHER_LINK_PERSONA_EVENTO = """
@@ -130,7 +168,9 @@ UNWIND $rows AS row
 MATCH (p:Persona {persona_key: row.persona_key})
 MATCH (e:Evento {evento_key: row.evento_key})
 MERGE (p)-[r:PARTICIPO_EN {rol: row.rol, fuente: row.fuente}]->(e)
-SET r.descripcion_raw = row.descripcion_raw
+SET r.descripcion_raw = row.descripcion_raw,
+    r.ccd_certeza = coalesce(row.ccd_certeza, r.ccd_certeza),
+    r.id_ccd = coalesce(row.id_ccd, r.id_ccd)
 """
 
 CYPHER_LINK_CASO_EVENTO = """
@@ -190,7 +230,21 @@ MERGE (l:Lugar {lugar_key: row.lugar_key})
 SET l.nombre_canonico = row.nombre_canonico,
     l.tipo = row.tipo,
     l.pais_code = row.pais_code,
-    l.fuente = row.fuente
+    l.fuente = row.fuente,
+    l.lat = coalesce(row.lat, l.lat),
+    l.lon = coalesce(row.lon, l.lon),
+    l.id_ccd = coalesce(row.id_ccd, l.id_ccd),
+    l.zona = coalesce(row.zona, l.zona),
+    l.subzona = coalesce(row.subzona, l.subzona),
+    l.area = coalesce(row.area, l.area),
+    l.jurisdiccion = coalesce(row.jurisdiccion, l.jurisdiccion),
+    l.ubicacion = coalesce(row.ubicacion, l.ubicacion),
+    l.emplazamiento_propiedad = coalesce(row.emplazamiento_propiedad, l.emplazamiento_propiedad),
+    l.geo_point = CASE
+        WHEN coalesce(row.lat, l.lat) IS NOT NULL AND coalesce(row.lon, l.lon) IS NOT NULL
+             THEN point({latitude: coalesce(row.lat, l.lat), longitude: coalesce(row.lon, l.lon)})
+        ELSE l.geo_point
+    END
 """
 
 CYPHER_LINK_LUGAR_PARENT = """

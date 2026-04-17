@@ -3,6 +3,7 @@ from __future__ import annotations
 import difflib
 import re
 from collections import Counter, defaultdict
+from pathlib import Path
 from typing import Any, Dict, List
 
 from zona4_graph_loader.constants import ALIAS_ROOT_PARENT_KEY, DIRECTIONAL_TOKENS
@@ -10,7 +11,33 @@ from zona4_graph_loader.domain.place_norm import resolve_place
 from zona4_graph_loader.domain.text_norm import slugify_name
 
 
-def build_lugar_layer_rows(data: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
+def _node_from_lugar_key(lugar_key: str) -> Dict[str, str]:
+    core = lugar_key.split("|", 1)[0]
+    parts = core.split(":", 2)
+    if len(parts) != 3:
+        return {
+            "lugar_key": lugar_key,
+            "nombre_canonico": core.upper(),
+            "tipo": "INDETERMINADO",
+        }
+
+    tipo = parts[1].upper()
+    nombre = parts[2].replace("_", " ").upper()
+    return {
+        "lugar_key": lugar_key,
+        "nombre_canonico": nombre,
+        "tipo": tipo,
+    }
+
+
+def build_lugar_layer_rows(
+    data: List[Dict[str, Any]],
+    *,
+    use_georef: bool = True,
+    georef_catalog_path: Path,
+    georef_min_score: float,
+    georef_ambiguity_delta: float,
+) -> Dict[str, List[Dict[str, Any]]]:
     pais_key = "lugar:PAIS:argentina"
     lugares: Dict[str, Dict[str, Any]] = {
         pais_key: {
@@ -38,15 +65,16 @@ def build_lugar_layer_rows(data: List[Dict[str, Any]]) -> Dict[str, List[Dict[st
             parent_key = place["parent_key"]
             parents.add((place["lugar_key"], parent_key))
             if parent_key not in lugares:
-                prov_name = parent_key.split(":PROVINCIA:", 1)[1].split("|", 1)[0].replace("_", " ").upper()
+                parent_node = _node_from_lugar_key(parent_key)
                 lugares[parent_key] = {
-                    "lugar_key": parent_key,
-                    "nombre_canonico": prov_name,
-                    "tipo": "PROVINCIA",
+                    "lugar_key": parent_node["lugar_key"],
+                    "nombre_canonico": parent_node["nombre_canonico"],
+                    "tipo": parent_node["tipo"],
                     "pais_code": "AR",
                     "fuente": "normalizacion_lugar",
                 }
-            parents.add((parent_key, pais_key))
+            if parent_key != pais_key:
+                parents.add((parent_key, pais_key))
 
         alias_key = f"alias:{field}:{registro}:{slugify_name(place['alias_norm'])}"
         aliases[alias_key] = {
@@ -87,7 +115,13 @@ def build_lugar_layer_rows(data: List[Dict[str, Any]]) -> Dict[str, List[Dict[st
             continue
         detalle = item.get("detalle", {})
 
-        place_sec = resolve_place(detalle.get("descripcion_lugar_de_secuestro"))
+        place_sec = resolve_place(
+            detalle.get("descripcion_lugar_de_secuestro"),
+            use_georef=use_georef,
+            georef_catalog_path=georef_catalog_path,
+            georef_min_score=georef_min_score,
+            georef_ambiguity_delta=georef_ambiguity_delta,
+        )
         if place_sec:
             register_place(
                 place=place_sec,
@@ -97,7 +131,13 @@ def build_lugar_layer_rows(data: List[Dict[str, Any]]) -> Dict[str, List[Dict[st
                 persona_campo="secuestro",
             )
 
-        place_nac = resolve_place(detalle.get("Lugar de nacimiento"))
+        place_nac = resolve_place(
+            detalle.get("Lugar de nacimiento"),
+            use_georef=use_georef,
+            georef_catalog_path=georef_catalog_path,
+            georef_min_score=georef_min_score,
+            georef_ambiguity_delta=georef_ambiguity_delta,
+        )
         if place_nac:
             register_place(
                 place=place_nac,
@@ -107,7 +147,13 @@ def build_lugar_layer_rows(data: List[Dict[str, Any]]) -> Dict[str, List[Dict[st
                 persona_campo="nacimiento",
             )
 
-        place_ase = resolve_place(detalle.get("Lugar de asesinato"))
+        place_ase = resolve_place(
+            detalle.get("Lugar de asesinato"),
+            use_georef=use_georef,
+            georef_catalog_path=georef_catalog_path,
+            georef_min_score=georef_min_score,
+            georef_ambiguity_delta=georef_ambiguity_delta,
+        )
         if place_ase:
             register_place(
                 place=place_ase,
