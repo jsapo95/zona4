@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import difflib
+import hashlib
 import re
 from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any, Dict, List
 
 from zona4_graph_loader.constants import ALIAS_ROOT_PARENT_KEY, DIRECTIONAL_TOKENS
-from zona4_graph_loader.domain.place_norm import resolve_place
+from zona4_graph_loader.domain.place_norm import extract_specific_address, resolve_place
 from zona4_graph_loader.domain.text_norm import slugify_name
 
 
@@ -50,29 +51,45 @@ def build_lugar_layer_rows(
     }
     parents: set[tuple[str, str]] = set()
     aliases: Dict[str, Dict[str, Any]] = {}
+    direcciones: Dict[str, Dict[str, Any]] = {}
     persona_links: list[Dict[str, Any]] = []
     evento_links: list[Dict[str, Any]] = []
+    evento_direccion_links: list[Dict[str, Any]] = []
+
+    def ensure_lugar_node(lugar_key: str) -> None:
+        if lugar_key in lugares:
+            return
+        node = _node_from_lugar_key(lugar_key)
+        pais_code = "AR"
+        if node["tipo"] == "PAIS" and node["nombre_canonico"] != "ARGENTINA":
+            pais_code = "XX"
+        lugares[lugar_key] = {
+            "lugar_key": node["lugar_key"],
+            "nombre_canonico": node["nombre_canonico"],
+            "tipo": node["tipo"],
+            "pais_code": pais_code,
+            "fuente": "normalizacion_lugar",
+        }
 
     def register_place(place: Dict[str, Any], field: str, registro: int, evento_key: str | None, persona_campo: str | None) -> None:
         lugares[place["lugar_key"]] = {
             "lugar_key": place["lugar_key"],
             "nombre_canonico": place["nombre_canonico"],
             "tipo": place["tipo"],
-            "pais_code": "AR",
+            "pais_code": place.get("pais_code") or "AR",
             "fuente": "normalizacion_lugar",
         }
-        if place.get("parent_key"):
+        hierarchy_keys = place.get("hierarchy_keys")
+        if isinstance(hierarchy_keys, list) and len(hierarchy_keys) >= 2:
+            keys = [k for k in hierarchy_keys if isinstance(k, str) and k]
+            for key in keys:
+                ensure_lugar_node(key)
+            for idx in range(len(keys) - 1):
+                parents.add((keys[idx], keys[idx + 1]))
+        elif place.get("parent_key"):
             parent_key = place["parent_key"]
             parents.add((place["lugar_key"], parent_key))
-            if parent_key not in lugares:
-                parent_node = _node_from_lugar_key(parent_key)
-                lugares[parent_key] = {
-                    "lugar_key": parent_node["lugar_key"],
-                    "nombre_canonico": parent_node["nombre_canonico"],
-                    "tipo": parent_node["tipo"],
-                    "pais_code": "AR",
-                    "fuente": "normalizacion_lugar",
-                }
+            ensure_lugar_node(parent_key)
             if parent_key != pais_key:
                 parents.add((parent_key, pais_key))
 
@@ -108,6 +125,32 @@ def build_lugar_layer_rows(
                     "alias_raw": place["alias_raw"],
                 }
             )
+
+            direccion = extract_specific_address(place.get("alias_raw"))
+            if direccion is not None:
+                strict_scope = f"{direccion['direccion_norm']}|{place['lugar_key']}"
+                direccion_key = f"direccion:{hashlib.sha1(strict_scope.encode('utf-8')).hexdigest()[:20]}"
+                direcciones[direccion_key] = {
+                    "direccion_key": direccion_key,
+                    "direccion_raw": direccion["direccion_raw"],
+                    "direccion_norm": direccion["direccion_norm"],
+                    "via": direccion["via"],
+                    "numero": direccion["numero"],
+                    "piso_depto": direccion["piso_depto"],
+                    "confianza_parseo": direccion["confianza_parseo"],
+                    "fuente": "detalles_personas",
+                    "campo_fuente": field,
+                    "lugar_key": place["lugar_key"],
+                }
+                evento_direccion_links.append(
+                    {
+                        "evento_key": evento_key,
+                        "direccion_key": direccion_key,
+                        "fuente": "detalles_personas",
+                        "campo_fuente": field,
+                        "alias_raw": place["alias_raw"],
+                    }
+                )
 
     for item in data:
         registro = item.get("registro")
@@ -167,9 +210,11 @@ def build_lugar_layer_rows(
     return {
         "lugares": list(lugares.values()),
         "aliases": list(aliases.values()),
+        "direcciones": list(direcciones.values()),
         "parents": parent_rows,
         "persona_links": persona_links,
         "evento_links": evento_links,
+        "evento_direccion_links": evento_direccion_links,
     }
 
 

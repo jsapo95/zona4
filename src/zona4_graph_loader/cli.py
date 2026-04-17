@@ -10,7 +10,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--clean-project",
         action="store_true",
-        help="Limpia solo nodos y relaciones del proyecto (Persona, CasoNietx, Evento) antes de cargar.",
+        help="Limpia nodos y relaciones del proyecto (Persona, CasoNietx, Evento, Lugar y AliasLugar) antes de cargar.",
     )
     parser.add_argument(
         "--clean-all",
@@ -64,6 +64,16 @@ def parse_args() -> argparse.Namespace:
         default=0.02,
         help="Diferencia minima entre mejor y segundo candidato para evitar ambiguedades.",
     )
+    parser.add_argument(
+        "--extensions-dir",
+        default="data/extensions",
+        help="Directorio con paquetes JSON de filas canonicas para extender la carga con nuevas fuentes.",
+    )
+    parser.add_argument(
+        "--skip-extensions",
+        action="store_true",
+        help="No carga paquetes de extension desde --extensions-dir.",
+    )
 
     args = parser.parse_args()
     if args.clean_project and args.clean_all:
@@ -74,3 +84,7 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     run_load(args)
+
+
+if __name__ == "__main__":
+    main()

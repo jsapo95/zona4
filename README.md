@@ -67,6 +67,24 @@ Para poder analizar y crear modelos analíticos, se necesita procesar los datos 
 
 Con esta normalización se pretende crear una base de datos que pueda ser accedida públicamente con datos que están en constante actualización.
 
+## Operacion tecnica del loader
+
+Para documentacion tecnica de ingesta y extension de nuevas fuentes:
+
+- Ver `docs/ingesta_extensible.md`.
+- Ver `docs/neo4j/README.md` para modelo de grafo y consultas Cypher.
+
+Carga base (con extensiones habilitadas por default):
+
+```bash
+PYTHONPATH=src .venv/bin/python -m zona4_graph_loader.cli --clean-project
+```
+
+Flags utiles:
+
+- `--extensions-dir data/extensions`
+- `--skip-extensions`
+
 
 ## Análisis y visualización de datos
 

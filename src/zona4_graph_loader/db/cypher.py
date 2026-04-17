@@ -8,6 +8,8 @@ CONSTRAINTS = [
     "CREATE CONSTRAINT lugar_key_unique IF NOT EXISTS FOR (l:Lugar) REQUIRE l.lugar_key IS UNIQUE",
     "CREATE CONSTRAINT alias_lugar_key_unique IF NOT EXISTS FOR (a:AliasLugar) REQUIRE a.alias_key IS UNIQUE",
     "CREATE CONSTRAINT alias_lugar_scope_unique IF NOT EXISTS FOR (a:AliasLugar) REQUIRE (a.alias_norm, a.tipo, a.parent_key) IS UNIQUE",
+    "CREATE CONSTRAINT direccion_key_unique IF NOT EXISTS FOR (d:Direccion) REQUIRE d.direccion_key IS UNIQUE",
+    "CREATE CONSTRAINT direccion_scope_unique IF NOT EXISTS FOR (d:Direccion) REQUIRE (d.direccion_norm, d.lugar_key) IS UNIQUE",
     "CREATE INDEX persona_registro_idx IF NOT EXISTS FOR (p:Persona) ON (p.registro)",
     "CREATE INDEX persona_nombre_idx IF NOT EXISTS FOR (p:Persona) ON (p.nombre_completo)",
     "CREATE INDEX persona_estado_idx IF NOT EXISTS FOR (p:Persona) ON (p.estado_desaparicion)",
@@ -22,6 +24,7 @@ CONSTRAINTS = [
     "CREATE INDEX lugar_tipo_ccd_idx IF NOT EXISTS FOR (l:Lugar) ON (l.tipo, l.id_ccd)",
     "CREATE INDEX lugar_geo_idx IF NOT EXISTS FOR (l:Lugar) ON (l.geo_point)",
     "CREATE INDEX alias_lugar_norm_idx IF NOT EXISTS FOR (a:AliasLugar) ON (a.alias_norm)",
+    "CREATE INDEX direccion_norm_idx IF NOT EXISTS FOR (d:Direccion) ON (d.direccion_norm)",
 ]
 
 CYPHER_UPSERT_PERSONAS = """
@@ -204,7 +207,7 @@ SET r.detail_url = row.detail_url,
 
 CYPHER_CLEAN_PROJECT = """
 MATCH (n)
-WHERE n:Persona OR n:CasoNietx OR n:Evento OR n:PaginaListado OR n:Lugar OR n:AliasLugar
+WHERE n:Persona OR n:CasoNietx OR n:Evento OR n:PaginaListado OR n:Lugar OR n:AliasLugar OR n:Direccion
 DETACH DELETE n
 """
 
@@ -269,6 +272,9 @@ SET a.alias_norm = row.alias_norm,
     a.parent_key = row.parent_key
 WITH a, row
 MATCH (l:Lugar {lugar_key: row.lugar_key})
+OPTIONAL MATCH (a)-[old:ALIAS_DE]->(prev:Lugar)
+WHERE prev <> l
+DELETE old
 MERGE (a)-[:ALIAS_DE]->(l)
 """
 
@@ -285,6 +291,34 @@ UNWIND $rows AS row
 MATCH (e:Evento {evento_key: row.evento_key})
 MATCH (l:Lugar {lugar_key: row.lugar_key})
 MERGE (e)-[r:OCURRIO_EN {fuente: row.fuente, campo_fuente: row.campo_fuente}]->(l)
+SET r.alias_raw = row.alias_raw
+"""
+
+CYPHER_UPSERT_DIRECCIONES = """
+UNWIND $rows AS row
+MERGE (d:Direccion {direccion_norm: row.direccion_norm, lugar_key: row.lugar_key})
+ON CREATE SET d.direccion_key = row.direccion_key
+SET d.direccion_raw = row.direccion_raw,
+    d.via = coalesce(row.via, d.via),
+    d.numero = coalesce(row.numero, d.numero),
+    d.piso_depto = coalesce(row.piso_depto, d.piso_depto),
+    d.confianza_parseo = coalesce(row.confianza_parseo, d.confianza_parseo),
+    d.fuente = row.fuente,
+    d.campo_fuente = row.campo_fuente
+"""
+
+CYPHER_LINK_DIRECCION_LUGAR = """
+UNWIND $rows AS row
+MATCH (d:Direccion {direccion_key: row.direccion_key})
+MATCH (l:Lugar {lugar_key: row.lugar_key})
+MERGE (d)-[:UBICADA_EN]->(l)
+"""
+
+CYPHER_LINK_EVENTO_DIRECCION = """
+UNWIND $rows AS row
+MATCH (e:Evento {evento_key: row.evento_key})
+MATCH (d:Direccion {direccion_key: row.direccion_key})
+MERGE (e)-[r:OCURRIO_EN_DIRECCION {fuente: row.fuente, campo_fuente: row.campo_fuente}]->(d)
 SET r.alias_raw = row.alias_raw
 """
 

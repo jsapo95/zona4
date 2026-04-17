@@ -1,8 +1,9 @@
 // =============================================
-// QUERIES ANALITICAS AVANZADAS (PERSONAS/LUGARES/EVENTOS)
+// QUERIES ANALITICAS AVANZADAS (MODELO ACTUAL)
+// Incluye Lugar jerarquico, Direccion y CCD integrados
 // =============================================
 
-// 1) Hotspots de eventos por lugar (top global)
+// 1) Hotspots globales por Lugar de ocurrencia
 MATCH (e:Evento)-[:OCURRIO_EN]->(l:Lugar)
 RETURN l.lugar_key AS lugar_key,
        l.nombre_canonico AS lugar,
@@ -11,7 +12,7 @@ RETURN l.lugar_key AS lugar_key,
 ORDER BY eventos_total DESC
 LIMIT 50;
 
-// 2) Hotspots por tipo de evento y lugar
+// 2) Hotspots por tipo de evento y Lugar
 MATCH (e:Evento)-[:OCURRIO_EN]->(l:Lugar)
 RETURN e.tipo AS tipo_evento,
        l.nombre_canonico AS lugar,
@@ -20,7 +21,7 @@ RETURN e.tipo AS tipo_evento,
 ORDER BY eventos_total DESC
 LIMIT 100;
 
-// 3) Evolucion temporal anual de eventos
+// 3) Evolucion anual de eventos (incluye tipos CCD)
 MATCH (e:Evento)
 WHERE e.anio IS NOT NULL
 RETURN e.anio AS anio,
@@ -31,15 +32,18 @@ RETURN e.anio AS anio,
        count(CASE WHEN e.tipo = 'PARTO_CAUTIVERIO_CCD' THEN 1 END) AS partos_cautiverio_ccd
 ORDER BY anio;
 
-// 4) Evolucion anual por jurisdiccion de CCD
+// 4) Evolucion anual por jurisdiccion (usando lugar CCD o anclado)
 MATCH (e:Evento)-[:OCURRIO_EN]->(l:Lugar)
-WHERE e.anio IS NOT NULL AND l.jurisdiccion IS NOT NULL
+WHERE e.anio IS NOT NULL
+WITH e,
+     coalesce(l.jurisdiccion, l.provincia, l.nombre_canonico) AS jurisdiccion
+WHERE jurisdiccion IS NOT NULL
 RETURN e.anio AS anio,
-       l.jurisdiccion AS jurisdiccion,
+       jurisdiccion,
        count(*) AS eventos_total
 ORDER BY anio, eventos_total DESC;
 
-// 5) Personas con mayor cantidad de eventos registrados
+// 5) Personas con mayor cantidad de eventos
 MATCH (p:Persona)-[:PARTICIPO_EN]->(e:Evento)
 RETURN p.persona_key AS persona_key,
        coalesce(p.nombre_completo, p.persona_key) AS persona,
@@ -48,7 +52,7 @@ RETURN p.persona_key AS persona_key,
 ORDER BY eventos_total DESC
 LIMIT 100;
 
-// 6) Personas con trayectorias multisitio (cantidad de lugares distintos)
+// 6) Personas con trayectorias multisitio
 MATCH (p:Persona)-[:PARTICIPO_EN]->(:Evento)-[:OCURRIO_EN]->(l:Lugar)
 RETURN p.persona_key AS persona_key,
        coalesce(p.nombre_completo, p.persona_key) AS persona,
@@ -59,23 +63,21 @@ LIMIT 100;
 
 // 7) Red de co-ocurrencia por victimas simultaneas
 MATCH (p1:Persona)-[:VICTIMA_SIMULTANEA]->(p2:Persona)
-WITH p1, p2
 RETURN p1.persona_key AS source,
        p2.persona_key AS target,
        coalesce(p1.nombre_completo, p1.persona_key) AS source_nombre,
        coalesce(p2.nombre_completo, p2.persona_key) AS target_nombre
 LIMIT 500;
 
-// 8) Calidad de conciliacion de personas (placeholders con candidatos)
+// 8) Calidad de conciliacion de placeholders
 MATCH (p:Persona {es_placeholder:true})
-OPTIONAL MATCH (p)-[r:CANDIDATO_MERGE]->(c:Persona)
+OPTIONAL MATCH (p)-[r:CANDIDATO_MERGE]->(:Persona)
 RETURN count(DISTINCT p) AS placeholders_total,
        count(DISTINCT CASE WHEN r IS NOT NULL THEN p END) AS placeholders_con_candidato,
        count(r) AS relaciones_candidato_total,
-       avg(r.score) AS score_promedio
-;
+       avg(r.score) AS score_promedio;
 
-// 9) Placeholders mas ambiguos (muchos candidatos)
+// 9) Placeholders mas ambiguos
 MATCH (p:Persona {es_placeholder:true})-[r:CANDIDATO_MERGE]->(c:Persona)
 RETURN p.persona_key AS placeholder,
        count(r) AS candidatos,
@@ -84,28 +86,46 @@ RETURN p.persona_key AS placeholder,
 ORDER BY candidatos DESC, mejor_score DESC
 LIMIT 100;
 
-// 10) Cobertura de reutilizacion de lugares CCD vs nodo CCD propio
+// 10) Cobertura de eventos con direccion especifica
 MATCH (e:Evento)
-WHERE e.id_ccd IS NOT NULL
-MATCH (e)-[:OCURRIO_EN]->(l:Lugar)
-RETURN count(*) AS eventos_ccd_total,
-       count(CASE WHEN l.tipo <> 'CCD' THEN 1 END) AS eventos_ccd_en_lugar_reutilizado,
-       count(CASE WHEN l.tipo = 'CCD' THEN 1 END) AS eventos_ccd_en_lugar_ccd
-;
+OPTIONAL MATCH (e)-[:OCURRIO_EN_DIRECCION]->(d:Direccion)
+RETURN count(e) AS eventos_total,
+       count(CASE WHEN d IS NOT NULL THEN 1 END) AS eventos_con_direccion,
+       round(100.0 * count(CASE WHEN d IS NOT NULL THEN 1 END) / count(e), 2) AS pct_eventos_con_direccion;
 
-// 11) Sitios CCD mas activos (por eventos)
+// 11) Direcciones mas frecuentes y su lugar ancla
+MATCH (e:Evento)-[:OCURRIO_EN_DIRECCION]->(d:Direccion)-[:UBICADA_EN]->(l:Lugar)
+RETURN d.direccion_norm AS direccion,
+       l.nombre_canonico AS lugar,
+       l.tipo AS tipo_lugar,
+       count(e) AS eventos_total,
+       max(d.confianza_parseo) AS confianza_max
+ORDER BY eventos_total DESC
+LIMIT 100;
+
+// 12) Cobertura de anclaje jerarquico en CCD
+MATCH (ccd:Lugar {tipo:'CCD'})
+OPTIONAL MATCH (ccd)-[:PARTE_DE]->(p:Lugar)
+WITH ccd, collect(DISTINCT p) AS parents
+RETURN count(ccd) AS total_ccd,
+       count(CASE WHEN size(parents)=0 THEN 1 END) AS ccd_sin_parent,
+       count(CASE WHEN size(parents)>0 THEN 1 END) AS ccd_con_parent;
+
+// 13) Sitios CCD mas activos por eventos
 MATCH (e:Evento)
 WHERE e.id_ccd IS NOT NULL
 MATCH (e)-[:OCURRIO_EN]->(l:Lugar)
 RETURN e.id_ccd AS id_ccd,
        coalesce(e.ccd_denominacion, l.nombre_canonico) AS ccd,
+       l.nombre_canonico AS lugar_ocurrencia,
+       l.tipo AS tipo_lugar,
        count(*) AS eventos_total,
        count(CASE WHEN e.ccd_certeza = 'confirmado' THEN 1 END) AS confirmados,
        count(CASE WHEN e.ccd_certeza = 'posible' THEN 1 END) AS posibles
 ORDER BY eventos_total DESC
 LIMIT 100;
 
-// 12) Densidad de eventos con coordenadas (para mapas)
+// 14) Densidad de eventos con coordenadas (mapas)
 MATCH (e:Evento)-[:OCURRIO_EN]->(l:Lugar)
 WHERE l.geo_point IS NOT NULL
 RETURN l.geo_point.latitude AS lat,
@@ -116,7 +136,7 @@ RETURN l.geo_point.latitude AS lat,
 ORDER BY eventos_total DESC
 LIMIT 500;
 
-// 13) Personas desaparecidas/asesinadas por anio de evento principal
+// 15) Personas por anio de evento principal
 MATCH (p:Persona)-[:PARTICIPO_EN]->(e:Evento)
 WHERE p.estado_desaparicion IS NOT NULL
   AND e.anio IS NOT NULL
@@ -126,7 +146,7 @@ RETURN p.estado_desaparicion AS estado,
        count(DISTINCT p.persona_key) AS personas
 ORDER BY anio, estado;
 
-// 14) Lugares con mayor diversidad de personas afectadas
+// 16) Lugares con mayor diversidad de personas
 MATCH (p:Persona)-[:PARTICIPO_EN]->(:Evento)-[:OCURRIO_EN]->(l:Lugar)
 RETURN l.lugar_key AS lugar_key,
        l.nombre_canonico AS lugar,
@@ -135,7 +155,7 @@ RETURN l.lugar_key AS lugar_key,
 ORDER BY personas_distintas DESC
 LIMIT 100;
 
-// 15) Trayectorias de lugar por persona (secuencia temporal)
+// 17) Secuencia temporal de lugares por persona
 MATCH (p:Persona)-[:PARTICIPO_EN]->(e:Evento)-[:OCURRIO_EN]->(l:Lugar)
 WHERE e.fecha_inicio IS NOT NULL
 WITH p, e, l

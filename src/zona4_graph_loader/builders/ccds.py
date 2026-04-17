@@ -78,6 +78,8 @@ def _resolve_existing_lugar_key(
     *,
     lat: Optional[float],
     lon: Optional[float],
+    ubicacion_text: Optional[str],
+    denominacion_text: Optional[str],
     existing_lugar_keys: set[str],
     use_georef: bool,
     georef_catalog_path: Path,
@@ -86,26 +88,35 @@ def _resolve_existing_lugar_key(
     georef_api_timeout: int,
 ) -> Optional[str]:
     hint = _coord_to_place_hint(lat, lon, georef_api_timeout)
-    if not hint:
+    candidates: List[str] = []
+    if hint:
+        candidates.append(hint)
+    if ubicacion_text:
+        candidates.append(ubicacion_text)
+    if denominacion_text:
+        candidates.append(denominacion_text)
+
+    if not candidates:
         return None
 
-    resolved = resolve_place(
-        hint,
-        use_georef=use_georef,
-        georef_catalog_path=georef_catalog_path,
-        georef_min_score=georef_min_score,
-        georef_ambiguity_delta=georef_ambiguity_delta,
-    )
-    if not resolved:
-        return None
+    for candidate in candidates:
+        resolved = resolve_place(
+            candidate,
+            use_georef=use_georef,
+            georef_catalog_path=georef_catalog_path,
+            georef_min_score=georef_min_score,
+            georef_ambiguity_delta=georef_ambiguity_delta,
+        )
+        if not resolved:
+            continue
 
-    lugar_key = resolved.get("lugar_key")
-    if isinstance(lugar_key, str) and lugar_key in existing_lugar_keys and resolved.get("tipo") != "INDETERMINADO":
-        return lugar_key
+        lugar_key = resolved.get("lugar_key")
+        if isinstance(lugar_key, str) and lugar_key in existing_lugar_keys and resolved.get("tipo") != "INDETERMINADO":
+            return lugar_key
 
-    parent_key = resolved.get("parent_key")
-    if isinstance(parent_key, str) and parent_key in existing_lugar_keys:
-        return parent_key
+        parent_key = resolved.get("parent_key")
+        if isinstance(parent_key, str) and parent_key in existing_lugar_keys:
+            return parent_key
 
     return None
 
@@ -234,6 +245,8 @@ def build_ccd_rows(
             resolved_lugar_key = _resolve_existing_lugar_key(
                 lat=lat,
                 lon=lon,
+                ubicacion_text=ubicacion,
+                denominacion_text=denominacion,
                 existing_lugar_keys=existing_lugar_keys,
                 use_georef=use_georef,
                 georef_catalog_path=georef_catalog_path,
@@ -244,7 +257,9 @@ def build_ccd_rows(
             if resolved_lugar_key and resolved_lugar_key != lugar_key:
                 parents.add((lugar_key, resolved_lugar_key))
 
-            fecha_data = _parse_ccd_fecha(ref.get("fecha") if isinstance(ref.get("fecha"), list) else [])
+            fecha_raw = ref.get("fecha")
+            fecha_values = fecha_raw if isinstance(fecha_raw, list) else []
+            fecha_data = _parse_ccd_fecha(fecha_values)
             relacion = clean_text(ref.get("relacion")) or "desconocida"
             certeza = clean_text(ref.get("certeza"))
             evento_key = f"evento:detalles:ccd:{registro}:{id_ccd}:{idx}"

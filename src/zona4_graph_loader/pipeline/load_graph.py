@@ -22,6 +22,8 @@ from zona4_graph_loader.db.cypher import (
     CYPHER_CLEAN_ALL,
     CYPHER_CLEAN_PROJECT,
     CYPHER_LINK_CASO_EVENTO,
+    CYPHER_LINK_DIRECCION_LUGAR,
+    CYPHER_LINK_EVENTO_DIRECCION,
     CYPHER_LINK_EVENTO_LUGAR,
     CYPHER_LINK_LUGAR_PARENT,
     CYPHER_LINK_PERSONA_EVENTO,
@@ -30,6 +32,7 @@ from zona4_graph_loader.db.cypher import (
     CYPHER_UPSERT_ALIAS_LUGAR,
     CYPHER_UPSERT_CANDIDATO_MERGE,
     CYPHER_UPSERT_CASOS,
+    CYPHER_UPSERT_DIRECCIONES,
     CYPHER_UPSERT_EVENTOS,
     CYPHER_UPSERT_LUGARES,
     CYPHER_UPSERT_PAGINAS_LISTADO,
@@ -41,6 +44,7 @@ from zona4_graph_loader.db.cypher import (
 )
 from zona4_graph_loader.db.qa import run_qa_report
 from zona4_graph_loader.db.writer import run_batches
+from zona4_graph_loader.io.extensions import load_extension_collections
 from zona4_graph_loader.io.files import CCDS_PATH, DETALLES_PATH, LISTADO_PAGINAS_PATH, NIETXS_PATH, read_json
 
 
@@ -72,9 +76,11 @@ def run_load(args: argparse.Namespace) -> None:
         else {
             "lugares": [],
             "aliases": [],
+            "direcciones": [],
             "parents": [],
             "persona_links": [],
             "evento_links": [],
+            "evento_direccion_links": [],
         }
     )
 
@@ -93,6 +99,34 @@ def run_load(args: argparse.Namespace) -> None:
         lugar_layer["lugares"].extend(ccd_layer["lugares"])
         lugar_layer["parents"].extend(ccd_layer["parents"])
         lugar_layer["evento_links"].extend(ccd_layer["evento_links"])
+    if not args.skip_extensions:
+        extension_rows, extension_files = load_extension_collections(Path(args.extensions_dir))
+        if extension_files:
+            print(f"extensions_loaded: {len(extension_files)} ({', '.join(p.name for p in extension_files)})")
+        else:
+            print("extensions_loaded: 0")
+
+        detalles_personas.extend(extension_rows["personas_detalles"])
+        casos_nietx.extend(extension_rows["casos_nietx"])
+        protagonistas.extend(extension_rows["protagonistas"])
+        rel_familiares.extend(extension_rows["rel_familiares"])
+        rel_personas.extend(extension_rows["rel_personas"])
+        rel_simult.extend(extension_rows["rel_simult"])
+        eventos.extend(extension_rows["eventos"])
+
+        if not args.skip_listado_paginas:
+            paginas_listado.extend(extension_rows["paginas_listado"])
+            links_listado.extend(extension_rows["links_listado"])
+
+        if not args.skip_lugares:
+            lugar_layer["lugares"].extend(extension_rows["lugares"])
+            lugar_layer["aliases"].extend(extension_rows["aliases"])
+            lugar_layer["direcciones"].extend(extension_rows["direcciones"])
+            lugar_layer["parents"].extend(extension_rows["parents"])
+            lugar_layer["persona_links"].extend(extension_rows["persona_links"])
+            lugar_layer["evento_links"].extend(extension_rows["evento_links"])
+            lugar_layer["evento_direccion_links"].extend(extension_rows["evento_direccion_links"])
+
     safe_place_merges = (
         build_safe_place_merge_rows(lugar_layer)
         if (not args.skip_lugares and args.apply_safe_place_merges)
@@ -136,6 +170,15 @@ def run_load(args: argparse.Namespace) -> None:
             run_batches(session, CYPHER_UPSERT_ALIAS_LUGAR, lugar_layer["aliases"], "alias_lugar", BATCH_SIZE)
             run_batches(session, CYPHER_LINK_PERSONA_LUGAR, lugar_layer["persona_links"], "persona_lugar", BATCH_SIZE)
             run_batches(session, CYPHER_LINK_EVENTO_LUGAR, lugar_layer["evento_links"], "evento_lugar", BATCH_SIZE)
+            run_batches(session, CYPHER_UPSERT_DIRECCIONES, lugar_layer["direcciones"], "direcciones", BATCH_SIZE)
+            run_batches(session, CYPHER_LINK_DIRECCION_LUGAR, lugar_layer["direcciones"], "direccion_lugar", BATCH_SIZE)
+            run_batches(
+                session,
+                CYPHER_LINK_EVENTO_DIRECCION,
+                lugar_layer["evento_direccion_links"],
+                "evento_direccion",
+                BATCH_SIZE,
+            )
             if args.apply_safe_place_merges:
                 run_batches(
                     session,
