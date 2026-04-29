@@ -4,11 +4,18 @@ services:
     container_name: neo4j-zona4
     ports:
       - "7474:7474"
-      - "7687:7687"
+      - "17687:7687"
     environment:
       NEO4J_AUTH: neo4j/zona4local
+      NEO4J_PLUGINS: '["apoc", "graph-data-science"]'
+      NEO4J_dbms_security_procedures_unrestricted: "apoc.*,gds.*"
+      NEO4J_dbms_security_procedures_allowlist: "apoc.*,gds.*"
+      NEO4J_apoc_export_file_enabled: "true"
+      NEO4J_apoc_import_file_enabled: "true"
     volumes:
       - neo4j_data:/data
+      - neo4j_plugins:/plugins
 
 volumes:
   neo4j_data:
+  neo4j_plugins:

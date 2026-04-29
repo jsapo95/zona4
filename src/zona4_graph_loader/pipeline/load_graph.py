@@ -23,6 +23,7 @@ from zona4_graph_loader.db.cypher import (
     CYPHER_CLEAN_PROJECT,
     CYPHER_LINK_CASO_EVENTO,
     CYPHER_LINK_DIRECCION_LUGAR,
+    CYPHER_LINK_EVENTO_CCD,
     CYPHER_LINK_EVENTO_DIRECCION,
     CYPHER_LINK_EVENTO_LUGAR,
     CYPHER_LINK_LUGAR_PARENT,
@@ -170,6 +171,7 @@ def run_load(args: argparse.Namespace) -> None:
             run_batches(session, CYPHER_UPSERT_ALIAS_LUGAR, lugar_layer["aliases"], "alias_lugar", BATCH_SIZE)
             run_batches(session, CYPHER_LINK_PERSONA_LUGAR, lugar_layer["persona_links"], "persona_lugar", BATCH_SIZE)
             run_batches(session, CYPHER_LINK_EVENTO_LUGAR, lugar_layer["evento_links"], "evento_lugar", BATCH_SIZE)
+            run_batches(session, CYPHER_LINK_EVENTO_CCD, ccd_layer["evento_ccd_links"], "evento_ccd", BATCH_SIZE)
             run_batches(session, CYPHER_UPSERT_DIRECCIONES, lugar_layer["direcciones"], "direcciones", BATCH_SIZE)
             run_batches(session, CYPHER_LINK_DIRECCION_LUGAR, lugar_layer["direcciones"], "direccion_lugar", BATCH_SIZE)
             run_batches(

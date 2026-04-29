@@ -33,6 +33,15 @@ def _ccd_rel_to_tipo(relacion: str) -> str:
     return "EVENTO_CCD"
 
 
+def _ccd_rel_to_rol(relacion: str) -> str:
+    rel = (relacion or "").strip().lower()
+    if rel == "secuestrada_en":
+        return "victima"
+    if rel == "pario_en":
+        return "persona_que_pario"
+    return "persona_mencionada_ccd"
+
+
 @lru_cache(maxsize=256)
 def _reverse_georef_ubicacion(lat_str: str, lon_str: str, timeout: int) -> Optional[Dict[str, Any]]:
     params = urllib.parse.urlencode(
@@ -197,6 +206,7 @@ def build_ccd_rows(
     parents: set[tuple[str, str]] = set()
     eventos: List[Dict[str, Any]] = []
     evento_links: List[Dict[str, Any]] = []
+    evento_ccd_links: List[Dict[str, Any]] = []
 
     for item in detalles_data:
         registro = item.get("registro")
@@ -276,11 +286,21 @@ def build_ccd_rows(
                     "descripcion_raw": fecha_data["fecha_raw"],
                     "fuente": "parque_ccds",
                     "persona_key": f"registro:{registro}",
-                    "rol": "victima",
+                    "rol": _ccd_rel_to_rol(relacion),
                     "id_ccd": id_ccd,
                     "ccd_relacion": relacion,
                     "ccd_certeza": certeza,
                     "ccd_denominacion": denominacion,
+                }
+            )
+
+            evento_ccd_links.append(
+                {
+                    "evento_key": evento_key,
+                    "ccd_lugar_key": lugar_key,
+                    "fuente": "parque_ccds",
+                    "ccd_relacion": relacion,
+                    "ccd_certeza": certeza,
                 }
             )
 
@@ -299,4 +319,5 @@ def build_ccd_rows(
         "lugares": list(lugares.values()),
         "parents": [{"child_key": child, "parent_key": parent} for child, parent in sorted(parents)],
         "evento_links": evento_links,
+        "evento_ccd_links": evento_ccd_links,
     }

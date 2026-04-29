@@ -114,3 +114,21 @@ MATCH (a:AliasLugar)-[:ALIAS_DE]->(l:Lugar)
 WHERE a.alias_norm CONTAINS 'CAPITAL FEDERAL'
     AND l.nombre_canonico = 'FEDERAL'
 RETURN count(*) AS capital_federal_en_federal;
+
+// 20) Cobertura EN_CCD para eventos con id_ccd (deberia ser 100%)
+MATCH (e:Evento)
+WHERE e.id_ccd IS NOT NULL
+OPTIONAL MATCH (e)-[:EN_CCD]->(ccd:Lugar {tipo:'CCD'})
+RETURN count(e) AS eventos_ccd,
+             count(DISTINCT CASE WHEN ccd IS NOT NULL THEN e END) AS eventos_ccd_con_en_ccd,
+             count(ccd) AS total_links_en_ccd,
+             round(
+                 100.0 * count(DISTINCT CASE WHEN ccd IS NOT NULL THEN e END) / count(e),
+                 2
+             ) AS pct_eventos_ccd_con_en_ccd;
+
+// 21) Roles en PARTICIPO_EN para eventos CCD (lectura semantica)
+MATCH (:Persona)-[r:PARTICIPO_EN]->(e:Evento)
+WHERE e.tipo IN ['SECUESTRO_CCD', 'PARTO_CAUTIVERIO_CCD', 'EVENTO_CCD']
+RETURN e.tipo AS tipo_evento_ccd, r.rol AS rol, count(*) AS c
+ORDER BY tipo_evento_ccd, c DESC;

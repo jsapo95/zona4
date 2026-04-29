@@ -294,6 +294,15 @@ MERGE (e)-[r:OCURRIO_EN {fuente: row.fuente, campo_fuente: row.campo_fuente}]->(
 SET r.alias_raw = row.alias_raw
 """
 
+CYPHER_LINK_EVENTO_CCD = """
+UNWIND $rows AS row
+MATCH (e:Evento {evento_key: row.evento_key})
+MATCH (l:Lugar {lugar_key: row.ccd_lugar_key})
+MERGE (e)-[r:EN_CCD {fuente: row.fuente}]->(l)
+SET r.ccd_relacion = row.ccd_relacion,
+    r.ccd_certeza = row.ccd_certeza
+"""
+
 CYPHER_UPSERT_DIRECCIONES = """
 UNWIND $rows AS row
 MERGE (d:Direccion {direccion_norm: row.direccion_norm, lugar_key: row.lugar_key})

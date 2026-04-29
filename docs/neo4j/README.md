@@ -29,7 +29,7 @@ Ejemplo local:
 
 ```bash
 PYTHONPATH=src \
-NEO4J_URI=bolt://localhost:7687 \
+NEO4J_URI=bolt://localhost:17687 \
 NEO4J_USER=neo4j \
 NEO4J_PASSWORD=zona4local \
 NEO4J_DATABASE=neo4j \
@@ -41,6 +41,31 @@ Notas:
 - --clean-project limpia nodos del proyecto y recarga.
 - --clean-all limpia toda la base.
 - El pipeline crea constraints e indices si no existen.
+
+## APOC y GDS
+
+Para entorno local con Docker, este repo habilita ambos plugins en `docker-compose.yml`:
+
+- APOC
+- Graph Data Science (GDS)
+
+Verificacion rapida en Neo4j Browser:
+
+```cypher
+RETURN apoc.version() AS apoc_version;
+RETURN gds.version() AS gds_version;
+```
+
+Si falla por plugin ausente:
+
+1. Reiniciar contenedor con recreacion: `docker compose up -d --force-recreate`.
+2. Revisar logs: `docker logs neo4j-zona4 | grep -Ei "apoc|gds|plugin"`.
+
+Nota sobre Aura:
+
+- AuraDB no permite instalar plugins arbitrarios.
+- APOC Core suele estar disponible de forma parcial.
+- GDS requiere AuraDS o una instancia autogestionada de Neo4j con plugin GDS.
 
 ## Esquema conceptual resumido
 

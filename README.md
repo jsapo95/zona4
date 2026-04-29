@@ -85,6 +85,15 @@ Flags utiles:
 - `--extensions-dir data/extensions`
 - `--skip-extensions`
 
+Neo4j local con plugins:
+
+- `docker-compose.yml` ya incluye instalacion automatica de APOC y GDS para entorno local.
+- Esta instancia publica Bolt en `localhost:17687` para evitar conflictos con otros Neo4j en `7687`.
+- Reiniciar con `docker compose up -d --force-recreate` cuando se cambie la configuracion de Neo4j.
+- Verificar en Browser:
+	- `RETURN apoc.version() AS apoc_version;`
+	- `RETURN gds.version() AS gds_version;`
+
 
 ## Análisis y visualización de datos
 
