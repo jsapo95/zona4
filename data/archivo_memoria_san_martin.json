@@ -2,6 +2,7 @@
   {
     "nombre": "Bellantuono Herrero, Jorge",
     "fecha_desaparicion": "13 de julio de 1976",
+    "estudiante": true,
     "descripcion": "Nació el 13 de diciembre de 1951. Su apodo era “Nechi”. Trabajó como empleado administrativo contable en la fábrica de máquinas de coser Necchi S.A de Billinghurts, Partido de San Martin. Estudiaba Ciencias Económicas en la Universidad de Buenos Aires (U.B.A). Tenía 24 años cuando fue secuestrado el 13 de julio de 1976 en la vía pública, en Barrancas de Belgrano.",
     "lugar": "Billinghurst",
     "fecha_nacimiento": "1951-12-13",
@@ -65,6 +66,7 @@
   {
     "nombre": "Lamotta Ceriani, Luis Antonio",
     "fecha_desaparicion": "17 de junio de 1977",
+    "estudiante": true,
     "descripcion": "Nació el 21 de enero de 1952 en la Ciudad Autónoma de Buenos Aires. Trabajó como transportista. Tenía 25 años, estudiaba en la Facultad de Derecho de la Universidad de Buenos Aires (UBA). Su foto es parte del Mural “Estudiantes de derecho detenidos desaparecidos” que se encuentra en el Aula 1 de Extensión Universitaria. El 17 de junio de 1977, fue secuestrado en su domicilio, Conesa N⁰ 5160, Billinghurts, Partido de Gral. San Martín, Provincia de Buenos Aires. La denuncia por su desaparición, fue realizada en el año 1984. Desde 2017, su legajo de estudiante lleva un sello que lo reconoce como detenido desaparecido.",
     "lugar": "Billinghurst",
     "fecha_nacimiento": "1952-01-21",
@@ -77,7 +79,7 @@
     "descripcion": "Nació el 26 de febrero de 1954 en Quitilipi, provincia del Chaco. Hizo el secundario en la Escuela Wilde San Martín y estudio enfermería en la Facultad de Medicina de la UBA. Tenía 23 años, estaba de novia con Pablo Albarracín (cabo del ejército argentino a quien desaparecieron el día anterior, 13/4/77), ambos eran militantes del partido Revolucionario de los Trabajadores (PRT). Mirta desarrollaba actividades solidarias en su barrio en José C. Paz. Trabajaba como enfermera en el Hospital “Eva Perón” (ex Castex) de San Martín y en el Policlínico del Docente de CABA (OSPLAD), Lavalle 1972, donde dos hombres armados, vestidos de civil entraron identificándose como Ejército Argentino en medio de la noche para secuestrarla el 14 abril de 1977 en horario de trabajo y dentro del sanatorio. La vieron en el Centro Clandestino de Detención “El Campito” de la guarnición militar de Campo de Mayo.",
     "lugar": "Billinghurst",
     "fecha_nacimiento": "1954-02-26",
-    "fecha_desaparicion_normalizada": "1977-04-01",
+    "fecha_desaparicion_normalizada": "1977-04-14",
     "edad_al_desaparecer": 23
   },
   {
@@ -110,6 +112,7 @@
   {
     "nombre": "Arin Delacourt, Julio César",
     "fecha_desaparicion": "16 de junio de 1976",
+    "estudiante": true,
     "descripcion": "Nació el 1 de septiembre de 1952 en Misiones. Tenía 23 años, le decían “Coco”, estudiaba psicología en la Universidad de Buenos Aires (UBA) y trabajaba en el Bank of América en la sucursal de José León Suárez, San Martín. Estaba casado con Mercedes Leonor Cuadrelli (“Bicho”), ella tenía 21 años y llevaba un mes de embarazo. Ambos fueron secuestrados el 16 de junio de 1976 en su domicilio de Av. Cabildo 4315 6°B, en el barrio de Nuñez, Ciudad de Buenos Aires.",
     "lugar": "José León Suárez",
     "fecha_nacimiento": "1952-09-01",
@@ -209,6 +212,7 @@
   {
     "nombre": "Efrón, Horacio “Pincho”",
     "fecha_desaparicion": "18 de septiembre de 1974",
+    "estudiante": true,
     "descripcion": "Nació el 19 de junio de 1953. Tenía 21 años. Ingresó a la carrera de Ciencias Económicas en junio de 1971 y comenzó a participar en las luchas del pueblo contra la dictadura. En agosto de ese año se incorporó a un equipo estudiantil del PRT-ERP e integró el marxismo a su concepción ideológica. En diciembre ingresó como aspirante y en febrero de 1972 ya pasó a integrar el Comité Estudiantil del Partido, convirtiéndose posteriormente en responsable estudiantil. Después del 25 de agosto de 1973 se incorporó a la dirección zonal de Capital. Participó del Copamiento del Cuartel de Azul y pasó a ser responsable político de la Zona Capital y miembro del Comité Regional de Buenos Aires. Fue asesinado por la policía en Roldán y Charlone, Barrio Corea de José León Suárez, San Martín, mientras realizaba un reparto de leche para los más necesitados.",
     "lugar": "José León Suárez",
     "fecha_nacimiento": "1953-06-19",
@@ -227,6 +231,7 @@
   {
     "nombre": "Esplugas Ferrandini, Enrique Lorenzo “Rodi”",
     "fecha_desaparicion": "29 de octubre de 1976",
+    "estudiante": true,
     "descripcion": "Nació el 7 de agosto de 1949 y se crió en San Martín. Estudiaba Antropología en Filosofía y Letras de la UBA y trabajaba como comerciante en un negocio de artículos de Camping, Caza y Pesca. Tenía 27 años, pertenecía a un grupo de scouts católicos del colegio Aymar de San Martín. Fue secuestrado el 29 de octubre de 1976 en la vía pública en Vicente López.",
     "lugar": "José León Suárez",
     "fecha_nacimiento": "1949-08-07",
@@ -380,6 +385,7 @@
   {
     "nombre": "Vergara Luján, Hilda Zulma",
     "fecha_desaparicion": "10 de julio de 1976",
+    "estudiante": true,
     "descripcion": "Nació el 30 de noviembre de 1938 en Ciudad de Buenos Aires. Fue la mayor de cuatro hermanos. Su madre fue Elida Viturro y su padre David Vergara. La familia llegó a Luján en 1956 y vivieron en el popular barrio “El Quinto”. Desde pequeña Hilda dibujaba muy bien. A fines de 1960 concurría al taller del poeta Dardo Dorronzoro (también secuestrado-desaparecido) donde conoció a Arnaldo Harold Buffa, con quien se casó en 1970. A través suyo se acercó al socialismo, a diferencia de sus hermanos que militaban en la JP. En la Universidad de Luján realizó un curso de Guía de Turismo Regional de Luján. Siguió vinculándose con la universidad, donde se inscribió junto David y a su hermano David en un Centro Educativo de Nivel Secundario, el CENS N°35. En 1974 Hilda empezó a estudiar en la Escuela de Arte de Luján, que permitía el ingreso a mayores de 25 años sin título secundario, por eso Hilda pudo anotarse mientras estudiaba en el CENS de la Universidad. El matrimonio militaba en el Partido Socialista de los Trabajadores. En las elecciones del 11 de marzo de 1973 Hilda fue candidata a consejera escolar por el PST. En los primeros días del mes de marzo 1976, las iniciales de su nombre, las de Arnaldo, (que en noviembre de 1975 había sido secuestrado y luego liberado) y las de su hermano David aparecieron publicadas, junto con las de otras y otros militantes, en un comunicado del Comando Nacionalista Jordán Bruno Genta, que funcionó en la ciudad de Luján. Ante el riesgo que corrían sus vidas Hilda y su marido se fueron a Paso de los Libres, Corrientes, donde Vicente Omar Pascarelli, un compañero de militancia, tenía una casa. Pero el 10 de julio de 1976 los tres fueron secuestrados, trasladados y asesinados en un supuesto enfrentamiento que nunca existió. Afirman falsamente que murió el 31 de julio de ese mismo año, en Las Flores y Sarratea, José León Suárez. Los militares aseguraban que ella participó del asalto al Regimiento 29 de Infantería de Monte, en Formosa, el 5 de octubre de 1975, con el grado de aspirante en el Ejército Montonero. Los restos de Hilda y de Arnaldo fueron encontrados por el Equipo Argentino de Antropología Forense en el cementerio de San Martín en 2001 e identificados y restituidos a su familia en 2006. El 25 de marzo de 2019 por todas las víctimas que el Terrorismo de Estado inhumó como NN se realizó el Señalamiento al Cementerio de San Martín como Sitio de Memoria.",
     "lugar": "José León Suárez",
     "fecha_nacimiento": "1938-11-30",
@@ -398,6 +404,7 @@
   {
     "nombre": "Abinet Alonso, María Leonor",
     "fecha_desaparicion": "16 de septiembre de 1976",
+    "estudiante": true,
     "descripcion": "Nació el 29 de septiembre de 1944 en San Martín. Trabajaba como profesora de inglés en una escuela de Don Torcuato y estudiaba ciencias de la educación en la UBA. La llamaban Mara o Mafalda, militante montonera de la U.B. “Combatientes Peronistas”, miembro de la CTERA. Fue secuestrada el 16 de septiembre de 1976, de la pensión donde vivía en Asamblea 1661, Caseros, Tres De Febrero. Estaba cursando un embarazo de 7 meses y tenía fecha probable de parto para noviembre. Su pareja, Miguel Ángel Gallinari, había sido secuestrado en el mes de julio. Ella era divorciada y tenía dos hijos de su compañero anterior. Tuvo a su hija estando en cautiverio, quien fue apropiada por un policía y su familia. Se la recuperó el 21 de abril de 1987, estaba inscripta con una falsa partida de nacimiento firmada por la médica Silvia Marta Kirilosky. Fue la primera niña hallada por organismos de DD.HH. Sus restos habían sido inhumados como NN en el Cementerio de San Martín entre el 31 de enero y el 3 de febrero de 1977. María Leonor fue identificada por el ADN en mayo de 2009 por el Equipo Argentino de Antropología Forense (EAAF).",
     "lugar": "San Andrés",
     "fecha_nacimiento": "1944-09-29",
@@ -443,6 +450,7 @@
   {
     "nombre": "Chait, Patricia Viviana",
     "fecha_desaparicion": "5 de junio de 1976",
+    "estudiante": true,
     "descripcion": "Nació el 11 de noviembre de 1952. Le decían “Pato” o “Zapato”, era estudiante de arquitectura en la Universidad de Buenos Aires, militaba en la Juventud Universitaria Peronista (JUP). Tenía 23 años cuándo fue secuestrada el 5 de junio de 1976 de su domicilio, América 447 en el barrio de San Andrés, partido de San Martín. Su nombre aparece en el Cenotafio de la Plaza Central de San Martín.",
     "lugar": "San Andrés",
     "fecha_nacimiento": "1952-11-11",
@@ -479,6 +487,7 @@
   {
     "nombre": "Ollero, Inés",
     "fecha_desaparicion": "19 de julio de 1977",
+    "estudiante": true,
     "descripcion": "Nació el 3 de junio de 1955 en San Martín. Tenía 21 años y estudiaba tercer año de biología en la Facultad de Ciencias Exactas, Físicas y Naturales de la Universidad de Buenos Aires (UBA). Militaba en la Federación Juvenil Comunista, era responsable política del barrio de Almagro y cumplía tareas de responsable de Literatura al momento de su desaparición. La noche de su secuestro el 19 de julio de 1977 salía de una reunión de militancia y volvía a su casa en el colectivo 187, en el interno 13, cuando una pinza militar en Albararellos y Constituyentes, hizo bajar a los pasajeros y los llevó a la comisaría 49. Inés tenía encima lo que en ese momento se llamaban “literatura extremista” y era la prensa del Partido Comunista. Un grupo de tareas de la Marina la secuestró en la comisaría. Cuando el terrorismo de Estado la secuestró su padre, como muchos otros familiares, salió a enfrentarse con ese enemigo, con mucha valentía al punto que no dudó en ingresar a altas horas de la noche a la ESMA a entrevistarse con su director, el almirante Chamorro. Estaba convencido que Inés estaba ahí. En el 1985, dos ex detenidas declararon en el juicio a los ex comandantes que habían visto a Inés con vida en la ESMA. Hasta el día de hoy Inés sigue desaparecida. Al cumplirse 42 años de su secuestro, en el año 2019, se le realizó un homenaje colocándose una baldosa en donde fue su casa. En diciembre de 2023 se hizo una Señalización de Esquina por la Memoria, colocándose el nombre de Inés Ollero y Leonor Abinet a la intersección de las calles 3 de Febrero y Florida en el barrio de San Andrés.",
     "lugar": "San Andrés",
     "fecha_nacimiento": "1955-06-03",
@@ -497,6 +506,7 @@
   {
     "nombre": "San Martín, Guillermo Horacio",
     "fecha_desaparicion": "23 de diciembre de 1975",
+    "estudiante": true,
     "descripcion": "Nació el 26 de mayo de 1952. Fue al colegio Agustiniano de San Andrés. Era estudiante universitario de Agronomía. Vivía en Las Malvinas 389, San Andrés, Partido de San Martín. Militaba en el Partido Revolucionario de los Trabajadores- Ejército Revolucionario del Pueblo (PRT_ERP). Tenía 23 años cuándo fue asesinado el 23 de diciembre de 1975 en el Batallón Depósito de Arsenales 601 “Domingo Viejobueno” de Monte Chingolo, Lanús, Pcia. de Buenos Aires.",
     "lugar": "San Andrés",
     "fecha_nacimiento": "1952-05-26",
@@ -506,6 +516,7 @@
   {
     "nombre": "Vedoya Vergara, María Teresa",
     "fecha_desaparicion": "20 de octubre de 1976",
+    "estudiante": true,
     "descripcion": "Nació el 11 de agosto de 1954 en en La Plata, Pcia. Bs. As. Le decían Tere, Teresita o “Negrita”. Estudiante universitaria de medicina. Militaba en la Juventud Universitaria Peronista y en Montoneros. Estaba casada con Hugo Alberto Suárez Caballero, el 20 de diciembre de 1975 tuvieron a su hijo Marcos en la ciudad de La Plata. Tenía 22 años cuándo fue secuestrada el 20 de octubre de 1976 en la vía pública, en el barrio de San Andrés. Su compañero, junto al niño, fueron secuestrados entre el 8 y el 10 de diciembre. La familia comenzó la búsqueda en organismos del Estado, iglesias y hospitales obteniendo siempre respuestas negativas. El 30 de marzo de 2006 se presentó en Abuelas de Plaza de Mayo un joven interesado en conocer su filiación paterna. En la inscripción que se había realizado en el Registro Civil no figuraba ninguna información sobre su padre, existían escasos datos sobre su infancia y sobre su lugar de nacimiento aparentemente ocurrido en un domicilio particular. El 4 de abril de ese año el joven se presentó en la Comisión Nacional por el Derecho a la Identidad (CoNaDI) y en junio se realizó los análisis inmunogenéticos en el Banco Nacional de Datos Genéticos (BNDG). El 12 de septiembre confirmaron que se trataba de Marcos, hijo de María Teresa y Hugo. Sus padres permanecen desaparecidos. Los familiares de María Teresa, el 5 de diciembre de 2022 recibieron de la Facultad de Ciencias Médicas de la Universidad Nacional de La Plata en el acto que llevó a cabo enmarcado en el Programa de Reparación, digitalización y preservación de legajos de estudiantes, graduados y trabajadores de la Universidad Nacional de La Plata víctimas del terrorismo de Estado, que funciona de acuerdo a las resoluciones 259/15 y 260/15.4. En el desarrollo de la reaparición y en el acto de entrega intervinieron familiares y amigos de las víctimas, así como autoridades de la Universidad y de la Facultad. La reparación tiene como objetivo dejar constancia de la condición de detenidos-desaparecidos y/o asesinados en los legajos de estudiantes, docentes y no docentes, indicando los “reales motivos que determinaron la interrupción del desempeño laboral o estudiantil de todos aquellos que fueron víctimas de la última dictadura cívico-militar.",
     "lugar": "San Andrés",
     "fecha_nacimiento": "1954-08-11",
@@ -524,6 +535,7 @@
   {
     "nombre": "Accrescimbeni Thomsen, Adrián Enrique",
     "fecha_desaparicion": "23 de noviembre de 1976",
+    "estudiante": true,
     "descripcion": "Nació el 9 de julio de 1959 en Ciudad Autónoma de Bs. As. Le decían el Tano, era estudiante secundario, tenía 17 años, trabajó como empleado administrativo en el Mercado de Abasto de Buenos Aires, militó en la Unión de Estudiantes Secundarios (U.E.S). El 5 de noviembre de 1976, fue secuestrado cuando iba llegando a la escuela en la calle Balcarce, hoy Ruta 8 y Pueyrredón. Fue asesinado el 23 de noviembre de 1976 en Verónica Pdo. De Punta Indio (ex-Magdalena) Prov. De Buenos Aires. Sus restos fueron identificados por ADN y exhumados por el Equipo de Antropología Forense (EAAF) el 1 de febrero de 2012 en el cementerio de la ciudad donde lo mataron. Se lo recuerda con una Placa Homenaje en su Escuela de Enseñanza Secundaria Técnica Nº 4 ¨Ingeniero Emilio Mitre¨, un Cenotafio de la Plaza Central de San Martín y en la señalización de esquinas con su nombre, Adrian Enrique Accrescimbeni y de Juan Carlos Rosace, en el lugar donde fue secuestrado.",
     "lugar": "San Martín",
     "fecha_nacimiento": "1959-07-09",
@@ -533,6 +545,7 @@
   {
     "nombre": "Aibar Paolini, Alejandro Fabián",
     "fecha_desaparicion": "20 de septiembre de 1977",
+    "estudiante": true,
     "descripcion": "Nació el 1 de julio de 1959 en San Martín. Trabajaba desde los 14 años como empleado en Bonafide y era estudiante en el turno noche del Colegio Nacional Manuel Belgrano de Merlo. Militaba, como tantos otros chicos que querían un mundo más justo e igualitario, en la UES (Unión de Estudiantes Secundarios). La solidaridad y la igualdad eran su norte. Fue actor y titiritero para niñas y niños internados en hospitales, en parroquias y en la Sociedades de Fomento. Tenía 18 años, cuando el 20 de septiembre de 1977, fue llevado violentamente de su hogar en el Barrio Pompeya. En el 2012 la comunidad educativa en donde cursó la secundaria, colocó una placa con su nombre en la biblioteca de la escuela, que pasó a llamarse Alejandro Fabián Aibar.",
     "lugar": "San Martín",
     "fecha_nacimiento": "1959-07-01",
@@ -605,6 +618,8 @@
   {
     "nombre": "Baravalle Ana María y Julio César Galizzi",
     "fecha_desaparicion": "27 de agosto de 1976",
+    "embarazada": true,
+    "estudiante": true,
     "descripcion": "Ana María tenía 28 años, estaba embarazada de 5 meses y Julio Cesar tenía 24 años. Ambos fueron secuestrados el 27 de agosto de 1976, en su domicilio, Ramón Falcón 380 en San Martín. Ambos militaban en el Partido Revolucionario de los Trabajadores - Ejército Revolucionario del Pueblo (PRT -ERP) Ana María nació el 20 de marzo de 1948, tenía 28 años. Estudió en la secundaria Eduardo Wilde de San Martín. Era estudiante de sociología y trabajaba en el Ministerio de Hacienda. Era una militante de la vida, ponía el despertador a la madrugada para ir a la villa, decía que “Si no llegamos a que el pueblo sepa sus derechos, que no tienen que estar sometidos y que sean ellos mismos los hacedores de este país, no va a quedar nada. Si esto no cambia, en 25 años no va a quedar nada de los argentinos”. Ambos militaban en el Partido Revolucionario de los Trabajadores (PRT) y en el Ejército Revolucionario del Pueblo (ERP). Sus compañeros la llamaban “Alicia”. Al momento del secuestro en la casa de sus padres, estaban jugando al scrabble y el que perdía cebaba mate. Esperaban su primer hijo, que se cree que nació en cautiverio entre diciembre de 1976 y enero de 1977. Peleaban por revertir lo que consideraban injusto y fomentar una sociedad más equitativa. El 24 de septiembre de 2022 se realizó la señalización de la esquina de San Lorenzo y Vidal con sus nombres.",
     "lugar": "San Martín",
     "fecha_nacimiento": "1948-03-20",
@@ -632,6 +647,7 @@
   {
     "nombre": "Barciocco Heck, Andrés Luis",
     "fecha_desaparicion": "2 de julio de 1976",
+    "estudiante": true,
     "descripcion": "Nació el 12 de mayo de 1957 en San Martín. Hizo el secundario en el colegio La Merced de Caseros. Concurría a la capilla San Francisco de Asís, donde era integrante del Grupo de Scout, en Villa Bosch. Estudiaba abogacía, era militante Peronista y Montonero Tenía 19 años, cuando el 22 de mayo de 1976 estaba cenando con su familia y fueron secuestrados de la casa en Picasso 642, Ciudad Jardín Palomar. Los trasladaron a Campo de Mayo. Andrés fue asesinado el 2 de julio de 1976 en Ruta Nacional 202 y Camino a Bancalari. Sus restos fueron identificados por el Equipo de Antropología Forense (EAFF) en el Cementerio de San Fernando.",
     "lugar": "San Martín",
     "fecha_nacimiento": "1957-05-12",
@@ -695,6 +711,7 @@
   {
     "nombre": "Bolzan Zaldarriaga, Bernardo Pablo",
     "fecha_desaparicion": "20 de enero de 1978",
+    "estudiante": true,
     "descripcion": "Nació en la provincia de La Pampa el 18 de enero de 1938. Trabajaba en la Municipalidad de San Martín y estudiaba ingeniería en la Universidad de Buenos Aires. Era militante de Montoneros. El 20 de enero de 1978, una patota baleó el frente de la casa, en la que se encontraba junto a su compañera Olga Haydée Pini, sus tres hijos de 4 meses, 4 y 8 años. No se resistieron y se lo llevaron en una camioneta blanca y dos autos, de Wenceslao del Tata 4821 Caseros, Tres de Febrero. Estuvieron secuestrados en el Campito, Centro Clandestino de Detención de Campo de Mayo. El caso de Bernardo, fue incluido en la causa judicial que lleva el nombre de Santiago Omar Rivero, en la que se investigaron, y probaron delitos de Lesa Humanidad. La sentencia fue dictada en mayo de 2010 por el TOF 1 de San Martín.",
     "lugar": "San Martín",
     "fecha_nacimiento": "1938-01-18",
@@ -722,6 +739,7 @@
   {
     "nombre": "Castiñeiras, José María",
     "fecha_desaparicion": "30 de abril de 1976",
+    "estudiante": true,
     "descripcion": "Nació el 5 de noviembre de 1941 en San Martín. Era el presidente de bloque de la bancada justicialista en el Honorable Concejo Deliberante de San Martín, desde 1973. Militaba en el peronismo ortodoxo, era uno de los referentes de la organización Comando Evita, de las más importantes en el PJ del Municipio. También estudiaba Derecho en la Universidad de Buenos Aires (UBA). Vivía con su esposa Sara Cúneo y sus dos hijos, José María (4) y Juan Manuel (3), en la casa de Hurlingham, la que fue allanada en tres oportunidades. La primera vez no había nadie en la vivienda. Pero todo el barrio se enteró de que lo buscaban, un camión del Ejército se estacionó en la zona y los militares preguntaban a los vecinos si conocían a José María. Los represores lo buscaron con intensidad. Incluso, secuestraron a su padre, que se llamaba igual, quien fue torturado y alojado en la comisaría 1ra. de San Martín, a los pocos días lo liberaron. Producto de los tormentos sufrió un ataque de presión y quedó hemipléjico. El segundo operativo se produjo unas noches después. Tuvo un despliegue inmenso, con helicóptero incluido, entraron los soldados y habían rodeado la manzana de la casa. El último allanamiento ilegal fue en la víspera de su desaparición en la madrugada, entraron hombres de civil. Dieron vuelta la casa, el que comandaba el operativo apuntó a la familia, hizo de cuenta que disparaba y se fueron. Tenía 34 años cuando el 30 de abril de 1976 a las 8 de la mañana, al salir de la casa de sus padres, ubicada en Rivadavia al 470, San Martín, fue interceptado por un grupo de cuatro personas armadas, que se bajaron de un automóvil blanco, sin patente y lo obligaron a subir. José María fue trasladado a la comisaría 2da., conocida como la seccional de Villa Ballester que integró el circuito represivo vinculado a Campo de Mayo. Su paso por allí fue confirmado en el juicio por los testimonios de Luis Sacomani, Beatriz Ramona Castro de Villarreal y Amelia González, tres de las 14 víctimas que fueron recluidas de forma clandestina en esa dependencia policial en 1976. Su madre y su hermana se presentaron en el lugar, los testimonios se encuentran en la Conadep, les informaron que José María estaba ahí pero que no le podían dar más datos, volvieron a ir y les dijeron que saldría pronto, eran mediados de 1976. A Castiñeiras nunca más lo volvieron a ver. Se pudo comprobar que José María fue trasladado dos veces a Campo de Mayo. La segunda, no regresó a la comisaría. Por estos hechos, en el 2015, en el 13° juicio de la megacausa Campo de Mayo, por los crímenes ocurridos en la comisaría de Villa Ballester, se juzgó a Santiago Omar Riveros –jefe del Comando de Institutos Militares, con asiento en Campo de Mayo, entre los años 1976 a 1978, y a su vez, jefe de la Zona de Defensa IV; Rodolfo Feroglio –director de la Escuela de Caballería que dependía del Comando de Institutos Militares de Campo de Mayo, durante el año 1976 y a su vez, cumplía funciones de jefe del Área 430 en el partido bonaerense de San Martín; y el comisario Carlos Daniel Caimi, a cargo de la comisaría de Villa Ballester, entre el 30 de mayo de 1975 y el 25 de noviembre de 1977. Actualmente los 3 imputados cumplen prisión domiciliaria.",
     "lugar": "San Martín",
     "fecha_nacimiento": "1941-11-05",
@@ -731,6 +749,7 @@
   {
     "nombre": "Cazzulo De La Rosa, Luis Alberto",
     "fecha_desaparicion": "22 de noviembre de 1976",
+    "estudiante": true,
     "descripcion": "Nació el 5 de octubre de 1953 en San Martín. Le decían “Pelusa”, era soltero, técnico, maestro mayor de obras y estudiaba Arquitectura en la Universidad de Buenos Aires (UBA). Trabajaba como obrero en la fábrica textil de lanas Casimires Wells. Cuando tenía 23 años fue secuestrado, el 22 de noviembre de 1976 en su domicilio, Mitre 705 en el Municipio donde nació. Su nombre aparece en la Placa homenaje en la Plaza Central de San Martín.",
     "lugar": "Villa Lynch",
     "fecha_nacimiento": "1953-10-05",
@@ -767,6 +786,7 @@
   {
     "nombre": "Degiampietro Díaz, Jorge Rubén",
     "fecha_desaparicion": "23 de septiembre de 1976",
+    "estudiante": true,
     "descripcion": "Nació el 9 de julio de 1949 en Córdoba. Estudiaba medicina en la UBA, donde militaba políticamente en la JUP (Juventud Universitaria Peronista). Trabajó como empleado en el Banco Nación sucursal Congreso, en CABA. Su madre Ada y sus compañeros lo recuerdan como que era muy bueno, responsable, entusiasmado con su novia, muy comprometido socialmente y consciente de los riesgos de su militancia. Era muy divertido, alegre, chistoso, le gustaba hacer bromas y poner sobrenombres, siempre llevaba una sonrisa en su rostro, pero por sobre todas las cosas, era un gran compañero. Tenía 27 años, salió de su trabajo el 16 de septiembre, se despidió y no volvió más, un grupo de compañeros fueron hasta su casa en San Martín a consultarle a su madre dónde estaba. Muy atemorizada, les dijo que temía por el resto de su familia. Según consta en los archivos de CoNaDeP fue secuestrado en la vía pública, en CABA, el día 23 de septiembre de 1976. Según las Actas de Directorio del 2 de diciembre de 1976, “Jorge Degiampietro, auxiliar de la sucursal Congreso, desde el día 17 de septiembre de ese año, no concurrió a sus tareas en el Banco, por lo que se resuelve “Declararlo cesante por abandono de tareas” conforme lo estipulado por el art. 25 del Estatuto del Personal del Banco”.",
     "lugar": "San Martín",
     "fecha_nacimiento": "1949-07-09",
@@ -794,6 +814,7 @@
   {
     "nombre": "Duarte Báez, María Eva",
     "fecha_desaparicion": "9 de septiembre de 1977",
+    "embarazada": true,
     "descripcion": "Nació el 20 de mayo de 1955 en San Martín. Le decían “Mari” estaba casada con Samuel Aranda Cisterna. Tenía dos hijos Silvana Lorena y Alejandro Demián y estaba embarazada de 2 meses cuando fue secuestrada de su domicilio en Gregorio Marañon 2880, Los Polvorines. Su marido Samuel el “Flaco, Ref, Refu”, había nacido el 16 de diciembre de 1953 en Frías, Santiago del Estero y fue llevado de su lugar de trabajo, en Munro. Ambos eran militantes de la organización Montoneros y fueron secuestrados el 9 de septiembre de 1977. Se cree que su hijo nació en cautiverio entre abril y mayo de 1978 en Campo de Mayo, lugar donde se encontraba detenida.",
     "lugar": "San Martín",
     "fecha_nacimiento": "1955-05-20",
@@ -803,6 +824,7 @@
   {
     "nombre": "Fernández Alvarez, María Josefa",
     "fecha_desaparicion": "2 de junio de 1978",
+    "estudiante": true,
     "descripcion": "Fernández Álvarez, María Josefa. Nació el 19 de noviembre de 1953 en CABA. Su familia era de origen asturiano. Hizo la primaria en la escuela N°45, vivía con su mamá, Enemérita Álvarez, en Belgrano 204, Caseros. En el secundario, Escuela Normal Mixta EEUU de América en San Martín, las compañeras, por su cara dulce y la sonrisa, la llamaban La Gata. Se graduó de Bachiller en Letras en 1971. Luego cursó Magisterio. Tenía 24 años, estudiaba trabajo social en la Universidad de Buenos Aires. Trabajaba como secretaria del Jefe de Personal en el Sanatorio Antártida en Caballito. Le decían “Marita” y militaba en la Juventud Universitaria Peronista. \\ Estaba en pareja con Celestino Omar Baztarrica, quien asistió el 1 de junio de 1978 a la inauguración del mundial de fútbol y desapareció. Marita salió en su búsqueda y fue secuestrada el 2 de junio de 1978 en Capital Federal.",
     "lugar": "San Martín",
     "fecha_nacimiento": "1953-11-19",
@@ -956,6 +978,7 @@
   {
     "nombre": "La Spina Crespi, Nora Susana",
     "fecha_desaparicion": "15 de noviembre de 1976",
+    "embarazada": true,
     "descripcion": "Nació en La Plata el 3 de junio de 1948. Estaba casada con Jorge Néstor Cena con quien en 1974, tuvieron una hija, Laura. Le decían la “Gorda Nora”, militó en el Partido Comunista Marxista Leninista. Fue secuestrada el 15 de noviembre de 1976 en La Plata. Estaba embarazada a término. Permaneció en la Brigada de Investigaciones y en la Guardia de Infantería de la ciudad. Se supo que en noviembre de 1976 dio a luz una niña, probablemente en la Comisaría 5ta de La Plata, a la que llamó Mariana. El Equipo Argentino de Antropología Forense, en 2010, identificó sus restos, enterrados el 31 de enero de 1977 en el cementerio de San Martín. Mariana aún no apareció.",
     "lugar": "San Martín",
     "fecha_nacimiento": "1948-06-03",
@@ -983,6 +1006,7 @@
   {
     "nombre": "Linares Luque, Daniel Eduardo",
     "fecha_desaparicion": "2 de abril de 1977",
+    "estudiante": true,
     "descripcion": "Nació el 28 de noviembre de 1955, en Córdoba. Estudiante de Historia en la Facultad de Filosofía y Letras de la Universidad de Buenos Aires (UBA). Le decían Pardo y militaba en la Juventud Universitaria Peronista (JUP) y Montoneros. El 21 de diciembre de 1976 fue secuestrado de su casa Monoblock Nº 15, Acceso Nº 56 PB, Barrio Padre Mugica Ciudadela. Su cuerpo dinamitado apareció, el 2 de abril de 1977, en la calle Del Pacífico entre Beazley y Langeri, vía ferroviaria de la Estación Santos Lugares del Ferrocarril Gral. San Martín, Tres de Febrero. Fue inhumado como NN en el Cementerio de San Martín.",
     "lugar": "San Martín",
     "fecha_nacimiento": "1955-11-28",
@@ -992,6 +1016,7 @@
   {
     "nombre": "Lisso Palestrini, Alicia",
     "fecha_desaparicion": "27 de octubre de 1976",
+    "estudiante": true,
     "descripcion": "Nació el 20 de abril de 1954 en Quilmes. Estudiaba en la Escuela secundaria de adultos en Hudson. Tenía 22 años, cuando fue secuestrada, en la madrugada del 27 de octubre de 1976, de su domicilio, calle 58 entre 162 y 163, Barrio Textil Hudson. Fue vista en el Centro Clandestino de Detención en la localidad de Los Plátanos en Berazategui. Fue asesinada el 2 de febrero de 1977 en un enfrentamiento fraguado en Acosta, al 500 y Av. Díaz Vélez, Ciudadela. El Equipo Argentino de Antropología Forense (EAAF) en el 2011 identificó sus restos en el Cementerio de San Martín.",
     "lugar": "San Martín",
     "fecha_nacimiento": "1954-04-20",
@@ -1001,6 +1026,7 @@
   {
     "nombre": "López Calvo Domínguez, María Eugenia",
     "fecha_desaparicion": "14 de septiembre de 1976",
+    "estudiante": true,
     "descripcion": "Nació el 21 de mayo de 1957 en CABA. Hizo la secundaria en la Escuela Normal Mixta Estados Unidos de América en San Martín. Estudió para ser maestra normal nacional en Instituto Superior de Formación Docente 113 de San Martín. Le decían “Cecilia, Piti o Pati”. Tenía 19 años, era estudiante de Psicología de la UBA. Militaba en la Juventud Guevarista y en el Partido Revolucionario de los Trabajadores-Ejército Revolucionario del Pueblo (PRT-ERP). El 14 de septiembre de 1976 fue secuestrada de su domicilio, Segurola 3881 piso 2º departamento 9, en el barrio de Villa Devoto.",
     "lugar": "San Martín",
     "fecha_nacimiento": "1957-05-21",
@@ -1028,6 +1054,7 @@
   {
     "nombre": "Maisano Rago, Benedicto Victor",
     "fecha_desaparicion": "5 de agosto de 1976",
+    "estudiante": true,
     "descripcion": "Nació el 2 de julio de 1958. De familia italiana, muy inteligente, según contaban sus allegados e hincha fanático de Boca Juniors. Cursó el secundario en el Colegio Nacional Tomás Guido de San Martín, donde fue presidente del Centro de Estudiantes. Le decían Nito o Rulo, militaba en la UES. Tenía 18 años y había comenzado la universidad. El 5 de agosto de 1976 fue detenido por policías de civil al volver del partido entre Boca y Unión de Santa Fe, en Vallejos 2515, Villa Devoto. Sus padres lo buscaron, se entrevistaron con Monseñor Graselli, quien describió el padecimiento de los presos, esto los hizo pensar que él sabía bien lo que sucedía.",
     "lugar": "San Martín",
     "fecha_nacimiento": "1958-07-02",
@@ -1037,6 +1064,7 @@
   {
     "nombre": "Maisano Rago Loyola, Dominga Antonia",
     "fecha_desaparicion": "21 de diciembre de 1976",
+    "estudiante": true,
     "descripcion": "Nació el 12 de enero de 1955. Estudió en el Colegio Nacional Tomas Guido de San Martín. Cursaba Psicología en la UBA. Tenía 21 años, le decían “Sandi”, era ama de casa, estaba casada con Roberto Mario Loyola, tenían un hijo de seis meses, Pablo. Vivían en Loma Hermosa, Tres de Febrero. Trabajaban mucho por los más necesitados, visitaban los barrios de José León Suárez, volvían cansados y felices. El 21 de diciembre de 1976 fue secuestrada en su casa, con su esposo. Pablo se quedó con un vecino. Su padre hizo la denuncia en la comisaría 3° de Villa Lynch. Una placa homenaje la recuerda en su escuela de San Martín.",
     "lugar": "San Martín",
     "fecha_nacimiento": "1955-01-12",
@@ -1091,6 +1119,7 @@
   {
     "nombre": "Mendoza Castillo, José Martín",
     "fecha_desaparicion": "17 de septiembre de 1976",
+    "estudiante": true,
     "descripcion": "Nació el 1 de diciembre de 1950 en CABA. Estudiaba 4° año de Ingeniería Metalúrgica en la UTN. Empleado en la empresa estatal Subterráneos de Buenos Aires, estación Virreyes, línea “E”. Tenía 25 años, militaba en el Movimiento Revolucionario 17 de Octubre (MR17) y en la Juventud Guevarista. El 17 de septiembre de 1976 fue secuestrado en su domicilio José León Suárez 5740, Villa Riachuelo. Estuvo detenido en el centro División Cuatrerismo Brigada Güemes, El Vesubio. El Equipo de Antropología Forense (EAAF) en el año 2015, por el método de dactiloscópica identificó sus restos en el Cementerio de San Martín.",
     "lugar": "San Martín",
     "fecha_nacimiento": "1950-12-01",
@@ -1172,6 +1201,7 @@
   {
     "nombre": "Palacios Alcaraz, Jorge Agustín",
     "fecha_desaparicion": "1 de enero de 1977",
+    "estudiante": true,
     "descripcion": "Nació el 29 de agosto de 1955 en Caseros. Era estudiante de Ciencias Veterinarias en la Universidad de Buenos Aires (UBA). Estaba casado con Rosa Graciela Kazgunedian, quien cursaba el tercer o cuarto mes de embarazo. Trabajaba como corredor de artículos de limpieza, le decían “Pedro”, tenía 21 años y militaba en la organización Montoneros. El 1 de enero de 1977 fue secuestrado en Morón. Su compañera, Rosa, fue secuestrada en el mismo barrio, 4 días después. Se presume que su hijo/a debió nacer entre junio y julio.",
     "lugar": "San Martín",
     "fecha_nacimiento": "1955-08-29",
@@ -1199,6 +1229,7 @@
   {
     "nombre": "Passadore Basso, Jorge Roberto",
     "fecha_desaparicion": "3 de febrero de 1977",
+    "estudiante": true,
     "descripcion": "Nació el 1 de agosto de 1946 en Mercedes. Hizo el secundario en el Colegio Nacional “Florentino Ameghino”. Tenía 30 años y estudiaba Ingeniería en la Universidad Nacional de La Plata. Trabajó en un taller de chapa y pintura. El 27 de diciembre de 1976 fue secuestrado por el Ejército, en su casa, Calle 127 e/ 57 y 58, La Plata. El 3 de febrero de 1977 fue asesinado con Guillermo Sobral, Juan Carlos Mora y Pacífico Díaz, en un enfrentamiento fraguado en Sta. Marina e/ Chubut y Asunción, en Ciudadela. En noviembre del 2013 el Equipo Argentino de Antropología Forense, identificó sus restos en el Cementerio Municipal de San Martín.",
     "lugar": "San Martín",
     "fecha_nacimiento": "1946-08-01",
@@ -1208,6 +1239,7 @@
   {
     "nombre": "Peláez Delfini, María de Jesús",
     "fecha_desaparicion": "21 de diciembre de 1976",
+    "estudiante": true,
     "descripcion": "Nació el 22 de febrero de 1948 en La Plata. Realizó el secundario en el instituto “Corazón Eucarístico de Jesús” de La Plata, egresó con el título de Maestra Normal Nacional. En 1965 ingresó a la Facultad de Humanidades y Ciencias de la Educación, a la carrera de Letras en la Universidad Nacional de La Plata. Tenía 28 años, era bibliotecaria en la Secretaría de Educación de la Provincia de Buenos Aires. El 21 de diciembre de 1976 fue secuestrada en San Martín. Se la recuerda en una placa homenaje en la Plaza Central de San Martín. En el 2019, su legajo como estudiante de la Facultad de Humanidades fue reparado, resolución N°500/19.",
     "lugar": "San Martín",
     "fecha_nacimiento": "1948-02-22",
@@ -1217,6 +1249,7 @@
   {
     "nombre": "Pereyra Diez, Higinio Antonio",
     "fecha_desaparicion": "12 de agosto de 1976",
+    "estudiante": true,
     "descripcion": "Nació el 9 de diciembre de 1954 en CABA. Tenía 21 años, trabajaba en un comercio, estudiaba Psicología en la Universidad de Buenos Aires (UBA) y militaba en el Partido Peronista Auténtico. El 12 de agosto de 1976 fue secuestrado en su domicilio en San Martín. Su nombre aparece en la Placa homenaje en la Plaza Central del Municipio.",
     "lugar": "San Martín",
     "fecha_nacimiento": "1954-12-09",
@@ -1244,6 +1277,7 @@
   {
     "nombre": "Porcel Rodríguez, Gladis del Valle",
     "fecha_desaparicion": "1 de febrero de 1977",
+    "embarazada": true,
     "descripcion": "Nació el 1 de diciembre de 1952 en Salta. Trabajaba en la Legislatura provincial. Le decían Gorda, Zorra o Zorrita. Tenía 23 años, casada con Hugo Aníbal Puggioni, tenía 2 hijos y estaba embarazada de 5 meses. Militaba en el Frente Revolucionario 17 de Octubre. El 28 de octubre de 1976 fue secuestrada en una casa quinta de Moreno. Pasó por el Centro Clandestino de detención División Cuatrerismo Brigada Güemes. Asesinada el 1 de febrero de 1977 en Paso y Gral. Roca, en Ciudadela. El Equipo Argentino de Antropología Forense (EEAF) identificó sus restos, por ADN, exhumándolos el 1 de marzo de 2011, en el cementerio de San Martín.",
     "lugar": "San Martín",
     "fecha_nacimiento": "1952-12-01",
@@ -1262,6 +1296,7 @@
   {
     "nombre": "Prado Navarro, Sergio Guillermo",
     "fecha_desaparicion": "1972",
+    "estudiante": true,
     "descripcion": "Nació el 19 de noviembre de 1952 en San Martín. Le decían Fernando o Flaco, tenía 23 años, estudiaba Medicina en la UBA y militaba en la Juventud Peronista. En 1972 con la visita del Gral. Lanusse a Misiones, lo detienen por atentado a la autoridad, lesiones y daños por gritarle al oído al dictador: “Abajo la dictadura”. Le inventaron una orden de captura por pintadas en la vía pública, para complicarlo. Fue asesinado en la vía pública, Ruta Nacional N°3 Km 24, Gregorio de Laferrere, Buenos Aires, la Brigada de San Justo confirmó el hecho pero nunca entregó su cuerpo a los familiares.",
     "lugar": "San Martín",
     "fecha_nacimiento": "1952-11-19",
@@ -1280,6 +1315,7 @@
   {
     "nombre": "Ramos Berdaguer, Guillermo Pablo",
     "fecha_desaparicion": "23 de diciembre de 1975",
+    "estudiante": true,
     "descripcion": "Nació el 19 de febrero de 1955 en Montevideo, Uruguay. Tenía 20 años, estudiaba Sociología en la UBA, trabajaba en la Fábrica Irgaquim de San Martín. Le decían “Rolando” y militaba en el Partido Revolucionario de los Trabajadores - Ejército Revolucionario del Pueblo (PRT-ERP). Fue asesinado el 23 de diciembre de 1975 en el Batallón Depósito de Arsenales 601 “Domingo Viejobueno” de Monte Chingolo, Lanús.",
     "lugar": "San Martín",
     "fecha_nacimiento": "1955-02-19",
@@ -1307,6 +1343,8 @@
   {
     "nombre": "Ross Rossetti Liliana “Lechuguita”, “Rusita” o “Gorda”",
     "fecha_desaparicion": "10 de diciembre de 1976",
+    "embarazada": true,
+    "estudiante": true,
     "descripcion": "Nació el 14 de septiembre de 1955 en la localidad de Chacabuco, Buenos Aires. Estudiaba para convertirse en visitadora de higiene y asistente social en la Universidad Nacional de La Plata (UNLP). Militaba en Juventud Universitaria Peronista (JUP) y Montoneros. Fue secuestrada el 10 de diciembre de 1976 en la vía pública, Calle 8 entre 25 y 29, La Plata. Estaba embarazada de 4 meses. Estuvo detenida en el Cuerpo de Infantería de Policía y en el Pozo de Banfield. En el marco de la Iniciativa Latinoamericana para la Identificación de Personas Desaparecidas llevada adelante por el EAAF, los restos de Liliana fueron identificados. Había sido inhumada como NN el 2 de febrero de 1977 en el cementerio de San Martín. El 28 de marzo de 2011, la Cámara Nacional de Apelaciones en lo Criminal y Correccional Federal de la Ciudad de Buenos Aires lo ratificó. De esta manera, pudo comprobarse que su embarazo no llegó a término y que la joven fue asesinada el 1° de febrero de 1977 en un enfrentamiento fraguado ocurrido en las calles Pasco y Roca de la localidad de Ciudadela, Buenos Aires.",
     "lugar": "San Martín",
     "fecha_nacimiento": "1955-09-14",
@@ -1316,6 +1354,7 @@
   {
     "nombre": "Rosace Labate, Juan Carlos",
     "fecha_desaparicion": "5 de noviembre de 1976",
+    "estudiante": true,
     "descripcion": "Nació el 27 de junio de 1958 en Caseros, Tres de Febrero. Le decían Giani. Estudiaba en la Escuela de Educación Técnica N° 4 Ing. Emilio Mitre San Martín, donde militaba en la Unión de Estudiantes Secundarios (U.E.S.). El 5 de noviembre de 1976, cuando tenía 18 años fue secuestrado de su domicilio, Wenceslao de Tata 3830, Santos Lugares, Tres de Febrero. Sus restos fueron identificados por ADN y exhumados por el Equipo de Antropología Forense (EAAF) el 1 de febrero de 2012 en el cementerio de Verónica, Punta Indio (ex-Magdalena). Su nombre aparece en Placa homenaje en la Escuela de Enseñanza Secundaria Técnica Nº 4 ¨Ingeniero Emilio Mitre¨, en una de la Plaza Central de San Martín y en una baldosa en la Plaza ¨Ernesto Sábato¨ de Santos Lugares. El 23 de marzo de 2023 se realizó en el lugar donde fue secuestrado, la señalización de esquinas en su nombre Juan Carlos Rosace y de Adrian Enrique Accrescimbeni, en Ruta 8 y Pueyrredón, San Martín.",
     "lugar": "San Martín",
     "fecha_nacimiento": "1958-06-27",
@@ -1370,6 +1409,7 @@
   {
     "nombre": "Soto Pérez, Lidia del Carmen",
     "fecha_desaparicion": "1 de febrero de 1977",
+    "estudiante": true,
     "descripcion": "Nació el 15 de junio de 1956 en Comodoro Rivadavia, Chubut. Terminó sus estudios en el Colegio Nacional “Perito Moreno” en su ciudad. En 1974 ingresó a la carrera de Ingeniería en Telecomunicaciones en la Facultad de Ingeniería en la Universidad Nacional de La Plata (UNLP). Tenía 20 años cuando el 9 de diciembre de 1976 fue secuestrada de una pensión donde vivía en La Plata. En un enfrentamiento fraguado fue asesinada, el 1 de febrero de 1977, en las calles Juan José Paso y Gral. Roca, Ciudadela. El Equipo Argentino de Antropología Forense (EAAF), el 1 de marzo de 2012, identificó sus restos por medio del ADN en el Cementerio de San Martín. En el marco de la Resolución Nº 259/15 de la UNLP, su legajo estudiantil de la Universidad Nacional de La Plata (UNLP) fue reparado.",
     "lugar": "San Martín",
     "fecha_nacimiento": "1956-06-15",
@@ -1433,6 +1473,7 @@
   {
     "nombre": "Vargas Bustamante Rueda, María Antonia",
     "fecha_desaparicion": "22 de septiembre de 1977",
+    "estudiante": true,
     "descripcion": "Nació el 3 de septiembre de 1954 en Paraguay. Fue al secundario en el Colegio Nacional “Tomás Guido” 1968-1972. Tenía 23 años, le decían “Amaicha o Maricha”, trabajaba y estudiaba en la Facultad de Filosofía y letras de la UBA, le faltaba una materia para recibirse de Psicóloga. Era comprometida, persistente y colaboradora, participaba en un grupo que realizaba actividades recreativas para chicas y chicos sin familia. El 22 de septiembre de 1977, fue secuestrada junto a su marido Pablo Gustavo Rueda, en su casa, Av. San Martín 3373 Piso 7, CABA.",
     "lugar": "San Martín",
     "fecha_nacimiento": "1954-09-03",
@@ -1442,6 +1483,7 @@
   {
     "nombre": "Vergara Lujan, Hilda Zulma",
     "fecha_desaparicion": "10 de julio de 1976",
+    "estudiante": true,
     "descripcion": "Nació en la Ciudad de Buenos Aires, el 30 de noviembre de 1938. Fue la mayor de cuatro hermanos. Su madre fue Elida Viturro y su padre David Vergara. La familia llegó a Luján en 1956 y vivieron en el popular barrio “El Quinto”. Desde pequeña Hilda dibujaba muy bien. Hacia fines de la década de 1960 conoció a Arnaldo Harold Buffa, con quien se casó en 1970. Ambos militaron en el Partido Socialista de los Trabajadores y fueron candidatos a concejales en las elecciones del 11 de marzo de 1973. Aquel mismo año, la UNLU abrió sus puertas ofreciendo, además de sus carreras de grado, una nutrida agenda de actividades de extensión. Entre ellas, un Curso de Guía de Turismo Regional de Luján, que comenzó en septiembre y que Hilda no dudó en realizar. En marzo del año Centro Educativo de Nivel Secundario, el CENS N°35, fue una de las primeras en anotarse junto con su marido y su hermano David. También en 1974, Hilda empezó a estudiar en la Escuela de Arte de Luján, creada ese mismo año. Al igual que la UNLU, permitía el ingreso a mayores de 25 años sin título secundario, por eso Hilda pudo anotarse mientras estudiaba en el CENS de la Universidad. En los primeros días de marzo, antes del golpe de estado, las iniciales de su nombre, las de Arnaldo, (que en noviembre de 1975 había sido secuestrado y luego liberado) y las de su hermano David aparecieron publicadas, junto con las de otras y otros militantes, en un comunicado del Comando Nacionalista Jordán Bruno Genta, que funcionó en la ciudad de Luján. Ante el riesgo que corrían sus vidas Hilda y su marido se fueron a Paso de los Libres, donde Vicente Omar Pascarelli, un compañero de militancia, tenía una casa. El 10 de julio de 1976, los tres fueron secuestrados y luego trasladados a la localidad bonaerense de José León Suárez. Allí fueron asesinados por las fuerzas represivas. Los restos de Hilda y de Arnaldo fueron encontrados por el Equipo Argentino de Antropología Forense en el cementerio de San Martín en 2001 y restituidos a su familia en 2006.",
     "lugar": "San Martín",
     "fecha_nacimiento": "1938-11-30",
@@ -1514,6 +1556,7 @@
   {
     "nombre": "Grisonas Andrisjauskaite, Victoria Lucia",
     "fecha_desaparicion": "26 de septiembre de 1976",
+    "estudiante": true,
     "descripcion": "Nació el 16 de abril de 1945 en Ciudad Autónoma de Buenos Aires. Estudiante de Bellas Artes, tenía 31 años, le decían Gringa, casada con Mario Roger Julien Caseres, tenían dos hijos, Anatole (3 años) y Eva (1 año y medio). Militaba en Partido para la Victoria del Pueblo y en la Federación Anarquista (en Uruguay). El 26 de septiembre de 1976 es secuestrada con su familia, en su casa, en Mitre 1390/92 y Carlos Gardel, en San Martín. Fue vista en el Centro Clandestino de Detención Automotores Orletti. Sus hijos Anatole y Victoria fueron trasladados clandestinamente y abandonadas en una Plaza en Valparaíso, Chile, en 1979, donde posteriormente fueron adoptados. Su abuela paterna luego de intensos años de búsqueda logró localizarlos y fueron los primeros niños desaparecidos recuperados.",
     "lugar": "Tropezón",
     "fecha_nacimiento": "1945-04-16",
@@ -1523,6 +1566,7 @@
   {
     "nombre": "Julien Caseres, Mario Roger",
     "fecha_desaparicion": "26 de setiembre de 1976",
+    "estudiante": true,
     "descripcion": "Nació el 29 de abril de 1949 en Montevideo, Uruguay. Tenía 33 años estaba casado con Victoria Grisonas y tenía dos hijos, Anatole de 3 años y Eva de 1 año y medio. Era estudiante de Bellas Artes, ceramista y obrero gráfico en Uruguay. Militaba en el sindicato de Artes Gráficas en la Federación Anarquista Uruguaya y en Organización Popular Revolucionaria 33 Orientales (OPR 33). En setiembre de 1971, estando procesado por sus acciones políticas, logró fugarse del Penal de Punta Carretas. Requerido por las Fuerzas Conjuntas en mayo de 1973 se va del país y se instala en Buenos Aires junto a su familia. El 26 de setiembre de 1976, un violento operativo en el que participan represores de la Policía Federal y el ejército argentino, en el marco de la coordinación del Plan Cóndor, irrumpen en la casa familiar de la calle Mitre 1390/92 y Carlos Gardel, barrio de Tropezón, Partido de San Martín, Mario fue detenido ilegalmente. Se lo vio por última vez aquel día, herido y aparentemente muerto, su familia es secuestrada y trasladada al Centro Clandestino de Detención Automóviles Orletti. Sus hijos Anatole y Victoria fueron trasladados clandestinamente y abandonados en una Plaza en Valparaíso, Chile, en 1979, donde posteriormente fueron adoptados. Su abuela paterna luego de años de intensa búsqueda los localizó y fueron los primeros niños desaparecidos recuperados.",
     "lugar": "Tropezón",
     "fecha_nacimiento": "1949-04-29",
@@ -1541,6 +1585,7 @@
   {
     "nombre": "Landín Hachmann, Martín Ramón",
     "fecha_desaparicion": "7 de febrero de 1977",
+    "estudiante": true,
     "descripcion": "Nació el 12 de febrero de 1955 en Ciudad autónoma de Buenos Aires. Hizo el secundario en la escuela Normal EEUU de San Martín, era estudiante universitario de historia en la Universidad de Buenos Aires (UBA) y trabajó en la Facultad de Filosofía y Letras como empleado no docente. Militaba en el Peronismo de Base, concurría a las villas pasando obras de teatro y películas con dos curas catalanes tercermundistas de la parroquia de la zona. Participaba de las actividades de una unidad básica en Tropezón. Cumpliendo con el servicio militar obligatorio y descubierto como militante montonero debió desertar para no caer en manos de sus verdugos y paso a la clandestinidad. Todo en él era inmenso: era un obrero de la conciencia, de los libros, de la poesía, lo recuerdan en esas discusiones infinitas hasta la madrugada, aunque al otro día tenían que ir a trabajar. Sus padres Edmundo Ramón Landín y María Elisa Hachmann, propietarios de un comercio en la localidad, para conseguir información sobre el paradero de su hijo, fueron secuestrados, llevados a la ESMA y torturados, a los pocos días fueron liberados. Tenía tres hermanos: el mayor era oficial de la policía federal, la hermana era maestra y Horacio Ramón era sindicalista, militaba en el Peronismo de Base, en una unidad básica de Tropezón. Él también fue secuestrado y desaparecido el 9 de septiembre de 1977. Tenía 21 años cuando es asesinado el 7 de febrero de 1977, combatiendo sin entregarse, en su domicilio de Migueletes 1148, del barrio de Palermo.",
     "lugar": "Tropezón",
     "fecha_nacimiento": "1955-02-12",
@@ -1568,6 +1613,7 @@
   {
     "nombre": "Velasco, Olga Beatriz",
     "fecha_desaparicion": "29 de agosto de 1976",
+    "estudiante": true,
     "descripcion": "Nació el 30 de agosto de 1955 en la provincia de Mendoza. La conocían como “Olgui”, militaba en el barrio Independencia, uno de los más humildes de San Martín. Después al asumir una mayor responsabilidad en la organización Juventud Universitaria Peronista (JUP) y Montoneros, abandonó su trabajo. Tenía gran coraje, era cariñosa con sus vínculos, introvertida, aguerrida, comprometida y convencida del valor de la dignidad del pueblo. Sus ideas eran claras a favor de las causas justas. Su secundaria la inicio en la Escuela Nº 14 de Santos Lugares, provincia de Buenos Aires y la concluyó en la Escuela de Enseñanza Media Nº 11 “Tomás Guido” de San Martín. Era estudiante universitaria de Trabajo Social en la Facultad de Derecho de la Universidad de Buenos Aires (UBA). Trabajaba como obrera en Bodegas y Viñedos Peñaflor. El 29 de agosto de 1976, le había prometido a su mamá que llegaría al mediodía para celebrar que cumplía 20 años y el de su hermano, pero fue secuestrada por un grupo de tareas de la Escuela de Mecánica de la Armada (ESMA) en una cita militante en la estación de tren Tropezón, del Ferrocarril Urquiza. Tiempo después, un estudiante de guardiamarina de la ESMA, fue a ver a su padre al trabajo para llevarle una carta donde les dice que estaba bien, que no se preocupen, que los quiere y se despide. Con ella fueron también secuestrados y María del Carmen Sabino, Daniel Horacio Garabello y Susana Helvecia Battista.",
     "lugar": "Tropezón",
     "fecha_nacimiento": "1955-08-30",
@@ -1595,6 +1641,7 @@
   {
     "nombre": "Bossi González, Néstor Alejandro",
     "fecha_desaparicion": "3 de junio en 1977",
+    "estudiante": true,
     "descripcion": "Hizo la secundaria en el Liceo Militar San Martin. Ingresó en la Escuela Superior de Periodismo de La Plata inscribiéndose a la carrera de Ciencias de la Información en 1972. Militaba en la Juventud Peronista junto con su esposa Susana Elba Traverso, tenía 26 años, era Ingeniera Agrónoma, graduada de la Facultad de Ciencias Agrarias. Ambos fueron detenidos el 3 de junio en 1977 en Bahía Blanca. Néstor, iba en su auto, cerca de las 18 horas y en el semáforo frente a la Plaza Rivadavia de esa ciudad, un grupo de hombres armados descendieron de dos vehículos y violentamente lo bajaron del auto, lo encapucharon y se lo llevaron. Su esposa fue secuestrada en su domicilio, junto a su hija María Susana, de 14 meses, que luego fue abandonada por los secuestradores en la puerta del “Pequeño Cottolengo” de esa ciudad, junto con una muda de ropa y una nota con el teléfono de sus abuelos. La patota, también aprovecho la situación para saquear y robar todo del domicilio familiar. El matrimonio fue trasladado al Centro Clandestino de Detención (CCD) “La Escuelita” y posteriormente al Centro Clandestino de Detención (CCD) Brigada de Investigaciones de La Plata. En el año 2011 el Equipo Argentino de Antropología Forense identificó sus restos. Por el caso de ambos fueron condenados numerosos genocidas en las causas denominadas “Von Wernich” y “Circuito Camps” en la ciudad de La Plata y “Bayón” y “Striker” en la ciudad de Bahía Blanca. Su legajo como estudiante de Periodismo y Comunicación Social fue reparado mediante la resolución N°566/18 en el año 2018.",
     "lugar": "Villa Ballester",
     "fecha_nacimiento": null,
@@ -1703,6 +1750,7 @@
   {
     "nombre": "Di Giacinti Torrillas, Julio César",
     "fecha_desaparicion": "17 de enero de 1978",
+    "estudiante": true,
     "descripcion": "Nació el 3 de marzo de 1954 en La Plata. Creció en el barrio de Parque Saavedra, donde se encontraban la vivienda y la tintorería de sus padres. Realizó sus estudios primarios en la Escuela Nº 11 “Florentino Ameghino” y los secundarios en el Colegio Nacional “Rafael Hernández”. Era hincha de Gimnasia y ferviente lector de Verne y Salgari. En 1973 ingresó a la Facultad de Arquitectura y Urbanismo, según la anotación manual de su legajo, rindió materias por última vez en diciembre de 1975 correspondientes al tercer año de la carrera. Militaba en la JUP y Montoneros. Tenía 23 años cuándo fue asesinado el 17 de enero de 1978 junto a su compañera, Isabel Celia Loedel Maiztegui, durante un ataque a su vivienda en Villa Ballester. En septiembre de 2014 sus restos fueron identificados por el Equipo Argentino de Antropología Forense (EAAF) y exhumados del Cementerio Municipal de San Martín, donde habían sido enterrados como NN. Finalmente, en octubre de 2015, fue inhumado en el Mausoleo de Víctimas del Terrorismo de Estado en el Cementerio Municipal de La Plata. Su legajo como estudiante de Arquitectura y Urbanismo fue reparado mediante la resolución N° 1177/18 en el año 2018. Su legajo como estudiante del Colegio Nacional “Rafael Hernández” fue reparado mediante la resolución N° 1201/23 en el año 2023.",
     "lugar": "Villa Ballester",
     "fecha_nacimiento": "1954-03-03",
@@ -1739,6 +1787,7 @@
   {
     "nombre": "García Romero, Pablo Alberto",
     "fecha_desaparicion": "6 de abril de 1977",
+    "estudiante": true,
     "descripcion": "Nació el 5 de diciembre de 1957 en Bell Ville, Provincia de Córdoba. Le decían “El Cordobés”, era soltero, obrero de la Fábrica Estexa, estudiaba plomería. Tenía 19 años cuándo fue secuestrado el 6 de abril de 1977 por personal de la Marina, de su domicilio en Boulevard Ballester 757, Villa Ballester. Permaneció cautivo en “El Campito”, guarnición militar del Centro Clandestino de Detención Tortura y Exterminio “Campo de Mayo”. Su caso fue juzgado por la Justicia Federal en la “Causa Campo de Mayo II”.",
     "lugar": "Villa Ballester",
     "fecha_nacimiento": "1957-12-05",
@@ -1766,6 +1815,7 @@
   {
     "nombre": "González López, Ricardo Manuel",
     "fecha_desaparicion": "4 de agosto de 1976",
+    "estudiante": true,
     "descripcion": "Nació en 12 de diciembre de 1954. Era estudiante de 3° año de Derecho en la Universidad de Buenos Aires (UBA), formaba parte de la Juventud Universitaria Peronista (JUP) y trabajaba en la casa central del Royal Bank of Canadá de CABA. Tenía 21 años cuándo fue secuestrado el 4 de agosto de 1976 en la vía pública, en Villa Ballester, por un grupo operativo vinculado a la OT 18 de la SIDE y en algún momento de su cautiverio estuvo confinado en Orletti. Fue asesinado el 16 de agosto de 1976 y arrojado al Río Luján. Se encontraron sus restos en tambores de una tosquera en Maipú y José Ingenieros, San Fernando. El 1 de octubre de 2012 el Equipo Argentino de Antropología Forense (EEAF) recuperó su identidad, por medio de identificación dactiloscópica, en el Cementerio de San Fernando.",
     "lugar": "Villa Ballester",
     "fecha_nacimiento": "1954-12-12",
@@ -1802,6 +1852,7 @@
   {
     "nombre": "Jotar Iribar, Alberto Javier",
     "fecha_desaparicion": "31 de octubre de 1976",
+    "estudiante": true,
     "descripcion": "Nació en La Plata el 6 de septiembre de 1949. Muchos lo conocían como León o “Padrino”. Hizo sus estudios secundarios en la Escuela Nacional Superior de Comercio “Libertador General José de San Martin” y en 1970 ingresó a la Facultad de Humanidades y Ciencias de la Educación de la UNLP inscribién- dose en la carrera de Educación Física. Se recibió como Profesor de Educación Física el 21 de diciembre de 1973. Militó en las FAL22, en el PRT-ERP y en la Organización Comunista Poder Obrero (OCPO) Brigadas Rojas. Tenía 28 años cuándo fue secuestrado el 31 de octubre de 1976 en su domicilio de Villarroel 562 de Villa Ballester. Su pareja, Mirta Graciela Britos, fue secuestrada el mismo día. Ella tenía una hija de un matrimonio anterior y juntos habían tenido otra hija. En el momento de la detención ella se encontraba con las dos niñas que fueron abandonadas en una plaza y luego internadas en institutos de menores. Fueron localizadas por Abuelas de Plaza de Mayo recién en 1980, viviendo con una familia que las había adoptado de buena fe. Su legajo como estudiante y graduado de la FaHCE fue reparado mediante la resolución Nº500 del mes de marzo de 2019. Alberto continúa desaparecido y su caso aguarda justicia.",
     "lugar": "Villa Ballester",
     "fecha_nacimiento": "1949-09-06",
@@ -1811,6 +1862,7 @@
   {
     "nombre": "Landeuix, Daniel Horacio",
     "fecha_desaparicion": "9 de noviembre de 1977",
+    "estudiante": true,
     "descripcion": "Nació en San Nicolás. Le decían “Traca”. A finales de 1972, terminó el secundario en el colegio Justo José de Urquiza, viajó hasta La Plata para inscribirse en la facultad de Ciencias Veterinarias. En abril de 1973, aprobó las últimas materias que le habían quedado pendientes del bachillerato e hizo el curso de orientación vocacional en la Universidad Nacional de La Plata (UNLP). En 1975 fue el presidente del Centro de Estudiantes de la Facultad. Militaba en la Federación Universitaria para la Revolución Nacional (FURN), en la Juventud Peronista y en Montoneros. El 6 de abril de 1976, se anotó para cursar cuarto año, pero, al mes siguiente se perdió todo rastro. Sus familiares lo buscaron por la zona de Ezpeleta. Daniel Horacio, su responsable, contó que Montoneros lo había mandado a militar a la Columna Norte. Durante la última Dictadura Cívico Militar y Eclesiástica, junto a Pablo Carpintero Lobo, también militante Montoneros, fueron víctimas de un operativo montado por la inteligencia de la Armada el 9 de noviembre de 1977, donde son asesinados en la calle Chacabuco al 300 en Villa Ballester. El 10 de noviembre de 1977, Daniel Horacio Landeuix, Pablo Carpintero Lobo y a Marcelo Reinhold, quien estaba secuestrado en la Escuela de Mecánica de la Armada (ex ESMA), fueron dinamitados dentro de un coche en el kilómetro 34 de la Panamericana. Fueron inhumados como NN. El 16 de noviembre 2024 se realizó la Señalización de Esquina por la Memoria, colocándose sus nombres a la intersección de las calles Chacabuco y Artigas, Villa Ballester, Pdo. de San Martín.",
     "lugar": "Villa Ballester",
     "fecha_nacimiento": null,
@@ -1847,6 +1899,7 @@
   {
     "nombre": "López Gómez, María Inés",
     "fecha_desaparicion": "17 de marzo de 1977",
+    "estudiante": true,
     "descripcion": "Nació el 6 de noviembre de 1955 en Ciudad Autónoma de Buenos Aires. Terminó el secundario en el Instituto “Santa Ana” de Villa Ballester, Pdo. de San Martín. Vivía en Agustín Álvarez 657, Villa Ballester, estudiaba Letras en la Facultad de Filosofía y Letras de la Universidad de Buenos Aires (UBA), donde militaba en la Juventud Universitaria Peronista (JUP). Estaba de novia con Patricio Dillon, militante gremial, quien había sido secuestrado. Tenía 21 años cuándo fue secuestrada el 17 de marzo de 1977 en la vía pública. Fue vista en el Centro Clandestino “Club Atlético”, por el testimonio de sobrevivientes, estuvo secuestrada allí hasta fines de mayo de 1977. En esos días hubo un vuelo de la muerte. Si bien la/él testigo presenció cuando preparaban a las personas, las inyectaban, no la vio en forma directa, se puede llegar a deducir que sí estaba en el grupo, ya que nunca más la vieron.",
     "lugar": "Villa Ballester",
     "fecha_nacimiento": "1955-11-06",
@@ -1901,6 +1954,7 @@
   {
     "nombre": "Molina Ramacciotti Nicola, Lucia Esther",
     "fecha_desaparicion": "21 de abril de 1977",
+    "embarazada": true,
     "descripcion": "Nació el 21 de febrero de 1956 en la Capital de Córdoba. Su nacionalidad era Argentina-Italiana. Hizo su primaria en el Sagrado Corazón de Jesús, en el Hugo Wast y en el Manuel Belgrano. El secundario lo realizó en la Escuela Normal Superior «Dr. Alejandro Carbó» en la capital de Córdoba. Y estudió psicología e historia en la Universidad Nacional de Córdoba (UNC). Se enamoró de José Luis Nicola con quien se casó y fue mamá de su primer hijo, Santiago en 1976. Sus amigos le decían Lucy, India o Claudia, trabajaba en la Casa Cuna de la provincia de Córdoba y militaba en Organización Comunista Poder Obrero (OCPO). Su marido es asesinado el 27 de marzo de 1976. Pasado un tiempo, volvió a formar pareja con Rodolfo Goldin con quien esperaba un hijo/a al que querían llamar Andrés o Andrea. En la madrugada del 21 de abril de 1977 es secuestrada, junto a su compañero y su hijo, en su domicilio de Avellaneda 598, Villa Ballester. Lucía tenía 21 años, al momento de su secuestro estaba embarazada de 4 Meses, la criatura debió nacer en cautiverio en septiembre de 1977. Su hijo Santiago fue recuperado por su abuela Irma Ramacciotti, que pudo localizarlo en la Casa Cuna de La Plata. “Mima” Ramacciotti de Molina, una de las fundadoras de Abuelas de Plaza de Mayo en Córdoba y también una de las creadoras de la asociación Familiares de Detenidos y Desaparecidos por Razones Políticas de Córdoba, buscó incansablemente a su nieto o nieta, junto a las Abuelas de Córdoba antes de partir en abril del 2012. Fueron vistos por sobrevivientes en el centro clandestino “El Vesubio”, en el partido bonaerense de La Matanza. Rodolfo fue asesinado el 23 de mayo de 1977, al día siguiente su cuerpo apareció en la localidad de Monte Grande, junto al de otros detenidos del mismo centro clandestino. Su familia pudo recuperar sus restos.",
     "lugar": "Villa Ballester",
     "fecha_nacimiento": "1956-02-21",
@@ -1910,6 +1964,7 @@
   {
     "nombre": "Monzón, Ismael Antonio",
     "fecha_desaparicion": "23 de diciembre de 1975",
+    "estudiante": true,
     "descripcion": "Nació el 14 de agosto de 1956, en el Hospital Penna, CABA. Vivía en Valentín Alsina pero en 1961 su familia se mudó a Villa Ballester. Realizó su preescolar y 1° grado en el Colegio Emilio Lamarca. Siempre fue muy inquieto, desde chiquito trabajaba por su cuenta, mientras cursaba la primaria salía con su cajón de lustrar zapatos y después hacía reparto por las casas con el lechero. Al cumplir 14 años se fue de mochilero a Entre Ríos y a los 15 años se casó y fue papá de Cristy. Tony, como le decían, era compañero comprometido, solidario, hermano cariñoso y paternal, estudiante secundario y empleado del Banco Nacional de Desarrollo. Se conmovía con los relatos que le contaba su padre de las luchas gremiales, el sufrimiento y el hambre. Conocía bastante la historia de su pueblo y de algunas de las grandes revoluciones, admiraba al Che. Vivía con su familia en la pequeña, pero numerosa, villa de emergencia de la calle Arenales, Villa Ballester. En ese lugar es que conoce al Partido Revolucionario de los Trabajadores (PRT), empieza a miliar participando de algunos hechos menores, se integra al Ejército Revolucionario del Pueblo (ERP), Escuadrón General San Martín. El 23 de diciembre de 1975, participa del asalto al Batallón Depósito de Arsenales 601 “Domingo Viejobueno” de Monte Chingolo, Lanús, donde con 19 años cae en combate, gritando: “ Viva la Revolución”. Hoy descansa en el mausoleo de los Caídos de Monte Chingolo.",
     "lugar": "Villa Ballester",
     "fecha_nacimiento": "1956-08-14",
@@ -1955,6 +2010,7 @@
   {
     "nombre": "Oshiro Takara, Jorge Eduardo",
     "fecha_desaparicion": "10 de noviembre de 1976",
+    "estudiante": true,
     "descripcion": "Nació el 2 de enero de 1958 en Villa Adelina, Partido de San Isidro. Realizó la primaria en el Instituto Emilio Lamarca y estudiaba en el turno noche de la escuela de Enseñanza Secundaria Técnica Nº2 ¨Alemania¨ de Villa Ballester. Tenía 18 años, era soltero, cantaba, tocaba la guitarra y era parte de un grupo musical y militaba en el frente estudiantil de la Juventud Socialista de Avanzada (JSA), rama juvenil del Partido Socialista de los Trabajadores, vendía el periódico “Avanzada Socialista”, que tenía un suplemento denominado “La Chispa” dirigido a los más jóvenes. La madrugada del 10 de noviembre de 1976 un grupo de cinco hombres portando armas largas entraron en la casa de la familia en la calle Lamadrid 1340 de Villa Ballester, eran 5 hermanos y se dirigieron directamente al cuarto donde estaba Jorge secuestrándolo. No utilizaron violencia y el operativo fue hecho mayormente en silencio, parecía que conocían bien la distribución de la casa y a Jorge, ya que sus dos hermanos menores (de 16 y 17 años) se le parecían mucho, pero a ellos no los molestaron para nada. Fue visto por última vez en el Centro Clandestino de Detención Campo de Mayo, la familia pudo presentarse como querellante (Caso N° 216) ante los Juzgados federales de San Martín, en la Mega Causa de Campo de Mayo (causa 4012).",
     "lugar": "Villa Ballester",
     "fecha_nacimiento": "1958-01-02",
@@ -1991,6 +2047,7 @@
   {
     "nombre": "Ramos Berdaguer, Guillermo Pablo",
     "fecha_desaparicion": "23 de diciembre de 1975",
+    "estudiante": true,
     "descripcion": "Nació el 19 de febrero de 1955 en Montevideo, Uruguay. Tenía 20 años, le decían Rolando, estudiaba Sociología en la Facultad de Ciencias Sociales de la Universidad de Buenos Aires (UBA), trabajaba en la Fábrica Irgaquim de San Martín y vivía en Yapeyú 165, barrio Villa Ballester. Militaba en el Partido Revolucionario de los Trabajadores - Ejército Revolucionario del Pueblo (PRT-ERP). El 23 de diciembre de 1975 fue asesinado en el copamiento del Batallón Depósito de Arsenales 601 “Domingo Viejobueno”, Monte Chingolo, Lanús, Pcia. Buenos Aires.",
     "lugar": "Villa Ballester",
     "fecha_nacimiento": "1955-02-19",
@@ -2009,6 +2066,7 @@
   {
     "nombre": "Romero, María Inés",
     "fecha_desaparicion": "17 de marzo de 1977",
+    "estudiante": true,
     "descripcion": "Nació el 6 de noviembre de 1955 en CABA. Hizo su secundaria en el Instituto “Santa Ana” de Villa Ballester. Tenía 21 años, estudiaba Filosofía en la Facultad de Filosofía y Letras de la Universidad de Buenos Aires (UBA). En el año 1975 vivió en Agustín Álvarez 657, Villa Ballester. Militaba en la Juventud Universitaria Peronista. El 17 de marzo de 1977 fue secuestrada en la vía pública en la Ciudad Autónoma de Buenos Aires, trasladada al Centro de Detención “El Atlético”. CONADEP N°944. RUVTE Legajo N° 2870.",
     "lugar": "Villa Ballester",
     "fecha_nacimiento": "1955-11-06",
@@ -2090,6 +2148,7 @@
   {
     "nombre": "Yankilevich Dascal Schapira, Andrea Patricia",
     "fecha_desaparicion": "4 de octubre de 1978",
+    "estudiante": true,
     "descripcion": "Nació el 23 de febrero de 1953 en la ciudad de Buenos Aires. Estudiaba Sociología en la UBA y militaba en la Juventud Universitaria Peronista. Estaba casada con Daniel Marcelo Schapira Daskal. Tenía 25 años al momento de su secuestro un 4 de octubre de 1978, de su domicilio de Boulevard Ballester y Avellaneda en Villa Ballester. Fue vista en el CCD “El Campito” de Campo de Mayo antes de ser asesinada. En el centenario del Liceo N°1 “José Figueroa Alcorta”, se colocó una placa en su memoria, por ser ex alumna del instituto.",
     "lugar": "Villa Ballester",
     "fecha_nacimiento": "1953-02-23",
@@ -2099,6 +2158,7 @@
   {
     "nombre": "Yankilevich Dascal, Claudia Inés",
     "fecha_desaparicion": "4 de octubre de 1978",
+    "estudiante": true,
     "descripcion": "Nació el 29 de diciembre de 1951 en la ciudad de Buenos Aires. Estudiaba Sociología en la UBA y militaba en la Juventud Universitaria Peronista. Estaba casada, con su compañero de militancia Jaime Eduardo Said. Tenía 26 años al momento de su secuestro un 4 de octubre de 1978, de su domicilio de Boulevard Ballester y Avellaneda en Villa Ballester. Fue vista en el CCD “El Campito” antes de ser asesinada. En el centenario del Liceo N°1 “José Figueroa Alcorta”, se colocó una placa en su memoria, por ser ex alumna del instituto.",
     "lugar": "Villa Ballester",
     "fecha_nacimiento": "1951-12-29",
@@ -2171,6 +2231,7 @@
   {
     "nombre": "Quinteros, Juan Carlos",
     "fecha_desaparicion": "3 de agosto de 1978",
+    "estudiante": true,
     "descripcion": "Nació en 1941. Le decían “Cacho”, militaba en la organización Montoneros y era estudiante de contaduría en la Universidad de Belgrano, ya que en la empresa le pagaban la carrera. Era hermano de Jorge Alberto Quinteros y esposo de Betty, con quién tenía tres hijos: Andrés, Gabriela y Valeria. Era peronista y su familia también. Tenía carácter fuerte y mucho sentido del humor. Le gustaba vestirse bien, jugar con sus hijos y traerles golosinas, leía sobre economía, política y novelas. Fanático del jazz y del Polaco Goyeneche. También trabajó en Editorial Codex, dónde siempre fue muy solidario–inclusive con su profesión- con todos los compañeros que lo necesitaron. Hizo la colimba en la Marina, en el área de Aviación Naval. En el barrio nunca lo vieron con el uniforme porque lo odiaba, siempre recordaba lo profundamente antiperonista que era esa fuerza militar. Tenía 37 años cuándo fue secuestrado el 3 de agosto de 1978. Se encontraba con su esposa y con sus hijos de 14 , 9 y 7 años en su casa de Florida, Vicente López. Recuerda Betty: “Los domingos iba hasta la pieza de los chicos y les decía “está papi” y todos venían y se metían en la cama con él, yo compraba facturas y tomábamos mate y desayunábamos. Algunos domingos íbamos hasta la casa de sus padres en Villa Concepción y con su familia comíamos asado, que él mismo hacía. Como la casa tenía un fondo grande, a él le gustaba cortar el pasto”. Luis Cufré compañero y amigo dice que “era la bondad andando, siempre se lo veía de buen humor. Él nos ayudó a crecer como individuos, ponía énfasis en el aspecto humano de las relaciones”. Alberto Orieta, lo recuerda como “un tipo solidario que en la empresa se preocupaba y se ocupaba por resolver los problemas administrativos de los compañeros”. Ya en el año 2008, Delia Maisel compañera y amiga asevera que “hoy a 30 años de su secuestro, rescato y valoro su compromiso, y a sus hijos, Gabriela, Andrés y Valeria les digo que deben sentirse orgullosos del padre que tuvieron”.",
     "lugar": "Villa Concepción",
     "fecha_nacimiento": "1941",
@@ -2189,6 +2250,7 @@
   {
     "nombre": "Repetto, María del Carmen",
     "fecha_desaparicion": "3 de agosto de 1978",
+    "estudiante": true,
     "descripcion": "Nació el 19 de diciembre de 1962. Era hija de Raúl Alberto Repetto y Nélida Leonor Garde y hermana de Nelly Hebe Repetto. Le decían “Chiquita” o “Chiqui”, tenía 15 años y cursaba 2º año del secundario. Militó en la Unión de estudiantes Secundarios (UES), en la Escuela Normal Mixta Estados Unidos de América de San Martín. Su familia funcionaba como una unidad, había un gran amor entre todos ellos y las chicas seguían el compromiso de militancia de sus padres: era un hogar típico de la Resistencia Peronista. Vivía en la calle 17 N°162 V. Concepción, San Andrés, Pdo. San Martín. El 5 de junio de 1978 en una calle del barrio secuestran a su papá y por seguridad la familia se va del barrio. El 3 de agosto de 1978 fue secuestrada junto a su madre y a la hermana con su novio Jorge Teodoro Mosqueda “Koki” en la vía pública en Castelar, provincia de Buenos Aires.",
     "lugar": "Villa Concepción",
     "fecha_nacimiento": "1962-12-19",
@@ -2225,6 +2287,7 @@
   {
     "nombre": "Di Pratti Osvaldo Nereo",
     "fecha_desaparicion": "29 de diciembre de 1977",
+    "estudiante": true,
     "descripcion": "Nació el 29 de junio de 1949 en Junín, provincia de Buenos Aires. Le decían el “Flaco”, era fanático de Boca, tocaba la guitarra y le gustaban las carreras de autos. Hizo el Bachiller en Lincoln y estudiaba Ingeniería e Historia en la Universidad Nacional de La Plata (UNLP). Se casó en 1975 con María Nélida Ramírez Abella de 23 años, con quien tuvo a su hijo Arturo. Trabajó en la Dirección de Vialidad en La Plata y como chofer en la línea de colectivos 202. Militaba en FA “EP” (Frente de Agrupaciones Eva Perón) y en Montoneros. También hizo trabajo político en la zona de Berisso (J.P. de Villa Nueva Agrupación 17 de Noviembre) donde lo recuerdan como un hombre íntegro y fiel a sus ideales, buena persona y siempre un ser pensante. Por la situación política se mudó con su familia a la calle 3 N° 5573 en el barrio de Villa Libertad en San Martín, de donde fue secuestrado el 29 de diciembre de 1977 junto a su compañera María y a su hijo de 4 meses, quien fue recuperado por sus abuelos después de unos meses.",
     "lugar": "Villa Libertad",
     "fecha_nacimiento": "1949-06-29",
@@ -2243,6 +2306,7 @@
   {
     "nombre": "Ramírez Abella, María Nélida",
     "fecha_desaparicion": "29 de diciembre de 1977",
+    "estudiante": true,
     "descripcion": "Nació el 31 de diciembre de 1953 en La Plata. De acuerdo a su legajo N° 6960, ingresó al Liceo Víctor Mercante en 1967 proveniente de la Escuela Graduada Joaquín V. González. Cursó de 1°a 4° año en la división A y fue compañera de curso de Rita Artabe y Alejandro García Martegani. En 1970, luego de rendir dos exámenes de cultura general, fue acreedora de una beca otorgada por “American Field Service” a estudiantes secundarios, para residir y estudiar por un año en Nashville, Tennesse, Estados Unidos. A su regreso, en 1971, rindió libre las materias de 4°. Finalizó sus estudios secundarios en la Escuela de Enseñanza Media N°6. Fue estudiante de la carrera de La Plata. “Maneli”, como la apodaban, militaba en la Juventud Universitaria Peronista y en Montoneros. Estaba casada con Osvaldo Nereo Depratti, con quien tuvo un hijo, llamado Arturo. Fue secuestrada a los 23 años en las cercanías de su domicilio, Calle 3 N° 5573 en Villa Libertad, San Martín, el 29 de diciembre de 1977. El mismo día fueron secuestrados Osvaldo junto a su hijo, quien fue recuperado meses después por sus familiares. Actualmente continúa desaparecida.",
     "lugar": "Villa Libertad",
     "fecha_nacimiento": "1953-12-31",
@@ -2306,6 +2370,7 @@
   {
     "nombre": "Cazzulo De La Rosa, Luis Alberto",
     "fecha_desaparicion": "22 de noviembre de 1976",
+    "estudiante": true,
     "descripcion": "Nació en San Martín el 5 de octubre de 1953. Era soltero, técnico - maestro mayor de obras y estudiaba arquitectura en la Universidad de Buenos Aires (UBA). Le decían “Pelusa”, tenía 23 años y trabajaba como obrero en la fábrica textil de lanas Casimires Wells “Spenser” en Villa Lynch, San Martín. Fue secuestrado el 22 de noviembre de 1976 en su domicilio, en San Martín.",
     "lugar": "Villa Lynch",
     "fecha_nacimiento": "1953-10-05",
@@ -2315,6 +2380,7 @@
   {
     "nombre": "Cervantes Beñatena, Miguel",
     "fecha_desaparicion": "20 de septiembre de 1977",
+    "estudiante": true,
     "descripcion": "Nació el 25 de abril de 1958, en José C. Paz. Le decían Cacho o Chino, y era estudiante secundario en la Escuela Nacional Técnica N° 2 de Martín Coronado. Tenía 19 años, militaba en la UES (Unión de Estudiantes Secundarios). Trabajaba como obrero textil en una empresa de la calle Laprida 215 en Villa Lynch, San Martín. En la madrugada del 20 de setiembre de 1977 es secuestrado en su casa de Hurlingham. El 5 de diciembre de 2013, en sesión extraordinaria, el Concejo Deliberante de Morón entregó a sus familiares el Reconocimiento Treinta Mil Motivos reivindicando su militancia.",
     "lugar": "Villa Lynch",
     "fecha_nacimiento": "1958-04-25",
@@ -2351,6 +2417,7 @@
   {
     "nombre": "Garofalo Cattenazzi, Alba Noemí",
     "fecha_desaparicion": "8 de diciembre de 1976",
+    "embarazada": true,
     "descripcion": "Nació el 22 de enero de 1954 en Lanús, Pcia de Bs As. Estudió Trabajo Social en la UBA. Tenía 22 años, militaba en la Juventud Universitaria Peronista y en Montoneros. El 8 de diciembre de 1976, es secuestrada en su casa, con su esposo, Eduardo Placci, ambos tenían un hijo de 6 meses Nicolás. Alba estaba embarazada entre 2 y 4 meses. Nicolás fue el primer testigo en la audiencia del juicio por la Mega-Causa Campo de Mayo, donde entre otras cosas relató que la vivienda de sus padres, en la calle Quintana 205/208 San Martín, Prov. de Buenos Aires, fue usurpada por un policía Bonaerense y su esposa, habitándola muchos años y cuando tuvieron que entregarla, la destrozaron.",
     "lugar": "Villa Lynch",
     "fecha_nacimiento": "1954-01-22",
@@ -2387,6 +2454,7 @@
   {
     "nombre": "Nadal, Diego Reinaldo",
     "fecha_desaparicion": "23 de septiembre de 1978",
+    "estudiante": true,
     "descripcion": "Nació el 8 de febrero de 1946. Tenía 32 años, estudiaba en la Facultad de Filosofía y Letras de la UBA. Trabajaba de comerciante y vivía en Quintana 2230, San Martín. Militaba en el peronismo, en Montoneros. Fue secuestrado el 23 de septiembre de 1978, en un bar ubicado en la localidad de Escobar, Buenos Aires, junto a su esposa Elida Esther Gramondi Delfante Nadal, sus dos hijos Carmen Nadal y Diego Nadal, y su cuñado Raúl Eduardo Nadal. Se dirigían en automóvil hacia Ramallo para despedirse de familiares, ya que uno de ellos se exiliaba en México. A la altura de Escobar fueron detenidos en la ruta por personal armado uniformado. Se los llevaron al Centro Clandestino de Detención Campo de Mayo. También iban con ellos otros dos pequeños (Vladimiro y Carmela), hijos de otra pareja de militantes conformada por Ana María Martí y Hugo Alberto Ramos. Diego, como integrante de Montoneros, fue terriblemente torturado en la Escuela de Mecánica de la Armada (ESMA) antes de su asesinato.",
     "lugar": "Villa Lynch",
     "fecha_nacimiento": "1946-02-08",
@@ -2576,6 +2644,7 @@
   {
     "nombre": "Iglesias Maseda, Enrique Roberto",
     "fecha_desaparicion": "5 de septiembre de 1977",
+    "estudiante": true,
     "descripcion": "Nació el 31 de enero de 1947 en Ciudad de Buenos Aires. Tenía 30 años, le decían “Quique” y estudiaba Ciencias de la Administración en la Universidad Argentina de la Empresa (UADE). Era gerente en Flamini Hnos S.A., ubicada en Villa Maipú, San Martín. El 5 de septiembre de 1977 fue secuestrado en su casa, en Arcos 1825 6° A, barrio porteño de Belgrano. Fue sometido a tormentos y permaneció cautivo en la Brigada de Investigaciones de San Justo, al menos hasta el 23 de septiembre del mismo año, cuando fue trasladado al Centro Clandestino de Detención “Pozo Banfield”.",
     "lugar": "Villa Maipú",
     "fecha_nacimiento": "1947-01-31",
@@ -2585,6 +2654,7 @@
   {
     "nombre": "Jolly De Salterain, Guillermo Pablo",
     "fecha_desaparicion": "13 de diciembre de 1978",
+    "estudiante": true,
     "descripcion": "Nació el 28 de junio de 1948. Le decían Pato, Yoli o Rafael, y era estudiante de Filosofía y Letras en la UBA. Trabajaba de comerciante, tenía 30 años; militaba en la Juventud Peronista y Montoneros en la Columna Oeste. El 10 de diciembre de 1978 fue secuestrado por una patota armada en la vereda de la ex tradicional confitería “El Ciervo” en las avenidas Callao y Corrientes del centro de la Ciudad de Buenos Aires. Estuvo detenido en el Centro Clandestino de Detención “El Olimpo”. El 13 de diciembre de 1978 fue asesinado en la Estación Miguelete del Ferrocarril Mitre, en San Martín.",
     "lugar": "Villa Maipú",
     "fecha_nacimiento": "1948-06-28",
@@ -2594,6 +2664,7 @@
   {
     "nombre": "Luzzi Simone, Asunción Graciela",
     "fecha_desaparicion": "26 de octubre de 1977",
+    "estudiante": true,
     "descripcion": "Nació el 22 de agosto de 1956 en Ciudad de Buenos Aires. Le decían Asunta, era estudiante de abogacía en la UBA. Trabajó en la Casa Central del Banco Hipotecario. Militaba en la Juventud Trabajadora Peronista y se sumó a Montoneros. Tenía 21 años y había comenzado a trabajar en ESANI, un frigorífico que elaboraba grasas comestibles, cuando fue secuestrada en la vía pública el 26 de octubre de 1977, en San Martín. Sus amigos y compañeros de lucha, escribieron en 2006: “Si no nos contiene la memoria, nos derramará el olvido… A vos, Asunta, que luchaste con tus ideas a cuestas, te arrancaron la vida. Te extrañamos y no te olvidamos”.",
     "lugar": "Villa Maipú",
     "fecha_nacimiento": "1956-08-22",
@@ -2657,6 +2728,7 @@
   {
     "nombre": "Strejilevich Labenski, Gerardo",
     "fecha_desaparicion": "16 de julio de 1977",
+    "estudiante": true,
     "descripcion": "Nació el 6 de enero de 1950 en Ciudad de Buenos Aires. Su familia estaba constituida por sus padres León Strejilevich y Sara Irene Labenzki y una hermana, Nora. Comenzó el secundario en Vicente López y lo terminó en el Colegio Nº5 “Bartolomé Mitre” de Ciudad de Buenos Aires. Estudiaba en el Colegium Musicum, junto con su hermana. Soñaba con ser director de orquesta. Le gustaba jugar al ajedrez y tocaba la guitarra. Tenía 27 años, estaba en pareja con Graciela Barroca, y estudiaba Física en la Facultad de Ciencias Exactas y Naturales en la UBA. Era becario y estaba a punto de defender su tesis de Licenciatura, en el Departamento de Reactores Nucleares de la Comisión Nacional de Energía Atómica (CNEA) – Centro Atómico Constituyentes, en San Martín. Militaba de la Juventud Trabajadora Peronista (JTP). Vivía en Corrientes 2583 -3º piso, Dto “8”, en el barrio porteño de Balvanera. En la madrugada del 16 de julio de 1977 fue secuestrado junto a Manuel Rojas, compañero de Facultad, de la casa de Manuel, en Caseros, Buenos AIres. Por la tarde había sido secuestrada su hermana, Nora (quien fue liberada unos días después) y su amigo Daniel Rus Laskier, de la puerta de la CNEA en San Martín. La noche anterior se habían llevado a su novia Graciela Barroca, de su casa familiar. Todos brillantes jóvenes científicos. Gerardo fue visto en el Centro Clandestino de Detención “Club Atlético” y estaría comprobado su cautiverio en el CCD de la ESMA.",
     "lugar": "Villa Maipú",
     "fecha_nacimiento": "1950-01-06",
@@ -2711,6 +2783,7 @@
   {
     "nombre": "Leiva Sueyro, María Delia",
     "fecha_desaparicion": "11 de enero de 1977",
+    "estudiante": true,
     "descripcion": "Nació el 12 de abril de 1948 en CABA. Su familia le decía “Dilín”, “Tilin”, y sus amigos y compañeros de militancia “Caqui” o “Negra”. Tenía 28 años, estudiaba la carrera de Psicología en la Universidad de Buenos Aires (UBA), militaba en el Partido Revolucionario de los Trabajadores - Ejército Revolucionario del Pueblo (PRT-ERP) y estaba en pareja con Horacio. El 14 de octubre de 1976, nació Gabriel Matías Cevasco, hijo de ambos. Fue secuestrada el 11 de enero de 1977 al salir del trabajo, junto a su hijo de tres meses de edad, de la empresa Textil San Andrés S.A. en Ecuador y la Nueva, Villa Zagala, Partido de San Martín. Su hijo fue entregado por personal policial a una familia que lo inscribió como propio. A través del Banco genético el 25 de octubre del año 2000 confirmó que Gabriel era el hijo de María Delia, recuperando su verdadera identidad y convirtiéndose en el nieto restituido Nº 70. Tenía 25 años cuando se reencontró con su padre y familiares.",
     "lugar": "Villa Zagala",
     "fecha_nacimiento": "1948-04-12",
