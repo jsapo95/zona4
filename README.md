@@ -94,6 +94,7 @@ El pipeline de ingesta del proyecto se ha actualizado a la **Versión 1.1.1** de
 
 Para documentación técnica detallada:
 - Ver [ingesta_fuentes.md](file:///Users/a4649783/Documents/UNSAM/zona4/docs/operations/ingesta_fuentes.md) para extender la carga con nuevas fuentes.
+- Ver [README.md de Arquitectura](file:///Users/a4649783/Documents/UNSAM/zona4/docs/architecture/README.md) para comprender de forma visual y simple el flujo y los componentes del cargador.
 - Ver [README.md de Queries](file:///Users/a4649783/Documents/UNSAM/zona4/docs/queries/README.md) para el modelo de grafo, DDL e integridad, y consultas Cypher.
 - Ver [GEMINI.md](file:///Users/a4649783/Documents/UNSAM/zona4/GEMINI.md) para la guía completa del repositorio optimizada para LLMs.
 

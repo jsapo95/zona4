@@ -31,8 +31,7 @@ A continuación se detalla la estructura física del proyecto con enlaces de ref
   * [ingesta_fuentes.md](file:///Users/a4649783/Documents/UNSAM/zona4/docs/operations/ingesta_fuentes.md): Contrato y checklist para la ingesta de nuevas fuentes usando el formato del CDM.
   * [README.md de Sources](file:///Users/a4649783/Documents/UNSAM/zona4/docs/sources/README.md): Detalle explicativo de los orígenes de datos procesados.
   * [README.md de Neo4j / Queries](file:///Users/a4649783/Documents/UNSAM/zona4/docs/queries/README.md): Resumen de carga del grafo, uso de plugins y consultas Cypher.
-  * [diseno_lugares_fechas.md](file:///Users/a4649783/Documents/UNSAM/zona4/docs/architecture/diseno_lugares_fechas.md): Diseño detallado de la normalización espacial (lugares, jerarquías) y temporal (fechas/años).
-  * [modelo_normalizacion.md](file:///Users/a4649783/Documents/UNSAM/zona4/docs/architecture/modelo_normalizacion.md): Especificación detallada sobre las reglas de normalización.
+  * [README.md de Arquitectura](file:///Users/a4649783/Documents/UNSAM/zona4/docs/architecture/README.md): Explicación simple y visual del flujo de componentes y arquitectura del cargador.
 * **Código Fuente del Extractor (`src/zona4_extractor/`)**:
   * [__init__.py](file:///Users/a4649783/Documents/UNSAM/zona4/src/zona4_extractor/__init__.py): Archivo de inicialización del paquete del extractor.
   * [download_georef_catalog.py](file:///Users/a4649783/Documents/UNSAM/zona4/src/zona4_extractor/download_georef_catalog.py): Script para descargar y armar el catálogo Georef local.
