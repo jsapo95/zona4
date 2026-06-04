@@ -26,10 +26,9 @@ A continuación se detalla la estructura física del proyecto con enlaces de ref
   * `raw/`: Contiene los archivos y documentos origen crudos descargados (ej. PDFs, XLSX, TXT).
   * `processed/`:
     * [georef_catalog.json](file:///Users/a4649783/Documents/UNSAM/zona4/data/processed/georef_catalog.json): Catálogo geográfico consolidado para georreferenciación y desambiguación jerárquica de localidades de Argentina.
-    * [ccds.json](file:///Users/a4649783/Documents/UNSAM/zona4/data/processed/ccds.json), [nietos_y_nietas.json](file:///Users/a4649783/Documents/UNSAM/zona4/data/processed/nietos_y_nietas.json), [parque_de_la_memoria.json](file:///Users/a4649783/Documents/UNSAM/zona4/data/processed/parque_de_la_memoria.json): Datasets procesados origen de las cargas base.
-  * `extensions/`: Directorio de aportes descentralizados de datos. Contiene [_template_extension.json](file:///Users/a4649783/Documents/UNSAM/zona4/data/extensions/_template_extension.json).
+  * `sources/`: Contiene los archivos procesados origen de las cargas base y los JSONs de aporte directo. Incluye [ccds.json](file:///Users/a4649783/Documents/UNSAM/zona4/data/sources/ccds.json), [nietos_y_nietas.json](file:///Users/a4649783/Documents/UNSAM/zona4/data/sources/nietos_y_nietas.json), [parque_de_la_memoria.json](file:///Users/a4649783/Documents/UNSAM/zona4/data/sources/parque_de_la_memoria.json) y la plantilla [_template_source.json](file:///Users/a4649783/Documents/UNSAM/zona4/data/sources/_template_source.json).
 * **Documentación Técnica (`docs/`)**:
-  * [ingesta_extensible.md](file:///Users/a4649783/Documents/UNSAM/zona4/docs/operations/ingesta_extensible.md): Contrato y checklist para la ingesta de nuevas fuentes usando el sistema de extensiones.
+  * [ingesta_fuentes.md](file:///Users/a4649783/Documents/UNSAM/zona4/docs/operations/ingesta_fuentes.md): Contrato y checklist para la ingesta de nuevas fuentes usando el formato del CDM.
   * [README.md de Sources](file:///Users/a4649783/Documents/UNSAM/zona4/docs/sources/README.md): Detalle explicativo de los orígenes de datos procesados.
   * [README.md de Neo4j / Queries](file:///Users/a4649783/Documents/UNSAM/zona4/docs/queries/README.md): Resumen de carga del grafo, uso de plugins y consultas Cypher.
   * [diseno_lugares_fechas.md](file:///Users/a4649783/Documents/UNSAM/zona4/docs/architecture/diseno_lugares_fechas.md): Diseño detallado de la normalización espacial (lugares, jerarquías) y temporal (fechas/años).
@@ -165,7 +164,7 @@ NEO4J_DATABASE=neo4j \
 * `--clean-project`: Limpia solo los nodos correspondientes al dominio del proyecto (`:Persona`, `:Lugar`, `:AliasLugar`, `:DirecciónCCD`, `:Profesión`, `:Cargo`, `:Org`, `:Institución`, `:AliasPersona`) antes de realizar la inserción, respetando el resto del grafo.
 * `--clean-all`: Borra absolutamente todo el grafo físico de Neo4j.
 * `--apply-safe-place-merges`: Aplica fusiones automáticas seguras en nodos `:Lugar` de tipo `CIUDAD` con alta coincidencia de toponimia y parentesco jerárquico.
-* `--skip-extensions`: Deshabilita la ingesta de paquetes ubicados en `data/extensions/`.
+* `--skip-direct-sources`: Deshabilita la ingesta de fuentes JSON directas ubicadas en `data/sources/`.
 * `--skip-qa-report`: Evita calcular e imprimir las métricas de control al terminar la ingesta.
 
 ### 5.4 Comportamiento de Constraints e Integridad en Entornos de Comunidad
@@ -176,15 +175,15 @@ Al insertar relaciones familiares, si una persona objetivo (`target_key`) no exi
 
 ---
 
-## 6. Sistema de Extensiones (Ingesta de Nuevas Fuentes)
-Para agregar nuevos datos sin interferir en los scripts principales del pipeline, se utiliza la ingesta extensible por JSON descrita en [ingesta_extensible.md](file:///Users/a4649783/Documents/UNSAM/zona4/docs/operations/ingesta_extensible.md).
+## 6. Ingesta de Nuevas Fuentes (Fuentes Directas)
+Para agregar nuevos datos sin interferir en los scripts principales del pipeline, se utiliza la ingesta directa por JSON descrita en [ingesta_fuentes.md](file:///Users/a4649783/Documents/UNSAM/zona4/docs/operations/ingesta_fuentes.md).
 
-1. **Crear archivo JSON**: Guardar en `data/extensions/tu_fuente.json`.
-2. **Estructura del JSON**: Debe ajustarse al esquema especificado en [_template_extension.json](file:///Users/a4649783/Documents/UNSAM/zona4/data/extensions/_template_extension.json). Permite aportar directamente filas estructuradas para colecciones intermedias como:
-   * `personas_detalles`, `protagonistas`, `rel_familiares`, `rel_personas`, `lugares`, `aliases`, `direcciones`, `parents`, `persona_lugar_links`, `direccion_lugar_links`.
+1. **Crear archivo JSON**: Guardar en `data/sources/tu_fuente.json`.
+2. **Estructura del JSON**: Debe ajustarse al esquema especificado en [_template_source.json](file:///Users/a4649783/Documents/UNSAM/zona4/data/sources/_template_source.json). Permite aportar directamente filas estructuradas de acuerdo a las 5 llaves esenciales del CDM:
+   * `personas`, `lugares`, `relaciones_interpersonales`, `eventos_espaciales`, `jerarquias`.
 3. **Validar Contrato antes de Cargar**:
    ```bash
-   PYTHONPATH=src .venv/bin/python -m zona4_graph_loader.cli --validate-extensions-only --extensions-dir data/extensions
+   PYTHONPATH=src .venv/bin/python -m zona4_graph_loader.cli --validate-sources-only --sources-dir data/sources
    ```
 
 ---

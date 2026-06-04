@@ -2,11 +2,12 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 
+from zona4_graph_loader.builders.base import CanonicalDataset
 from zona4_graph_loader.domain.text_norm import clean_text
 
 
-def build_detalles_rows(data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    rows: List[Dict[str, Any]] = []
+def build_detalles_rows(data: List[Dict[str, Any]]) -> CanonicalDataset:
+    personas: List[Dict[str, Any]] = []
     for item in data:
         detalle = item.get("detalle", {})
         registro = item.get("registro")
@@ -22,20 +23,21 @@ def build_detalles_rows(data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             elif "fem" in sexo.lower():
                 genero = "FEMENINO"
 
-        rows.append(
+        personas.append(
             {
                 "persona_key": f"registro:{registro}",
                 "registro": registro,
                 "nombre": clean_text(item.get("nombre_completo")) or clean_text(detalle.get("descripcion_nombre")),
                 "genero": genero,
                 "fuente": "detalles_personas",
+                "es_nietx": False,
             }
         )
-    return rows
+    return {"personas": personas}
 
 
-def build_nietx_protagonistas(data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    rows: List[Dict[str, Any]] = []
+def build_nietx_protagonistas(data: List[Dict[str, Any]]) -> CanonicalDataset:
+    personas: List[Dict[str, Any]] = []
     for item in data:
         id_nietx = item.get("id_nietx")
         if id_nietx is None:
@@ -44,7 +46,7 @@ def build_nietx_protagonistas(data: List[Dict[str, Any]]) -> List[Dict[str, Any]
         restituido = item.get("restituido", {}) or {}
         adn_val = clean_text(restituido.get("ADN")) or "SÍ"
         
-        rows.append(
+        personas.append(
             {
                 "persona_key": f"nietx:{id_nietx}",
                 "nombre": clean_text(item.get("nombre_completo")),
@@ -52,6 +54,7 @@ def build_nietx_protagonistas(data: List[Dict[str, Any]]) -> List[Dict[str, Any]
                 "fuente": "nietxs_relacion",
                 "caso": clean_text(item.get("nombre_completo")) or f"Caso {id_nietx}",
                 "ADN": adn_val,
+                "es_nietx": True,
             }
         )
-    return rows
+    return {"personas": personas}

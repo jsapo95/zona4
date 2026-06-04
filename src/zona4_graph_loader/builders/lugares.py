@@ -7,6 +7,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any, Dict, List
 
+from zona4_graph_loader.builders.base import CanonicalDataset
 from zona4_graph_loader.constants import ALIAS_ROOT_PARENT_KEY, DIRECTIONAL_TOKENS
 from zona4_graph_loader.domain.date_norm import parse_ddmmyyyy
 from zona4_graph_loader.domain.place_norm import extract_specific_address, resolve_place
@@ -39,7 +40,7 @@ def build_lugar_layer_rows(
     georef_catalog_path: Path,
     georef_min_score: float,
     georef_ambiguity_delta: float,
-) -> Dict[str, List[Dict[str, Any]]]:
+) -> CanonicalDataset:
     pais_key = "lugar:PAIS:argentina"
     lugares: Dict[str, Dict[str, Any]] = {
         pais_key: {
@@ -48,6 +49,7 @@ def build_lugar_layer_rows(
             "tipoGeopolitico": "PAIS",
             "pais_code": "AR",
             "fuente": "normalizacion_lugar",
+            "tipo_entidad": "Lugar",
         }
     }
     parents: set[tuple[str, str]] = set()
@@ -69,6 +71,7 @@ def build_lugar_layer_rows(
             "tipoGeopolitico": node["tipoGeopolitico"],
             "pais_code": pais_code,
             "fuente": "normalizacion_lugar",
+            "tipo_entidad": "Lugar",
         }
 
     def register_place(
@@ -84,6 +87,7 @@ def build_lugar_layer_rows(
             "tipoGeopolitico": place["tipo"],
             "pais_code": place.get("pais_code") or "AR",
             "fuente": "normalizacion_lugar",
+            "tipo_entidad": "Lugar",
         }
         hierarchy_keys = place.get("hierarchy_keys")
         if isinstance(hierarchy_keys, list) and len(hierarchy_keys) >= 2:
@@ -109,6 +113,7 @@ def build_lugar_layer_rows(
             "tipo": place["tipo"],
             "parent_key": place.get("parent_key") or ALIAS_ROOT_PARENT_KEY,
             "lugar_key": place["lugar_key"],
+            "tipo_entidad": "AliasLugar",
         }
 
         # Directly link persona to lugar with V1.1 temporal audit properties
@@ -141,11 +146,13 @@ def build_lugar_layer_rows(
                     "coordenadas": "DESCONOCIDAS",
                     "direccionExacta": direccion["direccion_raw"],
                     "lugar_key": place["lugar_key"],
+                    "tipo_entidad": "DireccionCCD",
                 }
                 direccion_lugar_links.append(
                     {
                         "direccion_ccd_key": direccion_ccd_key,
                         "lugar_key": place["lugar_key"],
+                        "tipo_relacion": "UBICADA_EN",
                     }
                 )
 
@@ -206,14 +213,18 @@ def build_lugar_layer_rows(
                 fecha_event=fecha_ase,
             )
 
-    parent_rows = [{"child_key": c, "parent_key": p} for c, p in sorted(parents)]
+    parent_rows = [{"child_key": c, "parent_key": p, "tipo_relacion": "PARTE_DE"} for c, p in sorted(parents)]
+    
+    # Consolidate all geo entities under "lugares"
+    all_places = list(lugares.values()) + list(aliases.values()) + list(direcciones.values())
+    
+    # Consolidate structural relations under "jerarquias"
+    all_hierarchies = parent_rows + direccion_lugar_links
+
     return {
-        "lugares": list(lugares.values()),
-        "aliases": list(aliases.values()),
-        "direcciones": list(direcciones.values()),
-        "direccion_lugar_links": direccion_lugar_links,
-        "parents": parent_rows,
-        "persona_lugar_links": persona_lugar_links,
+        "lugares": all_places,
+        "eventos_espaciales": persona_lugar_links,
+        "jerarquias": all_hierarchies,
     }
 
 
@@ -256,9 +267,13 @@ def _is_safe_city_merge_name(name_a: str, name_b: str) -> tuple[bool, float, str
     return (True, min(1.0, full_score + direction_bonus), "typo_un_token")
 
 
-def build_safe_place_merge_rows(lugar_layer: Dict[str, List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
-    places = {row["lugar_key"]: row for row in lugar_layer.get("lugares", [])}
-    aliases = lugar_layer.get("aliases", [])
+def build_safe_place_merge_rows(lugar_layer: CanonicalDataset) -> List[Dict[str, Any]]:
+    # Extract Lugar types and AliasLugar types from the consolidated list
+    places_list = [x for x in lugar_layer.get("lugares", []) if x.get("tipo_entidad") == "Lugar"]
+    aliases_list = [x for x in lugar_layer.get("lugares", []) if x.get("tipo_entidad") == "AliasLugar"]
+
+    places = {row["lugar_key"]: row for row in places_list}
+    aliases = aliases_list
 
     alias_count_by_place: Dict[str, int] = Counter(a["lugar_key"] for a in aliases)
     scope_by_place: Dict[str, tuple[str, str]] = {}

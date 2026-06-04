@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
-from typing import LiteralString, cast
+from typing import Any, Dict, List, LiteralString, cast
 
 from neo4j import GraphDatabase, Query
 
+from zona4_graph_loader.builders.base import CanonicalDataset
 from zona4_graph_loader.builders.candidatos import build_v3_candidate_rows
 from zona4_graph_loader.builders.ccds import build_ccd_rows
 from zona4_graph_loader.builders.lugares import build_lugar_layer_rows, build_safe_place_merge_rows
@@ -32,93 +33,115 @@ from zona4_graph_loader.db.cypher import (
 )
 from zona4_graph_loader.db.qa import run_qa_report
 from zona4_graph_loader.db.writer import run_batches
-from zona4_graph_loader.io.extensions import load_extension_collections
+from zona4_graph_loader.io.sources_ingestor import empty_canonical_dataset, load_direct_sources
 from zona4_graph_loader.io.files import CCDS_PATH, DETALLES_PATH, NIETXS_PATH, read_json
 
 
+def _merge_datasets(dest: CanonicalDataset, src: CanonicalDataset) -> None:
+    for key, rows in src.items():
+        if rows:
+            if key not in dest:
+                dest[key] = []
+            dest[key].extend(rows)
+
+
 def run_load(args: argparse.Namespace) -> None:
-    # 1. Read input JSON files from data/processed
+    # 1. Read input JSON files from data/sources
     detalles = read_json(DETALLES_PATH)
     nietxs = read_json(NIETXS_PATH)
     ccds = read_json(CCDS_PATH)
 
-    # 2. Build Base Persons (Victims) and Grandkids (Nietxs)
-    detalles_personas = build_detalles_rows(detalles)
-    protagonistas = build_nietx_protagonistas(nietxs)
+    # Consolidated CDM container
+    consolidated = empty_canonical_dataset()
 
-    # 3. Build Interpersonal relationships
-    rel_familiares = build_nietx_rel_rows(nietxs)
-    rel_personas = build_detalles_rel_rows(detalles)
+    # 2. Run builders (convert inputs to unificated CDM)
+    _merge_datasets(consolidated, build_detalles_rows(detalles))
+    _merge_datasets(consolidated, build_nietx_protagonistas(nietxs))
+    _merge_datasets(consolidated, build_nietx_rel_rows(nietxs))
+    _merge_datasets(consolidated, build_detalles_rel_rows(detalles))
 
-    # 4. Build Geographic Place Layers
-    lugar_layer = (
-        build_lugar_layer_rows(
+    if not args.skip_lugares:
+        lugar_layer = build_lugar_layer_rows(
             detalles,
             use_georef=not args.disable_georef_resolver,
             georef_catalog_path=Path(args.georef_catalog_path),
             georef_min_score=args.georef_min_score,
             georef_ambiguity_delta=args.georef_ambiguity_delta,
         )
-        if not args.skip_lugares
-        else {
-            "lugares": [],
-            "aliases": [],
-            "direcciones": [],
-            "direccion_lugar_links": [],
-            "parents": [],
-            "persona_lugar_links": [],
+        _merge_datasets(consolidated, lugar_layer)
+
+        existing_lugar_keys = {
+            row["lugar_key"]
+            for row in consolidated.get("lugares", [])
+            if row.get("tipo_entidad") == "Lugar"
         }
-    )
 
-    # 5. Build Clandestine Detention Center (CCD) Layers
-    ccd_layer = build_ccd_rows(
-        detalles,
-        ccds,
-        existing_lugar_keys={row["lugar_key"] for row in lugar_layer["lugares"]},
-        use_georef=not args.disable_georef_resolver,
-        georef_catalog_path=Path(args.georef_catalog_path),
-        georef_min_score=args.georef_min_score,
-        georef_ambiguity_delta=args.georef_ambiguity_delta,
-    )
+        ccd_layer = build_ccd_rows(
+            detalles,
+            ccds,
+            existing_lugar_keys=existing_lugar_keys,
+            use_georef=not args.disable_georef_resolver,
+            georef_catalog_path=Path(args.georef_catalog_path),
+            georef_min_score=args.georef_min_score,
+            georef_ambiguity_delta=args.georef_ambiguity_delta,
+        )
+        _merge_datasets(consolidated, ccd_layer)
 
-    # 6. Consolidate place, parent, address, and temporal link layers
-    if not args.skip_lugares:
-        lugar_layer["lugares"].extend(ccd_layer["lugares"])
-        lugar_layer["direcciones"].extend(ccd_layer["direcciones"])
-        lugar_layer["direccion_lugar_links"].extend(ccd_layer["direccion_lugar_links"])
-        lugar_layer["parents"].extend(ccd_layer["parents"])
-        lugar_layer["persona_lugar_links"].extend(ccd_layer["persona_lugar_links"])
-
-    # 7. Merge external/manual extension collections
-    if not args.skip_extensions:
-        extension_rows, extension_files = load_extension_collections(Path(args.extensions_dir))
-        if extension_files:
-            print(f"extensions_loaded: {len(extension_files)} ({', '.join(p.name for p in extension_files)})")
+    # 3. Load and merge direct static sources
+    if not args.skip_direct_sources:
+        sources_dir = Path(args.sources_dir)
+        direct_rows, source_files = load_direct_sources(sources_dir)
+        if source_files:
+            print(f"sources_loaded: {len(source_files)} ({', '.join(p.name for p in source_files)})")
         else:
-            print("extensions_loaded: 0")
+            print("sources_loaded: 0")
+        _merge_datasets(consolidated, direct_rows)
 
-        detalles_personas.extend(extension_rows["personas_detalles"])
-        protagonistas.extend(extension_rows["protagonistas"])
-        rel_familiares.extend(extension_rows["rel_familiares"])
-        rel_personas.extend(extension_rows["rel_personas"])
+    # 4. Extract entities and relationships from the unificated CDM for Cypher execution
+    personas_detalles = [
+        p for p in consolidated.get("personas", []) if not p.get("es_nietx")
+    ]
+    protagonistas = [
+        p for p in consolidated.get("personas", []) if p.get("es_nietx")
+    ]
 
-        if not args.skip_lugares:
-            lugar_layer["lugares"].extend(extension_rows["lugares"])
-            lugar_layer["aliases"].extend(extension_rows["aliases"])
-            lugar_layer["direcciones"].extend(extension_rows["direcciones"])
-            lugar_layer["parents"].extend(extension_rows["parents"])
-            lugar_layer["persona_lugar_links"].extend(extension_rows["persona_lugar_links"])
-            lugar_layer["direccion_lugar_links"].extend(extension_rows["direccion_lugar_links"])
+    rel_familiares = [
+        r for r in consolidated.get("relaciones_interpersonales", [])
+        if r.get("fuente") == "nietxs_relacion"
+    ]
+    rel_personas = [
+        r for r in consolidated.get("relaciones_interpersonales", [])
+        if r.get("fuente") != "nietxs_relacion"
+    ]
 
-    # 8. Build Safe Place Merges and Identity Reconciliations
+    lugares_nodos = [
+        l for l in consolidated.get("lugares", []) if l.get("tipo_entidad") == "Lugar"
+    ]
+    aliases_nodos = [
+        l for l in consolidated.get("lugares", []) if l.get("tipo_entidad") == "AliasLugar"
+    ]
+    direcciones_nodos = [
+        l for l in consolidated.get("lugares", []) if l.get("tipo_entidad") == "DireccionCCD"
+    ]
+
+    parents = [
+        j for j in consolidated.get("jerarquias", []) if j.get("tipo_relacion") == "PARTE_DE"
+    ]
+    direccion_lugar_links = [
+        j for j in consolidated.get("jerarquias", []) if j.get("tipo_relacion") == "UBICADA_EN"
+    ]
+
+    persona_lugar_links = consolidated.get("eventos_espaciales", [])
+
+    # 5. Build Safe Place Merges and Identity Reconciliations
     safe_place_merges = (
-        build_safe_place_merge_rows(lugar_layer)
+        build_safe_place_merge_rows(consolidated)
         if (not args.skip_lugares and args.apply_safe_place_merges)
         else []
     )
-    v3_candidates = build_v3_candidate_rows(detalles_personas, rel_familiares, rel_personas)
+    v3_candidates = build_v3_candidate_rows(personas_detalles, rel_familiares, rel_personas)
 
-    # 9. Ingest into Neo4j
+    # 6. Ingest into Neo4j
     cfg = get_config()
     driver = GraphDatabase.driver(cfg.uri, auth=(cfg.username, cfg.password))
 
@@ -143,7 +166,7 @@ def run_load(args: argparse.Namespace) -> None:
                     raise e
 
         # Ingest Person roles
-        run_batches(session, CYPHER_UPSERT_PERSONAS, detalles_personas, "personas_detalles", BATCH_SIZE)
+        run_batches(session, CYPHER_UPSERT_PERSONAS, personas_detalles, "personas_detalles", BATCH_SIZE)
         run_batches(session, CYPHER_UPSERT_PROTAGONISTAS, protagonistas, "protagonistas_nietx", BATCH_SIZE)
 
         # Ingest Family and Interpersonal relationships
@@ -152,17 +175,17 @@ def run_load(args: argparse.Namespace) -> None:
 
         # Ingest Geographic/CCD layers
         if not args.skip_lugares:
-            run_batches(session, CYPHER_UPSERT_LUGARES, lugar_layer["lugares"], "lugares", BATCH_SIZE)
-            run_batches(session, CYPHER_LINK_LUGAR_PARENT, lugar_layer["parents"], "lugar_parte_de", BATCH_SIZE)
-            run_batches(session, CYPHER_UPSERT_ALIAS_LUGAR, lugar_layer["aliases"], "alias_lugar", BATCH_SIZE)
-            run_batches(session, CYPHER_UPSERT_DIRECCION_CCD, lugar_layer["direcciones"], "direcciones_ccd", BATCH_SIZE)
-            run_batches(session, CYPHER_LINK_DIRECCION_CCD_LUGAR, lugar_layer["direccion_lugar_links"], "direccion_ccd_lugar", BATCH_SIZE)
+            run_batches(session, CYPHER_UPSERT_LUGARES, lugares_nodos, "lugares", BATCH_SIZE)
+            run_batches(session, CYPHER_LINK_LUGAR_PARENT, parents, "lugar_parte_de", BATCH_SIZE)
+            run_batches(session, CYPHER_UPSERT_ALIAS_LUGAR, aliases_nodos, "alias_lugar", BATCH_SIZE)
+            run_batches(session, CYPHER_UPSERT_DIRECCION_CCD, direcciones_nodos, "direcciones_ccd", BATCH_SIZE)
+            run_batches(session, CYPHER_LINK_DIRECCION_CCD_LUGAR, direccion_lugar_links, "direccion_ccd_lugar", BATCH_SIZE)
             
             # Dynamic direct events (e.g. SECUESTRADO_EN, NACIO_EN)
             run_batches(
                 session,
                 CYPHER_LINK_PERSONA_LUGAR_DYNAMIC,
-                lugar_layer["persona_lugar_links"],
+                persona_lugar_links,
                 "persona_lugar_eventos_directos",
                 BATCH_SIZE,
             )

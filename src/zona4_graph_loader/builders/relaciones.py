@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 
+from zona4_graph_loader.builders.base import CanonicalDataset
 from zona4_graph_loader.domain.text_norm import clean_text, persona_key_from_name
 
 
@@ -120,8 +121,8 @@ def _map_relation(
     return rows
 
 
-def build_nietx_rel_rows(data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    rows: List[Dict[str, Any]] = []
+def build_nietx_rel_rows(data: List[Dict[str, Any]]) -> CanonicalDataset:
+    relaciones: List[Dict[str, Any]] = []
     for item in data:
         id_nietx = item.get("id_nietx")
         if id_nietx is None:
@@ -137,7 +138,7 @@ def build_nietx_rel_rows(data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             target_key = f"registro:{rel_id}" if rel_id is not None else persona_key_from_name(rel_name)
             
             raw_rel = clean_text(rel.get("relacion"))
-            rows.extend(
+            relaciones.extend(
                 _map_relation(
                     source_key=source_key,
                     source_name=source_name,
@@ -147,11 +148,11 @@ def build_nietx_rel_rows(data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
                     fuente="nietxs_relacion",
                 )
             )
-    return rows
+    return {"relaciones_interpersonales": relaciones}
 
 
-def build_detalles_rel_rows(data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    rows: List[Dict[str, Any]] = []
+def build_detalles_rel_rows(data: List[Dict[str, Any]]) -> CanonicalDataset:
+    relaciones: List[Dict[str, Any]] = []
     for item in data:
         registro = item.get("registro")
         if registro is None:
@@ -168,7 +169,7 @@ def build_detalles_rel_rows(data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             target_key = f"registro:{rel_id}" if rel_id is not None else persona_key_from_name(rel_name)
             
             raw_rel = clean_text(rel.get("relacion"))
-            rows.extend(
+            relaciones.extend(
                 _map_relation(
                     source_key=source_key,
                     source_name=source_name,
@@ -178,4 +179,4 @@ def build_detalles_rel_rows(data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
                     fuente="detalles_personas",
                 )
             )
-    return rows
+    return {"relaciones_interpersonales": relaciones}

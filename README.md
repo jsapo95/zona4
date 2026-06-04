@@ -67,7 +67,7 @@ Para garantizar la estabilidad y evitar dependencias de red durante la carga del
 
 1. **Extractor de Datos (`src/zona4_extractor/`)**:
    - **Propósito**: Ejecutar de manera previa y/o independiente la lógica de scraping, consulta de APIs en línea, parseo de archivos no estructurados (PDFs, HTML, etc.) y reverse-geocoding online.
-   - **Salida**: Genera datasets intermedios estructurados y homogéneos de personas, relaciones, y catalogaciones geopolíticas que se almacenan de forma local en `data/processed/`.
+   - **Salida**: Genera datasets intermedios estructurados y homogéneos de personas, relaciones, y catalogaciones geopolíticas que se almacenan de forma local en `data/sources/`.
    - **Archivos de referencia (Placeholders)**:
      - [download_georef_catalog.py](file:///Users/a4649783/Documents/UNSAM/zona4/src/zona4_extractor/download_georef_catalog.py): Script para descargar y consolidar el catálogo local offline de Georef.
      - [abuelas_scraper_placeholder.py](file:///Users/a4649783/Documents/UNSAM/zona4/src/zona4_extractor/abuelas_scraper_placeholder.py): Scraper web del buscador de Abuelas de Plaza de Mayo (Placeholder).
@@ -75,10 +75,10 @@ Para garantizar la estabilidad y evitar dependencias de red durante la carga del
      - [georef_client_placeholder.py](file:///Users/a4649783/Documents/UNSAM/zona4/src/zona4_extractor/georef_client_placeholder.py): Cliente de consulta dinámico de la API oficial de Georef Argentina (Placeholder).
 
 2. **Cargador del Grafo (`src/zona4_graph_loader/`)**:
-   - **Propósito**: Consumir de manera estrictamente local, determinista y *offline* los datasets ubicados en `data/processed/` e inyectarlos de forma masiva en la base de datos de grafos de Neo4j.
+   - **Propósito**: Consumir de manera estrictamente local, determinista y *offline* los datasets ubicados en `data/sources/` e inyectarlos de forma masiva en la base de datos de grafos de Neo4j.
    - **Ventaja**: El loader está totalmente libre de acoplamiento de red; no realiza peticiones externas y está optimizado únicamente para el ordenamiento geopolítico e interpersonal del Knowledge Graph.
 
-Con esta normalización y desacoplamiento, la base de datos se mantiene en un estado sólido de control de calidad y auditoría, siendo escalable para la integración futura de nuevas fuentes mediante el sistema de extensiones manuales en `data/extensions/` o nuevos módulos de extracción en `src/zona4_extractor/`.
+Con esta normalización y desacoplamiento, la base de datos se mantiene en un estado sólido de control de calidad y auditoría, siendo escalable para la integración futura de nuevas fuentes mediante el sistema de fuentes manuales en `data/sources/` o nuevos módulos de extracción en `src/zona4_extractor/`.
 
 ## Operación técnica del loader y Modelo de Datos (V1.1.1)
 
@@ -93,7 +93,7 @@ El pipeline de ingesta del proyecto se ha actualizado a la **Versión 1.1.1** de
 3. **Consistencia Referencial (Placeholder Merges)**: Al procesar relaciones familiares, si un actor no se encuentra formalmente declarado como persona base, el cargador genera un nodo `:Persona` temporal tipo placeholder para no perder la arista genealógica.
 
 Para documentación técnica detallada:
-- Ver [ingesta_extensible.md](file:///Users/a4649783/Documents/UNSAM/zona4/docs/operations/ingesta_extensible.md) para extender la carga con nuevas fuentes.
+- Ver [ingesta_fuentes.md](file:///Users/a4649783/Documents/UNSAM/zona4/docs/operations/ingesta_fuentes.md) para extender la carga con nuevas fuentes.
 - Ver [README.md de Queries](file:///Users/a4649783/Documents/UNSAM/zona4/docs/queries/README.md) para el modelo de grafo, DDL e integridad, y consultas Cypher.
 - Ver [GEMINI.md](file:///Users/a4649783/Documents/UNSAM/zona4/GEMINI.md) para la guía completa del repositorio optimizada para LLMs.
 
@@ -116,8 +116,8 @@ NEO4J_DATABASE=neo4j \
 - `--clean-project`: Limpia todos los nodos y relaciones correspondientes al proyecto (conservando otros dominios si existieran) antes de cargar.
 - `--clean-all`: Borra absolutamente todo el grafo físico de Neo4j.
 - `--apply-safe-place-merges`: Aplica fusiones automáticas conservadoras sobre nodos `:Lugar` de tipo `CIUDAD` con alta similitud toponímica y coherencia jerárquica.
-- `--skip-extensions`: Deshabilita la ingesta de paquetes ubicados en `data/extensions/`.
-- `--validate-extensions-only`: Valida la correctitud de los paquetes en `data/extensions/` y sale sin inyectar datos en Neo4j.
+- `--skip-direct-sources`: Deshabilita la ingesta de fuentes directas en formato JSON ubicadas en `data/sources/`.
+- `--validate-sources-only`: Valida la correctitud de las fuentes directas en `data/sources/` y sale sin inyectar datos en Neo4j.
 - `--skip-qa-report`: Evita calcular e imprimir el reporte QA de cierre al terminar la carga.
 
 ### Configuración del Entorno Local (Docker):

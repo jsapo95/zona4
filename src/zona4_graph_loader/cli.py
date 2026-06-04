@@ -65,19 +65,19 @@ def parse_args() -> argparse.Namespace:
         help="Diferencia minima entre mejor y segundo candidato para evitar ambiguedades.",
     )
     parser.add_argument(
-        "--extensions-dir",
-        default="data/extensions",
-        help="Directorio con paquetes JSON de filas canonicas para extender la carga con nuevas fuentes.",
+        "--sources-dir",
+        default="data/sources",
+        help="Directorio con archivos JSON de origen de datos directo para el pipeline.",
     )
     parser.add_argument(
-        "--skip-extensions",
+        "--skip-direct-sources",
         action="store_true",
-        help="No carga paquetes de extension desde --extensions-dir.",
+        help="No carga archivos JSON directos desde --sources-dir.",
     )
     parser.add_argument(
-        "--validate-extensions-only",
+        "--validate-sources-only",
         action="store_true",
-        help="Valida los paquetes JSON en el directorio de extensiones y sale sin inyectar datos en Neo4j.",
+        help="Valida los archivos JSON de origen directo en el directorio de fuentes y sale sin inyectar datos en Neo4j.",
     )
 
     args = parser.parse_args()
@@ -88,21 +88,21 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    if args.validate_extensions_only:
+    if args.validate_sources_only:
         import sys
         from pathlib import Path
-        from zona4_graph_loader.io.extensions import ALLOWED_EXTENSION_KEYS, load_extension_collections
+        from zona4_graph_loader.io.sources_ingestor import ALLOWED_SOURCE_KEYS, load_direct_sources
         
-        extensions_dir = Path(args.extensions_dir)
-        merged, files = load_extension_collections(extensions_dir)
-        print(f"Directorio de extensiones: {extensions_dir}")
+        sources_dir = Path(args.sources_dir)
+        merged, files = load_direct_sources(sources_dir)
+        print(f"Directorio de fuentes: {sources_dir}")
         print(f"Archivos detectados: {len(files)}")
         if files:
-            print("Archivos:")
+            print("Archivos directos cargados:")
             for path in files:
                 print(f"  - {path}")
-        print("Registros por colección:")
-        for key in sorted(ALLOWED_EXTENSION_KEYS):
+        print("Registros directos por colección:")
+        for key in sorted(ALLOWED_SOURCE_KEYS):
             print(f"  {key}: {len(merged[key])}")
         sys.exit(0)
 

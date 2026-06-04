@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from zona4_graph_loader.builders.base import CanonicalDataset
 from zona4_graph_loader.constants import GEOREF_AMBIGUITY_DELTA, GEOREF_CATALOG_PATH, GEOREF_MIN_SCORE
 from zona4_graph_loader.domain.date_norm import parse_partial_ymd
 from zona4_graph_loader.domain.place_norm import resolve_place
@@ -96,7 +97,7 @@ def build_ccd_rows(
     georef_catalog_path: Path = GEOREF_CATALOG_PATH,
     georef_min_score: float = GEOREF_MIN_SCORE,
     georef_ambiguity_delta: float = GEOREF_AMBIGUITY_DELTA,
-) -> Dict[str, List[Dict[str, Any]]]:
+) -> CanonicalDataset:
     existing_lugar_keys = existing_lugar_keys or set()
 
     ccd_by_id: Dict[str, Dict[str, Any]] = {}
@@ -155,6 +156,7 @@ def build_ccd_rows(
                 "jurisdiccion": clean_text(ccd.get("jurisdiccion")),
                 "ubicacion": ubicacion,
                 "emplazamiento_propiedad": clean_text(ccd.get("emplazamiento_propiedad")),
+                "tipo_entidad": "Lugar",
             }
 
             # Map the exact coordinates/address as DirecciónCCD
@@ -165,10 +167,12 @@ def build_ccd_rows(
                 "coordenadas": coordenadas_str,
                 "direccionExacta": ubicacion or denominacion,
                 "lugar_key": lugar_key,
+                "tipo_entidad": "DireccionCCD",
             }
             direccion_lugar_links.append({
                 "direccion_ccd_key": direccion_ccd_key,
                 "lugar_key": lugar_key,
+                "tipo_relacion": "UBICADA_EN",
             })
 
             resolved_lugar_key = _resolve_existing_lugar_key(
@@ -198,10 +202,16 @@ def build_ccd_rows(
                 "origen": "ccds_json",
             })
 
+    parent_rows = [{"child_key": child, "parent_key": parent, "tipo_relacion": "PARTE_DE"} for child, parent in sorted(parents)]
+
+    # Consolidate geo entities under "lugares"
+    all_places = list(lugares.values()) + list(direcciones.values())
+
+    # Consolidate relationships under "jerarquias"
+    all_hierarchies = parent_rows + direccion_lugar_links
+
     return {
-        "lugares": list(lugares.values()),
-        "direcciones": list(direcciones.values()),
-        "direccion_lugar_links": direccion_lugar_links,
-        "parents": [{"child_key": child, "parent_key": parent} for child, parent in sorted(parents)],
-        "persona_lugar_links": persona_lugar_links,
+        "lugares": all_places,
+        "eventos_espaciales": persona_lugar_links,
+        "jerarquias": all_hierarchies,
     }
