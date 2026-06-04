@@ -8,8 +8,9 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 from zona4_graph_loader.constants import ALIAS_ROOT_PARENT_KEY, DIRECTIONAL_TOKENS
+from zona4_graph_loader.domain.date_norm import parse_ddmmyyyy
 from zona4_graph_loader.domain.place_norm import extract_specific_address, resolve_place
-from zona4_graph_loader.domain.text_norm import slugify_name
+from zona4_graph_loader.domain.text_norm import clean_text, slugify_name
 
 
 def _node_from_lugar_key(lugar_key: str) -> Dict[str, str]:
@@ -18,16 +19,16 @@ def _node_from_lugar_key(lugar_key: str) -> Dict[str, str]:
     if len(parts) != 3:
         return {
             "lugar_key": lugar_key,
-            "nombre_canonico": core.upper(),
-            "tipo": "INDETERMINADO",
+            "nombre": core.upper(),
+            "tipoGeopolitico": "INDETERMINADO",
         }
 
     tipo = parts[1].upper()
     nombre = parts[2].replace("_", " ").upper()
     return {
         "lugar_key": lugar_key,
-        "nombre_canonico": nombre,
-        "tipo": tipo,
+        "nombre": nombre,
+        "tipoGeopolitico": tipo,
     }
 
 
@@ -43,8 +44,8 @@ def build_lugar_layer_rows(
     lugares: Dict[str, Dict[str, Any]] = {
         pais_key: {
             "lugar_key": pais_key,
-            "nombre_canonico": "ARGENTINA",
-            "tipo": "PAIS",
+            "nombre": "ARGENTINA",
+            "tipoGeopolitico": "PAIS",
             "pais_code": "AR",
             "fuente": "normalizacion_lugar",
         }
@@ -52,30 +53,35 @@ def build_lugar_layer_rows(
     parents: set[tuple[str, str]] = set()
     aliases: Dict[str, Dict[str, Any]] = {}
     direcciones: Dict[str, Dict[str, Any]] = {}
-    persona_links: list[Dict[str, Any]] = []
-    evento_links: list[Dict[str, Any]] = []
-    evento_direccion_links: list[Dict[str, Any]] = []
+    direccion_lugar_links: list[Dict[str, Any]] = []
+    persona_lugar_links: list[Dict[str, Any]] = []
 
     def ensure_lugar_node(lugar_key: str) -> None:
         if lugar_key in lugares:
             return
         node = _node_from_lugar_key(lugar_key)
         pais_code = "AR"
-        if node["tipo"] == "PAIS" and node["nombre_canonico"] != "ARGENTINA":
+        if node["tipoGeopolitico"] == "PAIS" and node["nombre"] != "ARGENTINA":
             pais_code = "XX"
         lugares[lugar_key] = {
             "lugar_key": node["lugar_key"],
-            "nombre_canonico": node["nombre_canonico"],
-            "tipo": node["tipo"],
+            "nombre": node["nombre"],
+            "tipoGeopolitico": node["tipoGeopolitico"],
             "pais_code": pais_code,
             "fuente": "normalizacion_lugar",
         }
 
-    def register_place(place: Dict[str, Any], field: str, registro: int, evento_key: str | None, persona_campo: str | None) -> None:
+    def register_place(
+        place: Dict[str, Any],
+        field: str,
+        registro: int,
+        persona_campo: str | None,
+        fecha_event: str | None
+    ) -> None:
         lugares[place["lugar_key"]] = {
             "lugar_key": place["lugar_key"],
-            "nombre_canonico": place["nombre_canonico"],
-            "tipo": place["tipo"],
+            "nombre": place["nombre_canonico"],
+            "tipoGeopolitico": place["tipo"],
             "pais_code": place.get("pais_code") or "AR",
             "fuente": "normalizacion_lugar",
         }
@@ -105,50 +111,41 @@ def build_lugar_layer_rows(
             "lugar_key": place["lugar_key"],
         }
 
+        # Directly link persona to lugar with V1.1 temporal audit properties
         if persona_campo:
-            persona_links.append(
+            tipo_relacion = "PRESENTE_EN"
+            if persona_campo == "secuestro":
+                tipo_relacion = "SECUESTRADO_EN"
+            elif persona_campo == "nacimiento":
+                tipo_relacion = "NACIO_EN"
+            elif persona_campo == "asesinato":
+                tipo_relacion = "ASESINADO_EN"
+
+            persona_lugar_links.append(
                 {
-                    "registro": registro,
+                    "persona_key": f"registro:{registro}",
                     "lugar_key": place["lugar_key"],
-                    "campo": persona_campo,
-                    "fuente": "detalles_personas",
-                    "alias_raw": place["alias_raw"],
-                }
-            )
-        if evento_key:
-            evento_links.append(
-                {
-                    "evento_key": evento_key,
-                    "lugar_key": place["lugar_key"],
-                    "fuente": "detalles_personas",
-                    "campo_fuente": field,
-                    "alias_raw": place["alias_raw"],
+                    "tipo_relacion": tipo_relacion,
+                    "fecha": fecha_event or "DESCONOCIDA",
+                    "origen": "detalles_personas",
                 }
             )
 
+            # Check if there is a specific street address in text to represent as DirecciónCCD
             direccion = extract_specific_address(place.get("alias_raw"))
             if direccion is not None:
                 strict_scope = f"{direccion['direccion_norm']}|{place['lugar_key']}"
-                direccion_key = f"direccion:{hashlib.sha1(strict_scope.encode('utf-8')).hexdigest()[:20]}"
-                direcciones[direccion_key] = {
-                    "direccion_key": direccion_key,
-                    "direccion_raw": direccion["direccion_raw"],
-                    "direccion_norm": direccion["direccion_norm"],
-                    "via": direccion["via"],
-                    "numero": direccion["numero"],
-                    "piso_depto": direccion["piso_depto"],
-                    "confianza_parseo": direccion["confianza_parseo"],
-                    "fuente": "detalles_personas",
-                    "campo_fuente": field,
+                direccion_ccd_key = f"direccion_ccd:{hashlib.sha1(strict_scope.encode('utf-8')).hexdigest()[:20]}"
+                direcciones[direccion_ccd_key] = {
+                    "direccion_ccd_key": direccion_ccd_key,
+                    "coordenadas": "DESCONOCIDAS",
+                    "direccionExacta": direccion["direccion_raw"],
                     "lugar_key": place["lugar_key"],
                 }
-                evento_direccion_links.append(
+                direccion_lugar_links.append(
                     {
-                        "evento_key": evento_key,
-                        "direccion_key": direccion_key,
-                        "fuente": "detalles_personas",
-                        "campo_fuente": field,
-                        "alias_raw": place["alias_raw"],
+                        "direccion_ccd_key": direccion_ccd_key,
+                        "lugar_key": place["lugar_key"],
                     }
                 )
 
@@ -158,6 +155,7 @@ def build_lugar_layer_rows(
             continue
         detalle = item.get("detalle", {})
 
+        fecha_sec = parse_ddmmyyyy(clean_text(detalle.get("descripcion_fecha_de_secuestro")))
         place_sec = resolve_place(
             detalle.get("descripcion_lugar_de_secuestro"),
             use_georef=use_georef,
@@ -170,10 +168,11 @@ def build_lugar_layer_rows(
                 place=place_sec,
                 field="descripcion_lugar_de_secuestro",
                 registro=registro,
-                evento_key=f"evento:detalles:secuestro:{registro}",
                 persona_campo="secuestro",
+                fecha_event=fecha_sec,
             )
 
+        fecha_nac = parse_ddmmyyyy(clean_text(detalle.get("descripcion_fecha_nacimiento")))
         place_nac = resolve_place(
             detalle.get("Lugar de nacimiento"),
             use_georef=use_georef,
@@ -186,10 +185,11 @@ def build_lugar_layer_rows(
                 place=place_nac,
                 field="lugar_nacimiento",
                 registro=registro,
-                evento_key=None,
                 persona_campo="nacimiento",
+                fecha_event=fecha_nac,
             )
 
+        fecha_ase = parse_ddmmyyyy(clean_text(detalle.get("descripcion_fecha_de_asesinato")))
         place_ase = resolve_place(
             detalle.get("Lugar de asesinato"),
             use_georef=use_georef,
@@ -202,8 +202,8 @@ def build_lugar_layer_rows(
                 place=place_ase,
                 field="lugar_asesinato",
                 registro=registro,
-                evento_key=f"evento:detalles:asesinato:{registro}",
-                persona_campo=None,
+                persona_campo="asesinato",
+                fecha_event=fecha_ase,
             )
 
     parent_rows = [{"child_key": c, "parent_key": p} for c, p in sorted(parents)]
@@ -211,10 +211,9 @@ def build_lugar_layer_rows(
         "lugares": list(lugares.values()),
         "aliases": list(aliases.values()),
         "direcciones": list(direcciones.values()),
+        "direccion_lugar_links": direccion_lugar_links,
         "parents": parent_rows,
-        "persona_links": persona_links,
-        "evento_links": evento_links,
-        "evento_direccion_links": evento_direccion_links,
+        "persona_lugar_links": persona_lugar_links,
     }
 
 
@@ -235,7 +234,7 @@ def _is_safe_city_merge_name(name_a: str, name_b: str) -> tuple[bool, float, str
     tokens_b = name_b.split()
     dirs_a = {t for t in tokens_a if t in DIRECTIONAL_TOKENS}
     dirs_b = {t for t in tokens_b if t in DIRECTIONAL_TOKENS}
-    # Directional markers are protected tokens: conflicting or missing direction is unsafe.
+    
     if dirs_a and dirs_b and dirs_a != dirs_b:
         return (False, 0.0, "direccion_conflictiva")
     if bool(dirs_a) != bool(dirs_b):
@@ -271,7 +270,7 @@ def build_safe_place_merge_rows(lugar_layer: Dict[str, List[Dict[str, Any]]]) ->
     city_keys = [
         k
         for k, row in places.items()
-        if row.get("tipo") == "CIUDAD" and k in scope_by_place and scope_by_place[k][1] != ALIAS_ROOT_PARENT_KEY
+        if row.get("tipoGeopolitico") == "CIUDAD" and k in scope_by_place and scope_by_place[k][1] != ALIAS_ROOT_PARENT_KEY
     ]
     scope_groups: Dict[tuple[str, str], List[str]] = defaultdict(list)
     for key in city_keys:
@@ -299,8 +298,8 @@ def build_safe_place_merge_rows(lugar_layer: Dict[str, List[Dict[str, Any]]]) ->
         for i in range(len(keys)):
             for j in range(i + 1, len(keys)):
                 ka, kb = keys[i], keys[j]
-                na = str(places[ka].get("nombre_canonico") or "")
-                nb = str(places[kb].get("nombre_canonico") or "")
+                na = str(places[ka].get("nombre") or "")
+                nb = str(places[kb].get("nombre") or "")
                 ok, score, reason = _is_safe_city_merge_name(na, nb)
                 if not ok:
                     continue

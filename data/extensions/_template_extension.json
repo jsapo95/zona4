@@ -1,25 +1,17 @@
 {
   "source_id": "nombre_fuente_v1",
-  "description": "Paquete de extension con filas canonicas para el loader",
+  "description": "Paquete de extension con filas canonicas para el loader V1.1",
   "version": 1,
 
   "personas_detalles": [],
-  "casos_nietx": [],
   "protagonistas": [],
   "rel_familiares": [],
   "rel_personas": [],
-  "rel_simult": [],
-
-  "eventos": [],
-
-  "paginas_listado": [],
-  "links_listado": [],
 
   "lugares": [],
   "aliases": [],
   "direcciones": [],
   "parents": [],
-  "persona_links": [],
-  "evento_links": [],
-  "evento_direccion_links": []
+  "persona_lugar_links": [],
+  "direccion_lugar_links": []
 }

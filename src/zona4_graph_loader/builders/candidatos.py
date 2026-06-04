@@ -11,21 +11,22 @@ def build_v3_candidate_rows(
     detalles_personas: List[Dict[str, Any]],
     rel_familiares: List[Dict[str, Any]],
     rel_personas: List[Dict[str, Any]],
-    rel_simult: List[Dict[str, Any]],
 ) -> List[Dict[str, Any]]:
     fuzzy_threshold = 0.96
     max_fuzzy_slugs_per_placeholder = 3
 
-    placeholder_keys = {
-        r["target_key"]
-        for r in (rel_familiares + rel_personas + rel_simult)
-        if r.get("target_placeholder") is True and str(r.get("target_key", "")).startswith("nombre:")
-    }
+    # Detect placeholders (keys starting with "nombre:")
+    placeholder_keys = set()
+    for r in (rel_familiares + rel_personas):
+        for key_name in ("source_key", "target_key"):
+            val = r.get(key_name, "")
+            if isinstance(val, str) and val.startswith("nombre:"):
+                placeholder_keys.add(val)
 
     slug_to_candidates: Dict[str, List[str]] = {}
     for person in detalles_personas:
         key = person.get("persona_key")
-        name = person.get("nombre_completo")
+        name = person.get("nombre")  # V1.1 property name
         if not key or not name:
             continue
         slug = slugify_name(name)

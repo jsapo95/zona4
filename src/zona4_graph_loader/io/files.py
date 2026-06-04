@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[3]
-DATA_DIR = ROOT / "data"
+DATA_DIR = ROOT / "data" / "processed"
 LISTADO_PAGINAS_PATH = DATA_DIR / "listado_paginas.json"
 DETALLES_PATH = DATA_DIR / "parque_de_la_memoria.json"
 NIETXS_PATH = DATA_DIR / "nietos_y_nietas.json"

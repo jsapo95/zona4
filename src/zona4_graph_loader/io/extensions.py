@@ -4,24 +4,18 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
-# Canonical row collections accepted by the loader pipeline.
+# Canonical row collections accepted by the V1.1 loader pipeline.
 ALLOWED_EXTENSION_KEYS = {
     "personas_detalles",
-    "casos_nietx",
     "protagonistas",
     "rel_familiares",
     "rel_personas",
-    "rel_simult",
-    "eventos",
-    "paginas_listado",
-    "links_listado",
     "lugares",
     "aliases",
     "direcciones",
     "parents",
-    "persona_links",
-    "evento_links",
-    "evento_direccion_links",
+    "persona_lugar_links",
+    "direccion_lugar_links",
 }
 
 METADATA_KEYS = {"source_id", "description", "version"}

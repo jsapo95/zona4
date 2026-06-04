@@ -10,7 +10,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--clean-project",
         action="store_true",
-        help="Limpia nodos y relaciones del proyecto (Persona, CasoNietx, Evento, Lugar y AliasLugar) antes de cargar.",
+        help="Limpia nodos y relaciones del proyecto (Persona, Lugar y AliasLugar) antes de cargar.",
     )
     parser.add_argument(
         "--clean-all",
@@ -49,7 +49,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--georef-catalog-path",
-        default="data/georef_catalog.json",
+        default="data/processed/georef_catalog.json",
         help="Ruta al catalogo Georef local (JSON consolidado).",
     )
     parser.add_argument(
@@ -74,6 +74,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="No carga paquetes de extension desde --extensions-dir.",
     )
+    parser.add_argument(
+        "--validate-extensions-only",
+        action="store_true",
+        help="Valida los paquetes JSON en el directorio de extensiones y sale sin inyectar datos en Neo4j.",
+    )
 
     args = parser.parse_args()
     if args.clean_project and args.clean_all:
@@ -83,6 +88,24 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    if args.validate_extensions_only:
+        import sys
+        from pathlib import Path
+        from zona4_graph_loader.io.extensions import ALLOWED_EXTENSION_KEYS, load_extension_collections
+        
+        extensions_dir = Path(args.extensions_dir)
+        merged, files = load_extension_collections(extensions_dir)
+        print(f"Directorio de extensiones: {extensions_dir}")
+        print(f"Archivos detectados: {len(files)}")
+        if files:
+            print("Archivos:")
+            for path in files:
+                print(f"  - {path}")
+        print("Registros por colección:")
+        for key in sorted(ALLOWED_EXTENSION_KEYS):
+            print(f"  {key}: {len(merged[key])}")
+        sys.exit(0)
+
     run_load(args)
 
 

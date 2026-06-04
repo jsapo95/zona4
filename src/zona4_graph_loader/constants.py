@@ -83,7 +83,7 @@ DIRECTIONAL_TOKENS = {
     "SUR",
 }
 
-GEOREF_CATALOG_PATH = Path("data/georef_catalog.json")
+GEOREF_CATALOG_PATH = Path("data/processed/georef_catalog.json")
 GEOREF_MIN_SCORE = 0.76
 GEOREF_AMBIGUITY_DELTA = 0.02
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Descarga un catalogo local de Georef para resolver lugares offline."""
+"""Descarga un catálogo local de Georef para resolver lugares offline."""
 
 from __future__ import annotations
 
@@ -96,7 +96,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("data/georef_catalog.json"),
+        default=Path("data/processed/georef_catalog.json"),
         help="Ruta de salida del catalogo consolidado.",
     )
     parser.add_argument(
