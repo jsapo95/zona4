@@ -1,0 +1,11 @@
+{
+  "source_id": "nombre_fuente_v1",
+  "description": "Plantilla de origen de datos directa para el loader con CDM unificado",
+  "version": 1,
+
+  "personas": [],
+  "lugares": [],
+  "relaciones_interpersonales": [],
+  "eventos_espaciales": [],
+  "jerarquias": []
+}

@@ -37,15 +37,15 @@ La veracidad de la información utilizada se encuentra ligada mayormente al cont
 | Nombre | Estado | Url | Glosario |
 | ------ | ------ | --- | -------- |
 | Archivo de la Memoria de San Martín | Pendiente | https://sitiosale.cdn.prismic.io/sitiosale/Z9luiTiBA97GimGK_M_ArchivodeMemoria-1-.pdf | |
-| Base de datos - Parque de la memoria | Procesado | https://basededatos.parquedelamemoria.org.ar/registros/ | [Ver glosario](/docs/base_de_datos/parque_de_la_memoria.md) |
+| Base de datos - Parque de la memoria | Procesado | https://basededatos.parquedelamemoria.org.ar/registros/ | [Ver glosario](file:///Users/a4649783/Documents/UNSAM/zona4/docs/sources/parque_de_la_memoria.md) |
 | Niños desaparecidos. Jóvenes localizados 1975 - 2015 | Pendiente | https://www.unq.edu.ar/wp-content/uploads/migracion/documentos/5594327fb5347.pdf | |
-| Nietas y nietos - Abuelas de Plaza de Mayo | Procesado | https://www.abuelas.org.ar/nietas-y-nietos/buscador | [Ver glosario](/docs/base_de_datos/nietos_y_nietas.md) |
+| Nietas y nietos - Abuelas de Plaza de Mayo | Procesado | https://www.abuelas.org.ar/nietas-y-nietos/buscador | [Ver glosario](file:///Users/a4649783/Documents/UNSAM/zona4/docs/sources/nietos_y_nietas.md) |
 | Centros clandestinos de detención | Pendiente | https://es.wikipedia.org/wiki/Centro_clandestino_de_detenci%C3%B3n_(Argentina) | |
-| Listado de Centros Clandestinos de Detención | Procesado | https://www.argentina.gob.ar/sites/default/files/6._anexo_v_listado_de_ccd-investigacion_ruvte-ilid.pdf | [Ver glosario](/docs/base_de_datos/ccds.md) |
+| Listado de Centros Clandestinos de Detención | Procesado | https://www.argentina.gob.ar/sites/default/files/6._anexo_v_listado_de_ccd-investigacion_ruvte-ilid.pdf | [Ver glosario](file:///Users/a4649783/Documents/UNSAM/zona4/docs/sources/ccds.md) |
 | Listado de casos sin denuncia formal | Pendiente | https://www.argentina.gob.ar/sites/default/files/3._anexo_ii_listado_de_casos_sin_dcia_formal-investigacion_ruvte-ilid.pdf | |
 | Registro Unificado de Víctimas del Terrorismo de Estado (RUVTE) | Pendiente | https://www.argentina.gob.ar/derechoshumanos/ANM/ruvte/2015 | |
 | Centros Clandestinos de Detención durante la dictadura cívico-militar entre 1976 y 1982 | Pendiente | https://observatorioconurbano.ungs.edu.ar/?p=5392 | |
-| Paquete R - presentes | Procesado | https://diegokoz.github.io/presentes/ | [Ver glosario](/docs/base_de_datos/paquete_r_presentes.md) |
+| Paquete R - presentes | Procesado | https://diegokoz.github.io/presentes/ | [Ver glosario](file:///Users/a4649783/Documents/UNSAM/zona4/docs/sources/paquete_r_presentes.md) |
 | Documentos desclasificados EE.UU. | Pendiente |https://desclasificados.org.ar/ | |
 | Datos de represores y victimas | Pendiente | https://derechoshumanos.mjus.gba.gob.ar/imputado/33-balmaceda-roberto-armando/ | |
 | Imputados | Pendiente | https://www.mpf.gob.ar/plan-condor/imputados/zona-iv-santiago-omar-riveros/ | |
@@ -61,11 +61,74 @@ La veracidad de la información utilizada se encuentra ligada mayormente al cont
 | Juicios PBA | Pendiente | https://derechoshumanos.mjus.gba.gob.ar/lesa-humanidad/ | |
 
 
-## Procesamiento de los datos
+## Procesamiento de los datos y Arquitectura Decoplada
 
-Para poder analizar y crear modelos analíticos, se necesita procesar los datos obtenidos para normalizarlos. En ese sentido se utilizan técnicas de automatización cuando es posible o procesamiento manual en varios casos.
+Para garantizar la estabilidad y evitar dependencias de red durante la carga del grafo, el repositorio se divide arquitectónicamente en dos subsistemas principales:
 
-Con esta normalización se pretende crear una base de datos que pueda ser accedida públicamente con datos que están en constante actualización.
+1. **Extractor de Datos (`src/zona4_extractor/`)**:
+   - **Propósito**: Ejecutar de manera previa y/o independiente la lógica de scraping, consulta de APIs en línea, parseo de archivos no estructurados (PDFs, HTML, etc.) y reverse-geocoding online.
+   - **Salida**: Genera datasets intermedios estructurados y homogéneos de personas, relaciones, y catalogaciones geopolíticas que se almacenan de forma local en `data/sources/`.
+   - **Archivos de referencia (Placeholders)**:
+     - [download_georef_catalog.py](file:///Users/a4649783/Documents/UNSAM/zona4/src/zona4_extractor/download_georef_catalog.py): Script para descargar y consolidar el catálogo local offline de Georef.
+     - [abuelas_scraper_placeholder.py](file:///Users/a4649783/Documents/UNSAM/zona4/src/zona4_extractor/abuelas_scraper_placeholder.py): Scraper web del buscador de Abuelas de Plaza de Mayo (Placeholder).
+     - [parque_memoria_parser_placeholder.py](file:///Users/a4649783/Documents/UNSAM/zona4/src/zona4_extractor/parque_memoria_parser_placeholder.py): Parseador de registros procedentes del Parque de la Memoria (Placeholder).
+     - [georef_client_placeholder.py](file:///Users/a4649783/Documents/UNSAM/zona4/src/zona4_extractor/georef_client_placeholder.py): Cliente de consulta dinámico de la API oficial de Georef Argentina (Placeholder).
+
+2. **Cargador del Grafo (`src/zona4_graph_loader/`)**:
+   - **Propósito**: Consumir de manera estrictamente local, determinista y *offline* los datasets ubicados en `data/sources/` e inyectarlos de forma masiva en la base de datos de grafos de Neo4j.
+   - **Ventaja**: El loader está totalmente libre de acoplamiento de red; no realiza peticiones externas y está optimizado únicamente para el ordenamiento geopolítico e interpersonal del Knowledge Graph.
+
+Con esta normalización y desacoplamiento, la base de datos se mantiene en un estado sólido de control de calidad y auditoría, siendo escalable para la integración futura de nuevas fuentes mediante el sistema de fuentes manuales en `data/sources/` o nuevos módulos de extracción en `src/zona4_extractor/`.
+
+## Operación técnica del loader y Modelo de Datos (V1.1.1)
+
+El pipeline de ingesta del proyecto se ha actualizado a la **Versión 1.1.1** del modelo de datos en grafos. 
+
+### Cambios Clave en el Modelo de Datos:
+1. **Simplificación Topológica**: Se eliminaron los nodos intermediarios `:Evento` y `:CasoNietx`. Ahora los hechos históricos se mapean como relaciones temporales directas desde los nodos `:Persona` hacia los nodos `:Lugar` (ej: `-[:SECUESTRADO_EN]->`, `-[:PRESENTE_EN]->`, `-[:ASESINADO_EN]->`), reduciendo la redundancia de datos.
+2. **Nuevas Relaciones Interpersonales y Familiares**: Se incorporó soporte nativo y unificado para:
+   - Parejas (`PAREJA_DE`), unificando cónyuge, novio/a y compañero/a.
+   - Hermanos (`HERMANX_DE`).
+   - Parientes políticos de alta frecuencia: Cuñados (`CUÑADX_DE`), Suegros (`SUEGRX_DE`), y Yernos/Nueras (`YERNX_NUERX_DE`).
+3. **Consistencia Referencial (Placeholder Merges)**: Al procesar relaciones familiares, si un actor no se encuentra formalmente declarado como persona base, el cargador genera un nodo `:Persona` temporal tipo placeholder para no perder la arista genealógica.
+
+Para documentación técnica detallada:
+- Ver [ingesta_fuentes.md](file:///Users/a4649783/Documents/UNSAM/zona4/docs/operations/ingesta_fuentes.md) para extender la carga con nuevas fuentes.
+- Ver [README.md de Arquitectura](file:///Users/a4649783/Documents/UNSAM/zona4/docs/architecture/README.md) para comprender de forma visual y simple el flujo y los componentes del cargador.
+- Ver [README.md de Queries](file:///Users/a4649783/Documents/UNSAM/zona4/docs/queries/README.md) para el modelo de grafo, DDL e integridad, y consultas Cypher.
+- Ver [GEMINI.md](file:///Users/a4649783/Documents/UNSAM/zona4/GEMINI.md) para la guía completa del repositorio optimizada para LLMs.
+
+### Carga Base Completa y Limpia
+
+Para ejecutar la ingesta local apuntando al puerto Neo4j configurado (`17687`), utilice las siguientes variables de entorno:
+
+```bash
+PYTHONPATH=src \
+NEO4J_URI=bolt://localhost:17687 \
+NEO4J_USERNAME=neo4j \
+NEO4J_PASSWORD=zona4local \
+NEO4J_DATABASE=neo4j \
+.venv/bin/python -m zona4_graph_loader.cli --clean-project --apply-safe-place-merges
+```
+
+*Nota para Neo4j Community Edition:* Las restricciones de existencia (`IS NOT NULL`) de las labels son exclusivas de la versión Enterprise de Neo4j. El loader detectará de forma automática si la base de datos es Community Edition, omitirá amigablemente la creación de estas restricciones arrojando un `Warning` y continuará con la inserción de los datos.
+
+### Flags útiles en `cli.py`:
+- `--clean-project`: Limpia todos los nodos y relaciones correspondientes al proyecto (conservando otros dominios si existieran) antes de cargar.
+- `--clean-all`: Borra absolutamente todo el grafo físico de Neo4j.
+- `--apply-safe-place-merges`: Aplica fusiones automáticas conservadoras sobre nodos `:Lugar` de tipo `CIUDAD` con alta similitud toponímica y coherencia jerárquica.
+- `--skip-direct-sources`: Deshabilita la ingesta de fuentes directas en formato JSON ubicadas en `data/sources/`.
+- `--validate-sources-only`: Valida la correctitud de las fuentes directas en `data/sources/` y sale sin inyectar datos en Neo4j.
+- `--skip-qa-report`: Evita calcular e imprimir el reporte QA de cierre al terminar la carga.
+
+### Configuración del Entorno Local (Docker):
+- El archivo `docker-compose.yml` en la raíz define e inicializa el contenedor local de Neo4j con los plugins `apoc` y `graph-data-science` (GDS) habilitados por defecto.
+- Expone el puerto Bolt en `17687` para evitar colisionar con otras instancias activas en el puerto default `7687`.
+- Puede verificar que la inicialización fue correcta ingresando a la consola (Browser) y corriendo:
+  ```cypher
+  RETURN apoc.version() AS apoc_version;
+  RETURN gds.version() AS gds_version;
+  ```
 
 
 ## Análisis y visualización de datos
