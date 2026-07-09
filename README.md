@@ -53,7 +53,7 @@ La veracidad de la información utilizada se encuentra ligada mayormente al cont
 | Semblanza de las dictaduras civico-militares del 55' al 83' | Pendiente | https://robertobaschetti.com/ | |
 | Leyes de la dictadura | Reprocesar | https://www.lasleyesdeladictadura.com.ar/index.php?a=PublicView&name=LeyesPublic | |
 | Condor Atlanta | Pendiente | https://condor-atlanta.org/ | |
-| Juicios de Lesa Humanidad | Pendiente | http://www.juiciosdelesahumanidad.ar/ | |
+| Juicios de Lesa Humanidad | Procesado | http://www.juiciosdelesahumanidad.ar/ | |
 | Nizkor | Pendiente | https://www.derechos.org/nizkor/arg/ | |
 | Fiscales juicios | Pendiente | https://www.fiscales.gob.ar/lesa-humanidad/?tipo-entrada=agenda | |
 | Webinar IA y DDHH | Pendiente | https://www.cipdh.gob.ar/inteligencia-artificial-y-derechos-humanos/ | |
