@@ -36,7 +36,7 @@ La veracidad de la información utilizada se encuentra ligada mayormente al cont
 
 | Nombre | Estado | Url | Glosario |
 | ------ | ------ | --- | -------- |
-| Archivo de la Memoria de San Martín | Pendiente | https://sitiosale.cdn.prismic.io/sitiosale/Z9luiTiBA97GimGK_M_ArchivodeMemoria-1-.pdf | |
+| Archivo de la Memoria de San Martín | Procesado | https://sitiosale.cdn.prismic.io/sitiosale/Z9luiTiBA97GimGK_M_ArchivodeMemoria-1-.pdf | |
 | Base de datos - Parque de la memoria | Procesado | https://basededatos.parquedelamemoria.org.ar/registros/ | [Ver glosario](/docs/base_de_datos/parque_de_la_memoria.md) |
 | Niños desaparecidos. Jóvenes localizados 1975 - 2015 | Pendiente | https://www.unq.edu.ar/wp-content/uploads/migracion/documentos/5594327fb5347.pdf | |
 | Nietas y nietos - Abuelas de Plaza de Mayo | Procesado | https://www.abuelas.org.ar/nietas-y-nietos/buscador | [Ver glosario](/docs/base_de_datos/nietos_y_nietas.md) |
