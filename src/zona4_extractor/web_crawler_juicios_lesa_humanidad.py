@@ -26,23 +26,34 @@ HEADERS = {
     )
 }
 
-# Parámetros compartidos por ambas consultas
-DEFAULT_PARAMS = {
-    "campo": "cant_imputados",
-    "order": "DESC",
-    "size": 20000,
-    "estado": "con sentencia;en tramite de debate oral",
-}
-
-# Mapeo de endpoints y sus respectivos archivos de salida
+# Diccionario maestro de endpoints, rutas de guardado y sus respectivos parámetros
 ENDPOINTS_CONFIG = {
     "argentina": {
         "url": "http://api.juiciosdelesahumanidad.ar/api/v1.0/historico/causa/busqueda/combinada",
         "filepath": "data/raw/juicios_lesa_humanidad_argentina.json",
+        "params": {
+            "campo": "cant_imputados",
+            "order": "DESC",
+            "size": 20000,
+            "estado": "con sentencia;en tramite de debate oral",
+        },
     },
     "exterior": {
         "url": "http://api.juiciosdelesahumanidad.ar/api/v1.0/causas_exterior/",
         "filepath": "data/raw/juicios_lesa_humanidad_exterior.json",
+        "params": {
+            "campo": "cant_imputados",
+            "order": "DESC",
+            "size": 20000,
+            "estado": "con sentencia;en tramite de debate oral",
+        },
+    },
+    "condenados": {
+        "url": "http://api.juiciosdelesahumanidad.ar/api/v1.0/condenado/busqueda/combinada",
+        "filepath": "data/raw/juicios_lesa_humanidad_condenados.json",
+        "params": {
+            "size": 2000000,
+        },
     },
 }
 
@@ -100,7 +111,6 @@ class JuiciosAPIClient:
 def save_to_json_file(data: Dict[str, Any], filepath: str) -> None:
     """Guarda un diccionario en un archivo JSON asegurando la existencia del directorio."""
     try:
-        # Asegura que la estructura de carpetas (data/raw/) exista
         directorio = os.path.dirname(filepath)
         if directorio:
             os.makedirs(directorio, exist_ok=True)
@@ -115,17 +125,17 @@ def save_to_json_file(data: Dict[str, Any], filepath: str) -> None:
 def main() -> None:
     """Función principal (Punto de entrada del script)."""
     for origen, config in ENDPOINTS_CONFIG.items():
-        logger.info(f"--- Iniciando descarga de causas: {origen.upper()} ---")
+        logger.info(f"--- Iniciando descarga de: {origen.upper()} ---")
         
         client = JuiciosAPIClient(base_url=config["url"])
-        data = client.fetch_all_data(params=DEFAULT_PARAMS)
+        data = client.fetch_all_data(params=config["params"])
 
         if data is not None:
             save_to_json_file(data, filepath=config["filepath"])
         else:
-            logger.error(f"No se pudieron obtener los datos de causas del {origen}.")
+            logger.error(f"No se pudieron obtener los datos de: {origen}.")
         
-        print("\n")  # Separador visual en consola
+        print("\n")
 
 
 if __name__ == "__main__":
