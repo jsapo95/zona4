@@ -1,0 +1,92 @@
+PROVINCIA;LOCALIDAD;CEM - CCD - EP;LUGAR DE HALLAZGO;HOJA DE REFERENCIA;Lat;Long;Suma de CASOS;Suma de EXHUMADOS;Suma de ID CON CUERPO;Suma de ID SIN CUERPO;Suma de ID;Suma de NO ID
+Buenos Aires;Almirante Brown;CEM;Cementerio de Almirante Brown;Zona_Sur-Rafael_Calzada;-34.795355931418285;-58.34562565092717;30;30;10;0;10;20
+Buenos Aires;Arana;CCD;Comisaría de Arana;Centros_Clandestinos_de_Detención-Arana;-34.996624097223666;-57.89276388220877;13;13;1;0;1;12
+Buenos Aires;Avellaneda;CEM;Cementerio de Avellaneda- Sector 134;Zona_Sur-Avellaneda_Sector_134;-34.702060816394;-58.34594250651651;247;245;117;2;119;128
+Buenos Aires;Avellaneda;CEM;Cementerio de Avellaneda-Fondo;Zona_Sur-Avellaneda;-34.70245210786185;-58.34848133917287;48;47;16;1;17;31
+Buenos Aires;Bahía Blanca;CEM;Cementerio de Bahía Blanca;Buenos_Aires-Bahía_Blanca;-38.70816622888275;-62.23004968897029;10;9;0;1;1;9
+Buenos Aires;Belén de Escobar;CEM;Cementerio de Escobar;Zona_Norte-Escobar;-34.32853917218838;-58.8009414756790002;13;13;7;0;7;6
+Buenos Aires;Benavídez;CEM;Cementerio de Benavídez;Zona_Norte-Tigre-Benavidez;-34.4261136491609;-58.70546978967362;6;0;0;6;6;0
+Buenos Aires;Berazategui;CEM;Cementerio Parque Municipal de Berazategui;Zona_Sur-Berazategui;-34.79137931089671;-58.18456103558183;11;11;8;0;8;3
+Buenos Aires;Boulogne Sur Mer;CEM;Cementerio de Boulogne;Zona_Norte-Boulogne-San_Isidro;-34.492235215938116;-58.578289292936866;23;17;7;6;13;10
+Buenos Aires;Campana;CEM;Cementerio de Campana;Zona_Norte-Campana;-34.17458274523213;-58.97397219999997;8;5;1;3;4;4
+Buenos Aires;Cañuelas;CEM;Cementerio de Cañuelas;Zona_Sur-Cañuelas;-35.05463439273889;-58.793083504293264;1;0;0;1;1;0
+Buenos Aires;Capilla del Señor;CEM;Cementerio de Capilla del Señor;Zona_Norte-Capilla_del_Señor;-34.292982283336684;-59.104869066884696;1;0;0;1;1;0
+Buenos Aires;Castelar;CCD;El Chalet- Hospital Nacional Profesor Alejandro Posadas;Centros_Clandestinos_de_Detención-Hospital_Posadas;-34.629865448930765;-58.57516071604371;1;1;1;0;1;0
+Buenos Aires;Chascomús;CEM;Cementerio de Chascomús;Zona_Sur-Chascomús;-35.590425871928154;-57.97686077188338;1;1;1;0;1;0
+Buenos Aires;Derqui;CEM;Cementerio de Presidente Derqui;Zona_Norte-Derqui;-34.4860923743163;-58.854419610606655;25;25;20;0;20;5
+Buenos Aires;Don Bosco;CCD;Subcomisaría de Don Bosco- Puesto Vasco;Centros_Clandestinos_de_Detención-Puesto_Vasco;-34.70356287291865;-58.30161830385041;2;2;0;0;0;2
+Buenos Aires;Esteban Echeverría;EP;Transradio;Sitios_Clandestinos_de_Inhumación-Transradio;-34.74121052173191;-58.50295751497303;5;5;4;0;4;1
+Buenos Aires;Ezpeleta;CEM;Cementerio de Ezpeleta;Zona_Sur-Ezpeleta;-34.7441875;-58.22922744455732;32;32;7;0;7;25
+Buenos Aires;General Lavalle;CEM;Cementerio de General Lavalle;Costa-General_Lavalle;-36.43302700854732;-56.93876570517948;25;25;21;0;21;4
+Buenos Aires;General Madariaga;CEM;Cementerio de General Madariaga;Costa-General_Madariaga;-36.98486551180827;-57.13349847041311;3;3;2;0;2;1
+Buenos Aires;Grand Bourg;CEM;Cementerio Parque Grand Bourg;Zona_Norte-Grand_Bourg;-34.499768056404044;-58.73495156432999;4;1;1;3;4;0
+Buenos Aires;La Matanza;CCD;Ex Centro Clandestino de Detención El Banco;Centros_Clandestinos_de_Detención-El_Banco;-34.72410716102484;-58.51494245225535;3;3;1;0;1;2
+Buenos Aires;La Matanza;CEM;Cementerio de Villegas;Zona_Oeste-Villegas-(Isidro_Casanova);-34.702496004867555;-58.563048879931536;55;47;26;8;34;21
+Buenos Aires;La Plata;CEM;Cementerio de La Plata;Zona_Sur-La_Plata;-34.95748941764096;-57.95396651827783;72;65;38;7;45;27
+Buenos Aires;Lomas de Zamora;CEM;Cementerio de Lomas de Zamora;Zona_Sur-Lomas_de_Zamora;-34.72601763575005;-58.420932793254494;71;68;57;3;60;11
+Buenos Aires;Magdalena;CEM;Cementerio de Magdalena;Zona_Sur-Magdalena;-35.076983602266466;-57.52807495017174;26;22;4;4;8;18
+Buenos Aires;Mar del Plata;CEM;Cementerio Parque;Zona_Sur-Mar_del_Plata;-38.05713608541682;-57.61012515217737;28;25;12;3;15;13
+Buenos Aires;Marcos Paz;CEM;Cementerio de Marcos Paz;Zona_Oeste-Marcos_Paz;-34.78928268944491;-58.853169410373525;2;2;0;0;0;2
+Buenos Aires;Merlo;CEM;Cementerio Santa Mónica;Zona_Oeste-Merlo;-34.71258522398172;-58.71201946826784;26;25;10;1;11;15
+Buenos Aires;Moreno;CEM;Cementerio de Moreno;Zona_Oeste-Moreno;-34.62079226688848;-58.81220433191661;13;13;12;0;12;1
+Buenos Aires;Morón;CEM;Cementerio de Morón;Zona_Oeste-Morón;-34.66085584756317;-58.62555943029171;12;5;0;7;7;5
+Buenos Aires;Olivos;CEM;Cementerio de Olivos;Zona_Norte-Olivos-Vicente_Lopez;-34.51645361646714;-58.50650594952432;11;10;9;1;10;1
+Buenos Aires;Pergamino;CEM;Cementerio de Pergamino;Zona_Norte-Pergamino;-33.89385399266203;-60.59341135123596;2;0;0;2;2;0
+Buenos Aires;San Andrés de Giles;CEM;Cementerio Norte;Zona_Norte-San_Andrés_de_Giles;-34.42393847293452;-59.44723266786669;5;5;5;0;5;0
+Buenos Aires;San Fernando;EP;Descampado al sur del Aeropuerto Internacional de San Fernando;Sitios_Clandestinos_de_Inhumación-Bancalari-San_Fernando;-34.479561003415604;-58.6027288738927;4;4;4;0;4;0
+Buenos Aires;San Martín;CEM;Cementerio de General San Martín;Zona_Norte-San_Martín;-34.5840916396207;-58.550919955974734;59;52;30;7;37;22
+Buenos Aires;San Nicolás de los Arroyos;CEM;Cementerio de San Nicolás de los Arroyos;Zona_Norte-San_Nicolás;-33.32021563376385;-60.22996990391279;1;0;0;1;1;0
+Buenos Aires;Verónica;CEM;Cementerio de Verónica;Zon_Sur-Verónica;-35.41550588529599;-57.34740877498149;2;2;0;0;0;2
+Buenos Aires;Villa Gesell;CEM;Cementerio de Villa Gesell;Costa-Villa_Gesell;-37.23410232047399;-57.040405567520686;1;1;1;0;1;0
+Buenos Aires;Virreyes;CEM;Cementerio de San Fernando;Zona_Norte-Virreyes;-34.456993293050694;-58.551140517373184;11;8;7;3;10;1
+Buenos Aires;San Miguel;CEM;Cementerio San Antonio de Padua;Zona_Oeste-San Miguel;-3,45376E+15;-5,8739E+16;1;0;0;1;1;0
+Catamarca;San Fernando del Valle de Catamarca;CEM;Cementerio Fray Mamerto Esquiú;Catamarca-San_Fernando_del_Valle_de_Catamarca;-28.48348411820645;-65.7734381863223;5;4;2;1;3;2
+Chaco;Quitilipi;CEM;Cementerio Jesús Misericordioso;Chaco_Quitilipi;-26.8819192747269;-60.236500992300236;6;6;0;0;0;6
+Chaco;Resistencia;CEM;Cementerio San Francisco Solano;Chaco_San_Francisco_de_Solano;-27.455433750849195;-59.00806095786003;2;2;2;0;2;0
+Chubut;Villa Futalaufquen;CEM;Cementerio de Villa Futalaufquen;Chubut_Villa_Futalaufquen;-42.90384560246743;-71.29244371362547;1;1;0;0;0;1
+Ciudad Autónoma de Buenos Aires;Ciudad Autónoma de Buenos Aires;CEM;Cementerio de la Chacarita;Buenos_Aires-Chacarita;-34.587608458121245;-58.45617293861763;47;11;5;36;41;6
+Córdoba;Cosquín;CEM;Cementerio de Cosquín;Córdoba-Cosquín;-31.238661221007995;-64.47445327455485;2;2;2;0;2;0
+Córdoba;Malagueño;CCD;Ex CCD La Perla;Córdoba-CCD_La_Perla-(Malagueño);-31.388743633166914;-64.3977630624337;16;16;16;0;16;0
+Córdoba;San Vicente;CEM;Cementerio San Vicente;Córdoba-San_Vicente;-31.41886227618794;-64.1256279568018;88;86;19;2;21;67
+Córdoba;Unquillo;EP;Pozo de agua;Córdoba-Unquillo;-31.256919957634718;-64.32718198026457;1;1;0;0;0;1
+Corrientes;Empedrado;CEM;Cementerio San Roque;Corrientes-Empedrado;-27.963177853499783;-58.81498044611249;9;9;3;0;3;6
+Corrientes;Laguna Brava;CEM;Cementerio San Isidro;Corrientes-Laguna_Brava;-27.7000055742234;-59.01432075166856;2;2;0;0;0;2
+Corrientes;Mercedes;CEM;Cementerio La Merced;Corrientes-La_Merced;-29.156140038001837;-58.082818213663266;2;2;1;0;1;1
+Corrientes;Paso de los Libres;CEM;Cementerio de la Santa Cruz;Corrientes-Paso_de_los_Libres;-29.725615334627122;-57.09814329073208;1;1;1;0;1;0
+Entre Ríos;Gualeguaychú;CEM;Cementerio Norte;Entre_Ríos-Gualeguaychú;-32.99333519409497;-58.53783566631421;2;2;0;0;0;2
+Entre Ríos;Paraná;CEM;Cementerio Santísima Trinidad;Entre_Ríos-Paraná;-31.729699139374063;-60.54173822986611;2;2;1;0;1;1
+Entre Ríos;Villa Paranacito;CEM;Cementerio de Villa Paranacito;Entre_Ríos-Villa_Paranacito;-33.70676216814401;-58.6358349988252;2;2;0;0;0;2
+Jujuy;Yala;CEM;Cementerio de Yala;Jujuy-Yala;-24.12542443618269;-65.39833493211111;9;9;1;0;1;8
+La Pampa;Alpachiri;CEM;Cementerio de Alpachiri;La_Pampa-Alpachiri;-37.39368290304952;-63.75850487691997;1;1;1;0;1;0
+La Pampa;General Pico;CEM;Cementerio de General Pico;La_Pampa-General_Pico;-35.64380372945112 ;-63.77656997443476;2;2;0;0;0;2
+Mendoza;Mendoza;CEM;Cementerio de la ciudad de Mendoza;Mendoza-Mendoza;-32.85726427363029;-68.83684020393319;80;79;2;1;3;77
+Misiones;Puerto Esperanza;CEM;Cementerio de Puerto Esperanza;Misiones-Puerto_Esperanza;-26.013754790698965;-54.62896385130831;1;1;0;0;0;1
+Misiones;Santa Ana;CEM;Cementerio de Santa Ana;Misiones-Santa_Ana;-27.391018299999985;-55.58103800000001;2;2;0;0;0;2
+Paraguay;Luque;CCD;Agrupación Especializada;Paraguay-Agrupación_Especializada;-25.307018002438323;-57.64910220422929;4;4;3;0;3;1
+Salta;Salta;CEM;Cementerio de la Santa Cruz;Salta-Salta;-24.79630058278378;-65.39545899895512;3;3;0;0;0;3
+San Luis;Ciudad de San Luis;CEM;Cementerio del Rosario;San_Luis-De_la_Toma;-33.308073334367755;-66.35051159999998;1;1;1;0;1;0
+Santa Fe;Barrancas;CEM;Cementerio de Barrancas;Santa_Fe-Barrancas;-32.2684427617184;-60.97088848417538;2;2;2;0;2;0
+Santa Fe;Campo Andino;CEM;Cementerio San Juan Bautista;Santa_Fe-Andino;-32.65689117208671;-60.85452197432485;1;1;1;0;1;0
+Santa Fe;Coronda;CEM;Cementerio de Coronda;Santa_Fe-Coronda;-31.98936727897024;-60.972507418524344;4;4;4;0;4;0
+Santa Fe;Fray Luis Beltrán;CEM;Cementerio de la Resurrección;Santa_Fe-Fray_Luis_Beltrán;-32.77579429053389;-60.74538486052946;1;1;0;0;0;1
+Santa Fe;Melincué;CEM;Cementerio de Melincué;Santa_Fe-Melincué;-33.6642252843514;-61.471012359816825;2;2;2;0;2;0
+Santa Fe;Pavón Arriba;CEM;Cementerio de Pavón Arriba;Santa_Fe-Pavón_Arriba;-33.30255464649875;-60.84061099499515;1;1;1;0;1;0
+Santa Fe;Rosario;CEM;Cementerio La Piedad;Santa_Fe-La_Piedad;-32.960959839779704;-60.711452742671376;151;127;27;24;51;100
+Santa Fe;San Lorenzo;CEM;Cementerio de San Lorenzo;Santa_Fe-San_Lorenzo;-32.74641022836691;-60.7638643323239;4;4;4;0;4;0
+Santa Fe;San Pedro;CCD;Campo Militar San Pedro;Santa_Fe-Campo_San_Pedro;-31.337921222704395;-60.56365508466294;8;8;6;0;6;2
+Santa Fe;Santa Fe;CEM;Cementerio Santa Fe de la Vera Cruz;Santa_Fe-Santa_Fe;-31.615745002223143;-60.720260640357864;13;9;9;4;13;0
+Santa Fe;Timbúes;CEM;Cementerio Jesús María;Santa_Fe-Timbúes;-32.66025304126341;-60.848063274324666;2;2;1;0;1;1
+Santa Fe;Maciel;CEM;Cementerio de Maciel;Santa_Fe-Maciel;-32.460714;-60.912963;1;1;1;0;1;0
+Santiago del Estero;Caloj Pozo;EP;Margen del canal de Dios;Santiago_del_Estero-Pozo_Caloj;-28.46618981919787;-63.673363379771565;1;1;0;0;0;1
+Santiago del Estero;Clodomira;CEM;Cementerio La Esperanza;Santiago_del_Estero-Clodomira;-27.50513574145413;-64.13573135886301;1;1;1;0;1;0
+Santiago del Estero;Pozo Hondo;CEM;Cementerio de Pozo Hondo;Santiago_del_Estero-Pozo_Hondo;-27.173623277909467;-64.49109888589922;1;1;1;0;1;0
+Santiago del Estero;Villa La Punta;CEM;Cementerio San Gabriel;Santiago_del_Estero-Villa_la_Punta;-28.378284004164605;-64.79254867028821;1;1;0;0;0;1
+Tucumán;Choromoro;CEM;Cementerio de Choromoro;Tucumán_Choromoro;-26.440268130825935;-65.30771788985797;2;2;1;0;1;1
+Tucumán;Las Talitas;CCD;Ex CCD Arsenal Miguel de Azcuénaga;Tucumán-CCD_Arsenales;-26.77106796629999;-65.21577755334052;14;14;14;0;14;0
+Tucumán;San Miguel de Tucumán;CEM;Cementerio Norte;Tucumán-Cementerio_Norte;-26.80477202872087;-65.18869054567071;73;69;8;4;12;61
+Tucumán;Simoca;EP;Margen del río Medina;Tucumán-Río_Medina;-27.5190169257508;-65.20951336886576;11;11;0;0;0;11
+Tucumán;Tacanas;CEM;Cementerio de Tacanas;Tucumán-Tacanas;-27.13301399599374;-64.81513799155498;4;4;3;0;3;1
+Tucumán;Tafí Viejo;EP;Pozo de Vargas;Tucumán-Pozo_de_Vargas;-26.783902525232268;-65.24984820556912;149;149;121;0;121;28
+Uruguay;Colonia del Sacramento;CEM;Cementerio de Colonia del Sacramento;Uruguay-Colonia;-34.47070112977278;-57.83637195347989;8;8;5;0;5;3
+Uruguay;Montevideo;CEM;Cementerio Parque del Norte;Uruguay-Cementerio_del_Norte;-34.84572367413997;-56.17609150384375;1;0;0;1;1;0
+Uruguay;Rocha;CEM;Cementerio de Rocha;Uruguay-Rocha;-34.49262562752319;-54.32912689368437;3;1;1;2;3;0
