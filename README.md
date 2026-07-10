@@ -47,7 +47,7 @@ La veracidad de la información utilizada se encuentra ligada mayormente al cont
 | Centros Clandestinos de Detención durante la dictadura cívico-militar entre 1976 y 1982 | Pendiente | https://observatorioconurbano.ungs.edu.ar/?p=5392 | |
 | Paquete R - presentes | Procesado | https://diegokoz.github.io/presentes/ | [Ver glosario](/docs/base_de_datos/paquete_r_presentes.md) |
 | Documentos desclasificados EE.UU. | Pendiente |https://desclasificados.org.ar/ | |
-| Datos de represores y victimas | Pendiente | https://derechoshumanos.mjus.gba.gob.ar/imputado/33-balmaceda-roberto-armando/ | |
+| Datos de represores, victimas, sentencias y ccds en GBA | Procesado | https://derechoshumanos.mjus.gba.gob.ar/consulta-interactiva/ | |
 | Imputados | Pendiente | https://www.mpf.gob.ar/plan-condor/imputados/zona-iv-santiago-omar-riveros/ | |
 | Archivo provincial de la memoria | Pendiente | https://apm.gov.ar/presentes/detalle/2716 | |
 | Semblanza de las dictaduras civico-militares del 55' al 83' | Pendiente | https://robertobaschetti.com/ | |
