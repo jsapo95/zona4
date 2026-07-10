@@ -51,7 +51,7 @@ La veracidad de la información utilizada se encuentra ligada mayormente al cont
 | Imputados | Pendiente | https://www.mpf.gob.ar/plan-condor/imputados/zona-iv-santiago-omar-riveros/ | |
 | Archivo provincial de la memoria | Pendiente | https://apm.gov.ar/presentes/detalle/2716 | |
 | Semblanza de las dictaduras civico-militares del 55' al 83' | Pendiente | https://robertobaschetti.com/ | |
-| Leyes de la dictadura | Reprocesar | https://www.lasleyesdeladictadura.com.ar/index.php?a=PublicView&name=LeyesPublic | |
+| Leyes de la dictadura | Procesado | https://www.lasleyesdeladictadura.com.ar/index.php?a=PublicView&name=LeyesPublic | |
 | Condor Atlanta | Pendiente | https://condor-atlanta.org/ | |
 | Juicios de Lesa Humanidad | Procesado | http://www.juiciosdelesahumanidad.ar/ | |
 | Nizkor | Pendiente | https://www.derechos.org/nizkor/arg/ | |
