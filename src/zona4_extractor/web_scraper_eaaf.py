@@ -13,7 +13,7 @@ logger = logging.getLogger("EAAFDownloader")
 # Mapeo de configuraciones: URL de origen -> Ruta de destino local
 DOWNLOAD_CONFIG = {
     "https://labusqueda.eaaf.org.ar/get-csv-cors.php?file=Consolidado_Micrositio_EAAFIdentificados_DATASET.csv": "data/raw/eaaf_identificados.csv",
-    "https://labusqueda.eaaf.org.ar/get-csv-cors.php?file=Consolidado_Micrositio_EAAFLugares_DATASET.csv": "data/raw/eaaf_lugares.csv"
+    "https://labusqueda.eaaf.org.ar/wp-content/uploads/2024/11/consolidadoLugaresFix.csv": "data/raw/eaaf_lugares.csv"
 }
 
 def descargar_archivo_csv(url: str, ruta_destino: str, timeout: int = 30) -> bool:
