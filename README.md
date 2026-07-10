@@ -59,6 +59,7 @@ La veracidad de la información utilizada se encuentra ligada mayormente al cont
 | Webinar IA y DDHH | Pendiente | https://www.cipdh.gob.ar/inteligencia-artificial-y-derechos-humanos/ | |
 | Juicios | Pendiente | https://www.mpf.gob.ar/lesa/jurisprudencia/ | |
 | Juicios PBA | Pendiente | https://derechoshumanos.mjus.gba.gob.ar/lesa-humanidad/ | |
+| EAFF La Busqueda | Procesado | https://labusqueda.eaaf.org.ar/ | |
 
 
 ## Procesamiento de los datos y Arquitectura Decoplada
