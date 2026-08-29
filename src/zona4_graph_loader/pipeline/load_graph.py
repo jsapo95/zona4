@@ -15,6 +15,8 @@ from zona4_graph_loader.builders.eaaf_lugares import build_eaaf_lugares_rows
 from zona4_graph_loader.builders.juicios_condenados import build_juicios_condenados_rows
 from zona4_graph_loader.builders.lugares import build_lugar_layer_rows, build_safe_place_merge_rows
 from zona4_graph_loader.builders.minjus_ccds import build_minjus_ccds_rows
+from zona4_graph_loader.builders.minjus_imputados import build_minjus_imputados_rows
+from zona4_graph_loader.builders.minjus_sentencias import build_sentencias_index
 from zona4_graph_loader.builders.personas import build_detalles_rows, build_nietx_protagonistas
 from zona4_graph_loader.builders.relaciones import build_detalles_rel_rows, build_nietx_rel_rows
 from zona4_graph_loader.config import get_config
@@ -150,6 +152,17 @@ def run_load(args: argparse.Namespace) -> None:
             existing_ccds=ccds_existentes,
         )
         _merge_datasets(consolidated, minjus_ccd_dataset)
+
+        sentencias_index = build_sentencias_index(
+            read_raw_json("derechos_humanos_minjus_gba_sentencias.json")
+        )
+        _merge_datasets(
+            consolidated,
+            build_minjus_imputados_rows(
+                read_raw_json("derechos_humanos_minjus_gba_imputados.json"),
+                sentencias_index=sentencias_index,
+            ),
+        )
 
     # 3. Load and merge direct static sources
     if not args.skip_direct_sources:
