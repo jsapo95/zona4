@@ -17,6 +17,7 @@ from zona4_graph_loader.builders.lugares import build_lugar_layer_rows, build_sa
 from zona4_graph_loader.builders.minjus_ccds import build_minjus_ccds_rows
 from zona4_graph_loader.builders.minjus_imputados import build_minjus_imputados_rows
 from zona4_graph_loader.builders.minjus_sentencias import build_sentencias_index
+from zona4_graph_loader.builders.minjus_victimas import build_minjus_victimas_rows
 from zona4_graph_loader.builders.personas import build_detalles_rows, build_nietx_protagonistas
 from zona4_graph_loader.builders.relaciones import build_detalles_rel_rows, build_nietx_rel_rows
 from zona4_graph_loader.config import get_config
@@ -160,6 +161,14 @@ def run_load(args: argparse.Namespace) -> None:
             consolidated,
             build_minjus_imputados_rows(
                 read_raw_json("derechos_humanos_minjus_gba_imputados.json"),
+                sentencias_index=sentencias_index,
+            ),
+        )
+        _merge_datasets(
+            consolidated,
+            build_minjus_victimas_rows(
+                read_raw_json("derechos_humanos_minjus_gba_victimas.json"),
+                ccd_key_by_slug=minjus_ccd_keys,
                 sentencias_index=sentencias_index,
             ),
         )
