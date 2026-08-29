@@ -23,6 +23,11 @@ def parse_args() -> argparse.Namespace:
         help="No crea relaciones CANDIDATO_MERGE de reconciliacion asistida.",
     )
     parser.add_argument(
+        "--skip-identity-resolution",
+        action="store_true",
+        help="No reconcilia identidades entre fuentes antes de cargar.",
+    )
+    parser.add_argument(
         "--skip-qa-report",
         action="store_true",
         help="No imprime el reporte QA de cierre al finalizar la carga.",

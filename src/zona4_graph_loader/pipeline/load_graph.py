@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 from typing import Any, Dict, List, LiteralString, cast
 
@@ -40,6 +41,7 @@ from zona4_graph_loader.db.cypher import (
 )
 from zona4_graph_loader.db.qa import run_qa_report
 from zona4_graph_loader.db.writer import run_batches
+from zona4_graph_loader.domain.identity_resolution import resolve_identities
 from zona4_graph_loader.domain.roles import normalize_roles
 from zona4_graph_loader.io.sources_ingestor import empty_canonical_dataset, load_direct_sources
 from zona4_graph_loader.io.files import CCDS_PATH, DETALLES_PATH, NIETXS_PATH, read_json
@@ -122,10 +124,24 @@ def run_load(args: argparse.Namespace) -> None:
             print("sources_loaded: 0")
         _merge_datasets(consolidated, direct_rows)
 
-    # 4. Extract entities and relationships from the unificated CDM for Cypher execution
+    # 3.5 Reconcile identities across sources before writing anything
     for persona in consolidated.get("personas", []):
         persona["roles"] = normalize_roles(persona)
 
+    identity_candidatos: List[Dict[str, Any]] = []
+    if not args.skip_identity_resolution:
+        identity_report = resolve_identities(consolidated)
+        identity_candidatos = identity_report.candidatos
+        print(
+            f"identity_resolution: {len(identity_report.merges)} merges, "
+            f"{len(identity_candidatos)} candidatos"
+        )
+        dump_path = Path("data/processed/identity_merges.json")
+        dump_path.parent.mkdir(parents=True, exist_ok=True)
+        with dump_path.open("w", encoding="utf-8") as f:
+            json.dump(identity_report.merges, f, ensure_ascii=False, indent=2)
+
+    # 4. Extract entities and relationships from the unificated CDM for Cypher execution
     personas_detalles = [
         p for p in consolidated.get("personas", []) if "NIETX" not in p["roles"]
     ]
@@ -193,6 +209,7 @@ def run_load(args: argparse.Namespace) -> None:
         else []
     )
     v3_candidates = build_v3_candidate_rows(personas_detalles, rel_familiares, rel_personas)
+    v3_candidates.extend(identity_candidatos)
 
     # 6. Ingest into Neo4j
     cfg = get_config()
