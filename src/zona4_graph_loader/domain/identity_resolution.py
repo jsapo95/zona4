@@ -23,6 +23,10 @@ SOURCE_PRIORITY = [
 FUZZY_THRESHOLD = 0.96
 MAX_FUZZY_CANDIDATES = 3
 
+# Campos que _absorber ya trata con lógica propia: no se pisan con el volcado
+# genérico de campos de `otro`.
+_ABSORBER_CAMPOS_ESPECIALES = {"persona_key", "nombre", "fuente", "roles", "claves_alt", "genero"}
+
 
 @dataclass
 class IdentityReport:
@@ -38,15 +42,34 @@ def _priority(fuente: Optional[str]) -> int:
 
 
 def _canonical_of(personas: List[Dict[str, Any]]) -> Dict[str, Any]:
-    return min(personas, key=lambda p: (_priority(p.get("fuente")), p.get("persona_key", "")))
+    return min(personas, key=lambda p: (_priority(p.get("fuente")), p["persona_key"]))
 
 
 def _fechas_confirman(a: Dict[str, Any], b: Dict[str, Any]) -> Optional[str]:
+    """Devuelve el campo de fecha que confirma que `a` y `b` son la misma persona.
+
+    Evalúa AMBOS campos de fecha. Si alguno está presente en los dos registros y
+    los valores no coinciden, es un veto: se devuelve None sin importar si el
+    otro campo sí coincide. Solo si ningún campo compartido contradice al otro
+    se devuelve el primer campo que efectivamente confirmó la coincidencia.
+    """
+    confirmaciones: List[str] = []
     for campo in ("fecha_nacimiento", "fecha_secuestro"):
         va, vb = a.get(campo), b.get(campo)
-        if va and vb and va == vb:
-            return campo
-    return None
+        if va and vb:
+            if va != vb:
+                return None
+            confirmaciones.append(campo)
+    return confirmaciones[0] if confirmaciones else None
+
+
+def _fechas_contradicen(a: Dict[str, Any], b: Dict[str, Any]) -> bool:
+    """True si algún campo de fecha presente en ambos registros no coincide."""
+    for campo in ("fecha_nacimiento", "fecha_secuestro"):
+        va, vb = a.get(campo), b.get(campo)
+        if va and vb and va != vb:
+            return True
+    return False
 
 
 def _absorber(canonico: Dict[str, Any], otro: Dict[str, Any]) -> None:
@@ -66,9 +89,14 @@ def _absorber(canonico: Dict[str, Any], otro: Dict[str, Any]) -> None:
 
     canonico["roles"] = sorted(set(canonico.get("roles") or []) | set(otro.get("roles") or []))
 
-    for campo in ("fecha_nacimiento", "fecha_secuestro", "registro", "complice_tipo"):
-        if not canonico.get(campo) and otro.get(campo):
-            canonico[campo] = otro[campo]
+    # Cualquier otro campo de `otro`, ausente o falsy en `canonico`, se completa.
+    # Los campos con manejo propio (arriba, o género abajo) quedan afuera para
+    # no pisarlos dos veces.
+    for campo, valor in otro.items():
+        if campo in _ABSORBER_CAMPOS_ESPECIALES:
+            continue
+        if not canonico.get(campo) and valor:
+            canonico[campo] = valor
 
     if canonico.get("genero") in (None, "INDETERMINADO") and otro.get("genero") not in (
         None, "INDETERMINADO",
@@ -79,10 +107,19 @@ def _absorber(canonico: Dict[str, Any], otro: Dict[str, Any]) -> None:
 def _reescribir_referencias(dataset: CanonicalDataset, key_map: Dict[str, str]) -> None:
     if not key_map:
         return
-    for fila in dataset.get("relaciones_interpersonales", []):
-        for campo in ("source_key", "target_key"):
-            if fila.get(campo) in key_map:
-                fila[campo] = key_map[fila[campo]]
+
+    relaciones = dataset.get("relaciones_interpersonales")
+    if relaciones:
+        for fila in relaciones:
+            for campo in ("source_key", "target_key"):
+                if fila.get(campo) in key_map:
+                    fila[campo] = key_map[fila[campo]]
+        # Un merge puede dejar una relación apuntando a sí misma (ambos extremos
+        # resueltos al mismo canónico); esa fila sería un self-loop en el grafo.
+        dataset["relaciones_interpersonales"] = [
+            fila for fila in relaciones if fila.get("source_key") != fila.get("target_key")
+        ]
+
     for fila in dataset.get("eventos_espaciales", []):
         if fila.get("persona_key") in key_map:
             fila["persona_key"] = key_map[fila["persona_key"]]
@@ -131,28 +168,72 @@ def resolve_identities(dataset: CanonicalDataset) -> IdentityReport:
         if len(grupo) < 2:
             continue
 
-        clusters: List[List[Dict[str, Any]]] = []
-        for persona in sorted(grupo, key=lambda p: (_priority(p.get("fuente")), p["persona_key"])):
-            destino = None
-            for cluster in clusters:
-                if any(p.get("fuente") == persona.get("fuente") for p in cluster):
-                    continue
-                if any(_fechas_confirman(p, persona) for p in cluster):
-                    destino = cluster
-                    break
-            if destino is None:
-                clusters.append([persona])
-            else:
-                destino.append(persona)
+        ordenado = sorted(grupo, key=lambda p: (_priority(p.get("fuente")), p["persona_key"]))
+        n = len(ordenado)
 
-        for cluster in clusters:
-            if len(cluster) < 2:
-                continue
-            canonico = _canonical_of(cluster)
-            for otro in cluster:
-                if otro is canonico:
+        # Grafo de confirmación: hay arista entre i y j solo si vienen de
+        # fuentes distintas Y una fecha los confirma sin contradicción.
+        confirmado = [[False] * n for _ in range(n)]
+        for i in range(n):
+            for j in range(i + 1, n):
+                if ordenado[i].get("fuente") == ordenado[j].get("fuente"):
                     continue
-                motivo = _fechas_confirman(canonico, otro) or "fecha_confirmada"
+                if _fechas_confirman(ordenado[i], ordenado[j]) is not None:
+                    confirmado[i][j] = confirmado[j][i] = True
+
+        # Componentes conexas de ese grafo.
+        visitado = [False] * n
+        componentes: List[List[int]] = []
+        for i in range(n):
+            if visitado[i]:
+                continue
+            visitado[i] = True
+            pila = [i]
+            componente = [i]
+            while pila:
+                actual = pila.pop()
+                for vecino in range(n):
+                    if confirmado[actual][vecino] and not visitado[vecino]:
+                        visitado[vecino] = True
+                        pila.append(vecino)
+                        componente.append(vecino)
+            componentes.append(sorted(componente))
+
+        for indices in componentes:
+            if len(indices) < 2:
+                continue
+
+            # Una componente conexa solo fusiona si es un clique completo: cada
+            # par dentro de ella debe estar confirmado. Si un tercer registro la
+            # conecta pero no todos los pares se confirman entre sí (o alguno
+            # comparte fuente), es una componente ambigua: nadie se fusiona y
+            # todos quedan disponibles para la revisión humana como candidatos.
+            es_clique = all(
+                confirmado[a][b]
+                for pos, a in enumerate(indices)
+                for b in indices[pos + 1:]
+            )
+            if not es_clique:
+                continue
+
+            cluster = [ordenado[i] for i in indices]
+            canonico = _canonical_of(cluster)
+            otros = [p for p in cluster if p is not canonico]
+
+            # El motivo de cada merge se congela ANTES de tocar `canonico`: una
+            # vez que `_absorber` empieza a mutarlo, comparar contra el estado
+            # mutado ya no refleja lo que realmente confirmó la fusión.
+            motivos: List[str] = []
+            for otro in otros:
+                motivo = _fechas_confirman(canonico, otro)
+                if motivo is None:
+                    raise ValueError(
+                        "Inconsistencia interna: clique confirmado sin fecha entre "
+                        f"{canonico['persona_key']!r} y {otro['persona_key']!r}"
+                    )
+                motivos.append(motivo)
+
+            for otro, motivo in zip(otros, motivos):
                 _absorber(canonico, otro)
                 key_map[otro["persona_key"]] = canonico["persona_key"]
                 absorbidas.add(otro["persona_key"])
@@ -163,16 +244,25 @@ def resolve_identities(dataset: CanonicalDataset) -> IdentityReport:
                 })
 
         # Los que quedaron sin fusionar dentro del bloque, pero vienen de fuentes
-        # distintas, son candidatos de confianza media.
-        sobrevivientes = [p for p in grupo if p["persona_key"] not in absorbidas]
+        # distintas, son candidatos para revisión humana. Se clasifican una sola
+        # vez: si sus fechas contradicen directamente, la etiqueta lo advierte;
+        # si simplemente no hay fecha que confirme ni contradiga, es el caso
+        # "mismo nombre sin fecha" de siempre.
+        sobrevivientes = [p for p in ordenado if p["persona_key"] not in absorbidas]
         for i, a in enumerate(sobrevivientes):
             for b in sobrevivientes[i + 1:]:
                 if a.get("fuente") == b.get("fuente"):
                     continue
-                report.candidatos.append(
-                    _candidato(a["persona_key"], b["persona_key"],
-                               "nombre_exacto_sin_fecha", 0.9, slug, "media")
-                )
+                if _fechas_contradicen(a, b):
+                    report.candidatos.append(
+                        _candidato(a["persona_key"], b["persona_key"],
+                                   "nombre_exacto_fecha_contradictoria", 0.5, slug, "baja")
+                    )
+                else:
+                    report.candidatos.append(
+                        _candidato(a["persona_key"], b["persona_key"],
+                                   "nombre_exacto_sin_fecha", 0.9, slug, "media")
+                    )
 
     dataset["personas"] = [p for p in personas if p["persona_key"] not in absorbidas]
     _reescribir_referencias(dataset, key_map)

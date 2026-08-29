@@ -209,7 +209,6 @@ def run_load(args: argparse.Namespace) -> None:
         else []
     )
     v3_candidates = build_v3_candidate_rows(personas_detalles, rel_familiares, rel_personas)
-    v3_candidates.extend(identity_candidatos)
 
     # 6. Ingest into Neo4j
     cfg = get_config()
@@ -282,6 +281,10 @@ def run_load(args: argparse.Namespace) -> None:
         # Ingest Candidate merges
         if not args.skip_v3_candidates:
             run_batches(session, CYPHER_UPSERT_CANDIDATO_MERGE, v3_candidates, "v3_candidatos_merge", BATCH_SIZE)
+        if not args.skip_identity_resolution:
+            run_batches(
+                session, CYPHER_UPSERT_CANDIDATO_MERGE, identity_candidatos, "identity_candidatos", BATCH_SIZE
+            )
 
         # Run QA closure report
         if not args.skip_qa_report:

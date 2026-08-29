@@ -167,3 +167,112 @@ def test_dataset_sin_personas_no_falla():
     report = resolve_identities(dataset)
     assert report.merges == []
     assert report.candidatos == []
+
+
+def test_cadena_transitiva_sin_clique_no_mergea():
+    """A-B comparten fecha_nacimiento y B-C comparten fecha_secuestro, pero A y
+    C no tienen ningún campo de fecha en común (A no registra fecha_secuestro,
+    C no registra fecha_nacimiento): no hay evidencia directa entre ellos, ni a
+    favor ni en contra. La componente conexa A-B-C (conectada solo a través de
+    B) no es un clique completo porque falta la arista A-C, así que ninguno de
+    los tres debe fusionarse. Bajo el criterio pairwise viejo ("admite si CUALQUIER
+    miembro del cluster confirma"), los tres habrían colapsado en un solo
+    canónico pese a que A y C jamás se confirmaron entre sí.
+    """
+    dataset = {
+        "personas": [
+            _persona("registro:1", "Marta Alsina", "detalles_personas",
+                     fecha_nacimiento="1950-01-01"),
+            _persona("archivo_memoria:2", "Marta Alsina", "archivo_memoria",
+                     fecha_nacimiento="1950-01-01", fecha_secuestro="1977-06-01"),
+            _persona("minjus_victima:3", "Marta Alsina", "minjus_victimas",
+                     fecha_secuestro="1977-06-01"),
+        ],
+    }
+    report = resolve_identities(dataset)
+    assert len(dataset["personas"]) == 3
+    assert report.merges == []
+
+
+def test_fecha_secuestro_contradictoria_veta_merge_y_marca_candidato():
+    """Mismo nombre y fecha_nacimiento coincidente, pero fecha_secuestro
+    contradictoria: la fecha que no coincide es evidencia de que son dos
+    personas distintas y debe vetar el merge, no solo ser ignorada.
+    """
+    dataset = {
+        "personas": [
+            _persona("registro:1", "Carlos Ibañez", "detalles_personas",
+                     fecha_nacimiento="1945-04-04", fecha_secuestro="1976-03-01"),
+            _persona("minjus_victima:5", "Carlos Ibañez", "minjus_victimas",
+                     fecha_nacimiento="1945-04-04", fecha_secuestro="1978-11-20"),
+        ],
+    }
+    report = resolve_identities(dataset)
+    assert len(dataset["personas"]) == 2
+    assert report.merges == []
+    assert len(report.candidatos) == 1
+    candidato = report.candidatos[0]
+    assert candidato["metodo"] == "nombre_exacto_fecha_contradictoria"
+    assert candidato["metodo"] != "nombre_exacto_sin_fecha"
+    assert candidato["confianza"] == "baja"
+
+
+def test_clique_completo_de_tres_fuentes_mergea_a_un_canonico():
+    """Los tres pares de un trío se confirman mutuamente por una fecha
+    compartida: es un clique completo y la regla más estricta no debe romper
+    este merge legítimo entre tres fuentes distintas.
+    """
+    dataset = {
+        "personas": [
+            _persona("registro:1", "Pedro Suarez", "detalles_personas",
+                     fecha_nacimiento="1948-08-08"),
+            _persona("archivo_memoria:2", "Pedro Suarez", "archivo_memoria",
+                     fecha_nacimiento="1948-08-08"),
+            _persona("minjus_victima:3", "Pedro Suarez", "minjus_victimas",
+                     fecha_nacimiento="1948-08-08"),
+        ],
+    }
+    report = resolve_identities(dataset)
+    assert len(dataset["personas"]) == 1
+    assert dataset["personas"][0]["persona_key"] == "registro:1"
+    assert len(report.merges) == 2
+
+
+def test_merge_que_generaria_self_loop_no_deja_relacion_apuntandose_a_si_misma():
+    dataset = {
+        "personas": [
+            _persona("registro:1", "Rosa Medina", "detalles_personas",
+                     fecha_nacimiento="1952-02-14"),
+            _persona("minjus_victima:2", "Rosa Medina", "minjus_victimas",
+                     fecha_nacimiento="1952-02-14"),
+        ],
+        "relaciones_interpersonales": [
+            # Ambos extremos resuelven al mismo canónico tras el merge: sería
+            # un self-loop si no se filtrara.
+            {"source_key": "registro:1", "target_key": "minjus_victima:2",
+             "tipo": "HERMANA_DE", "fuente": "detalles_personas"},
+        ],
+    }
+    resolve_identities(dataset)
+    assert all(
+        fila["source_key"] != fila["target_key"]
+        for fila in dataset["relaciones_interpersonales"]
+    )
+
+
+def test_absorber_copia_campo_no_listado_y_no_pisa_el_ya_presente():
+    dataset = {
+        "personas": [
+            _persona("registro:1", "Elena Rios", "detalles_personas",
+                     fecha_nacimiento="1958-07-07", ocupacion="Docente"),
+            _persona("minjus_victima:2", "Elena Rios", "minjus_victimas",
+                     fecha_nacimiento="1958-07-07", ocupacion="Estudiante",
+                     nacionalidad="Argentina"),
+        ],
+    }
+    resolve_identities(dataset)
+    superviviente = dataset["personas"][0]
+    # Campo ausente en el canónico: se completa desde el absorbido.
+    assert superviviente["nacionalidad"] == "Argentina"
+    # Campo ya presente en el canónico: no se pisa con el del absorbido.
+    assert superviviente["ocupacion"] == "Docente"
