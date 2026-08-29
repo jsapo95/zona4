@@ -7,6 +7,7 @@ from typing import Any, Dict, List, LiteralString, cast
 
 from neo4j import GraphDatabase, Query
 
+from zona4_graph_loader.builders.archivo_memoria import build_archivo_memoria_rows
 from zona4_graph_loader.builders.base import CanonicalDataset
 from zona4_graph_loader.builders.candidatos import build_v3_candidate_rows
 from zona4_graph_loader.builders.ccds import build_ccd_rows
@@ -46,7 +47,7 @@ from zona4_graph_loader.domain.identity_resolution import resolve_identities
 from zona4_graph_loader.domain.roles import normalize_roles
 from zona4_graph_loader.io.sources_ingestor import empty_canonical_dataset, load_direct_sources
 from zona4_graph_loader.io.files import CCDS_PATH, DETALLES_PATH, NIETXS_PATH, read_json
-from zona4_graph_loader.io.raw_files import read_raw_csv
+from zona4_graph_loader.io.raw_files import read_raw_csv, read_raw_json
 
 
 def _merge_datasets(dest: CanonicalDataset, src: CanonicalDataset) -> None:
@@ -118,6 +119,10 @@ def run_load(args: argparse.Namespace) -> None:
 
     if not args.skip_nuevas_fuentes:
         _merge_datasets(consolidated, build_eaaf_lugares_rows(read_raw_csv("eaaf_lugares.csv")))
+        _merge_datasets(
+            consolidated,
+            build_archivo_memoria_rows(read_raw_json("archivo_memoria_san_martin.json")),
+        )
 
     # 3. Load and merge direct static sources
     if not args.skip_direct_sources:

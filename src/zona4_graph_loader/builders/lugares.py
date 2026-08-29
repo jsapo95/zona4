@@ -5,7 +5,7 @@ import hashlib
 import re
 from collections import Counter, defaultdict
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 from zona4_graph_loader.builders.base import CanonicalDataset
 from zona4_graph_loader.constants import ALIAS_ROOT_PARENT_KEY, DIRECTIONAL_TOKENS
@@ -14,7 +14,7 @@ from zona4_graph_loader.domain.place_norm import extract_specific_address, resol
 from zona4_graph_loader.domain.text_norm import clean_text, slugify_name
 
 
-def _node_from_lugar_key(lugar_key: str) -> Dict[str, str]:
+def node_from_lugar_key(lugar_key: str) -> Dict[str, str]:
     core = lugar_key.split("|", 1)[0]
     parts = core.split(":", 2)
     if len(parts) != 3:
@@ -31,6 +31,40 @@ def _node_from_lugar_key(lugar_key: str) -> Dict[str, str]:
         "nombre": nombre,
         "tipoGeopolitico": tipo,
     }
+
+
+def expand_lugar_ancestors(
+    lugar_key: str,
+    fuente: str,
+) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    """Materializa la cadena de contenedores implícita en un lugar_key.
+
+    `make_lugar_key` codifica la jerarquía como `lugar:TIPO:slug|<parent_key>`,
+    donde el parent_key es a su vez una clave completa. `resolve_place` devuelve
+    sólo el nodo hoja y su parent_key, así que sin esta expansión los nodos padre
+    nunca se crean y las aristas PARTE_DE se pierden.
+    """
+    lugares: List[Dict[str, Any]] = []
+    jerarquias: List[Dict[str, Any]] = []
+
+    actual = lugar_key
+    while actual:
+        nodo = dict(node_from_lugar_key(actual))
+        nodo["pais_code"] = "AR"
+        nodo["fuente"] = fuente
+        nodo["tipo_entidad"] = "Lugar"
+        lugares.append(nodo)
+
+        padre = actual.split("|", 1)[1] if "|" in actual else None
+        if padre:
+            jerarquias.append({
+                "tipo_relacion": "PARTE_DE",
+                "child_key": actual,
+                "parent_key": padre,
+            })
+        actual = padre
+
+    return lugares, jerarquias
 
 
 def build_lugar_layer_rows(
@@ -61,7 +95,7 @@ def build_lugar_layer_rows(
     def ensure_lugar_node(lugar_key: str) -> None:
         if lugar_key in lugares:
             return
-        node = _node_from_lugar_key(lugar_key)
+        node = node_from_lugar_key(lugar_key)
         pais_code = "AR"
         if node["tipoGeopolitico"] == "PAIS" and node["nombre"] != "ARGENTINA":
             pais_code = "XX"
