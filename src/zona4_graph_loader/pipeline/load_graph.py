@@ -14,6 +14,7 @@ from zona4_graph_loader.builders.ccds import build_ccd_rows
 from zona4_graph_loader.builders.eaaf_lugares import build_eaaf_lugares_rows
 from zona4_graph_loader.builders.juicios_condenados import build_juicios_condenados_rows
 from zona4_graph_loader.builders.lugares import build_lugar_layer_rows, build_safe_place_merge_rows
+from zona4_graph_loader.builders.minjus_ccds import build_minjus_ccds_rows
 from zona4_graph_loader.builders.personas import build_detalles_rows, build_nietx_protagonistas
 from zona4_graph_loader.builders.relaciones import build_detalles_rel_rows, build_nietx_rel_rows
 from zona4_graph_loader.config import get_config
@@ -91,6 +92,12 @@ def run_load(args: argparse.Namespace) -> None:
     _merge_datasets(consolidated, build_nietx_rel_rows(nietxs))
     _merge_datasets(consolidated, build_detalles_rel_rows(detalles))
 
+    # minjus_ccd_keys mapea slug de CCD de MinJus -> lugar_key resuelto (propio o
+    # reutilizado de RUVTE). Se inicializa aca, antes de --skip-lugares y
+    # --skip-nuevas-fuentes, para que quede ligado en toda combinacion de flags:
+    # las Tasks 11 y 12 lo consumen para colgar aristas PRESENTE_EN.
+    minjus_ccd_keys: Dict[str, str] = {}
+
     if not args.skip_lugares:
         lugar_layer = build_lugar_layer_rows(
             detalles,
@@ -128,6 +135,21 @@ def run_load(args: argparse.Namespace) -> None:
             consolidated,
             build_juicios_condenados_rows(read_raw_json("juicios_lesa_humanidad_condenados.json")),
         )
+
+        # CCDs de MinJus GBA, deduplicados contra los CCDs de RUVTE ya
+        # mergeados en `consolidated` (bloque de ccd_layer, arriba). El mapa
+        # slug -> lugar_key resultante lo consumen las Tasks 11 y 12 para
+        # colgar aristas PRESENTE_EN sin recurrir a texto libre.
+        ccds_existentes = {
+            l["nombre"]: l["lugar_key"]
+            for l in consolidated.get("lugares", [])
+            if l.get("tipo_entidad") == "Lugar" and l.get("tipoGeopolitico") == "CCD"
+        }
+        minjus_ccd_dataset, minjus_ccd_keys = build_minjus_ccds_rows(
+            read_raw_json("derechos_humanos_minjus_gba_centros_clandestinos.json"),
+            existing_ccds=ccds_existentes,
+        )
+        _merge_datasets(consolidated, minjus_ccd_dataset)
 
     # 3. Load and merge direct static sources
     if not args.skip_direct_sources:
