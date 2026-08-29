@@ -80,3 +80,39 @@ def test_sobre_el_archivo_real():
               if l["tipo_entidad"] == "Lugar" and l["fuente"] == "eaaf_lugares"]
     assert len(sitios) == 91
     assert all(l.get("lat") is not None for l in sitios)
+
+    # Los 91 sitios tienen coordenadas, asi que deben producir 91 direcciones
+    # distintas. Se compara el set de claves (no solo len(direcciones)) para
+    # que una colision que pise una direccion con otra no quede enmascarada.
+    direcciones = [l for l in dataset["lugares"] if l["tipo_entidad"] == "DireccionCCD"]
+    direccion_keys = {d["direccion_ccd_key"] for d in direcciones}
+    assert len(direcciones) == 91
+    assert len(direccion_keys) == 91
+
+
+def test_direccion_key_no_colisiona_entre_sitios_homonimos():
+    # "Cementerio Norte" aparece en el archivo real en Buenos Aires, Entre
+    # Rios y Tucuman: mismo nombre de sitio, distinta jerarquia. La clave de
+    # DireccionCCD no puede salir solo del nombre o los tres se pisarian.
+    fila_ba = dict(
+        FILA_CEM,
+        PROVINCIA="Buenos Aires",
+        LOCALIDAD="San Andres de Giles",
+        **{"LUGAR DE HALLAZGO": "Cementerio Norte"},
+    )
+    fila_er = dict(
+        FILA_CEM,
+        PROVINCIA="Entre Rios",
+        LOCALIDAD="Gualeguaychu",
+        **{"LUGAR DE HALLAZGO": "Cementerio Norte"},
+        Lat="-32.99333519409497",
+        Long="-58.53783566631421",
+    )
+
+    dataset = build_eaaf_lugares_rows([fila_ba, fila_er])
+    direcciones = [l for l in dataset["lugares"] if l["tipo_entidad"] == "DireccionCCD"]
+    sitios = [l for l in dataset["lugares"]
+              if l["tipo_entidad"] == "Lugar" and l["fuente"] == "eaaf_lugares"]
+
+    assert len({d["direccion_ccd_key"] for d in direcciones}) == 2
+    assert len({s["lugar_key"] for s in sitios}) == 2
