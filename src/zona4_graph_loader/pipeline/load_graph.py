@@ -10,6 +10,7 @@ from neo4j import GraphDatabase, Query
 from zona4_graph_loader.builders.base import CanonicalDataset
 from zona4_graph_loader.builders.candidatos import build_v3_candidate_rows
 from zona4_graph_loader.builders.ccds import build_ccd_rows
+from zona4_graph_loader.builders.eaaf_lugares import build_eaaf_lugares_rows
 from zona4_graph_loader.builders.lugares import build_lugar_layer_rows, build_safe_place_merge_rows
 from zona4_graph_loader.builders.personas import build_detalles_rows, build_nietx_protagonistas
 from zona4_graph_loader.builders.relaciones import build_detalles_rel_rows, build_nietx_rel_rows
@@ -45,6 +46,7 @@ from zona4_graph_loader.domain.identity_resolution import resolve_identities
 from zona4_graph_loader.domain.roles import normalize_roles
 from zona4_graph_loader.io.sources_ingestor import empty_canonical_dataset, load_direct_sources
 from zona4_graph_loader.io.files import CCDS_PATH, DETALLES_PATH, NIETXS_PATH, read_json
+from zona4_graph_loader.io.raw_files import read_raw_csv
 
 
 def _merge_datasets(dest: CanonicalDataset, src: CanonicalDataset) -> None:
@@ -114,6 +116,9 @@ def run_load(args: argparse.Namespace) -> None:
         )
         _merge_datasets(consolidated, ccd_layer)
 
+    if not args.skip_nuevas_fuentes:
+        _merge_datasets(consolidated, build_eaaf_lugares_rows(read_raw_csv("eaaf_lugares.csv")))
+
     # 3. Load and merge direct static sources
     if not args.skip_direct_sources:
         sources_dir = Path(args.sources_dir)
@@ -140,6 +145,13 @@ def run_load(args: argparse.Namespace) -> None:
         dump_path.parent.mkdir(parents=True, exist_ok=True)
         with dump_path.open("w", encoding="utf-8") as f:
             json.dump(identity_report.merges, f, ensure_ascii=False, indent=2)
+
+    if args.dump_cdm:
+        dump_cdm_path = Path(args.dump_cdm)
+        dump_cdm_path.parent.mkdir(parents=True, exist_ok=True)
+        with dump_cdm_path.open("w", encoding="utf-8") as f:
+            json.dump(consolidated, f, ensure_ascii=False, indent=2)
+        print(f"dump_cdm: {dump_cdm_path}")
 
     # 4. Extract entities and relationships from the unificated CDM for Cypher execution
     personas_detalles = [

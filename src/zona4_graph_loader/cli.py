@@ -84,6 +84,16 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Valida los archivos JSON de origen directo en el directorio de fuentes y sale sin inyectar datos en Neo4j.",
     )
+    parser.add_argument(
+        "--skip-nuevas-fuentes",
+        action="store_true",
+        help="No integra los builders de data/raw/ (EAAF, San Martín, MinJus, condenados).",
+    )
+    parser.add_argument(
+        "--dump-cdm",
+        default=None,
+        help="Vuelca el CDM consolidado a un JSON en la ruta indicada, para auditoría.",
+    )
 
     args = parser.parse_args()
     if args.clean_project and args.clean_all:
