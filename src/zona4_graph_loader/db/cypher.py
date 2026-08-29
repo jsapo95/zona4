@@ -302,7 +302,7 @@ CALL apoc.merge.relationship(
     {origen: row.origen},
     {fecha: coalesce(row.fecha, "DESCONOCIDA")},
     e,
-    {}
+    {fecha: coalesce(row.fecha, "DESCONOCIDA")}
 ) YIELD rel
 RETURN count(*)
 """
@@ -320,7 +320,7 @@ CALL apoc.merge.relationship(
     {origen: row.origen},
     {fecha: coalesce(row.fecha, "DESCONOCIDA")},
     p,
-    {}
+    {fecha: coalesce(row.fecha, "DESCONOCIDA")}
 ) YIELD rel
 RETURN count(*)
 """
