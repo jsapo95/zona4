@@ -21,6 +21,13 @@ QA_QUERIES = {
     "rel_murio_en_total": "MATCH ()-[r:MURIO_EN]->() RETURN count(r) AS value",
     "rel_liberado_en_total": "MATCH ()-[r:LIBERADO_EN]->() RETURN count(r) AS value",
     "candidatos_merge_total": "MATCH ()-[r:CANDIDATO_MERGE]->() RETURN count(r) AS value",
+    "orgs_total": "MATCH (e:Org) RETURN count(e) AS value",
+    "instituciones_total": "MATCH (e:Institución) RETURN count(e) AS value",
+    "profesiones_total": "MATCH (e:Profesión) RETURN count(e) AS value",
+    "cargos_total": "MATCH (e:Cargo) RETURN count(e) AS value",
+    "alias_personas_total": "MATCH (e:AliasPersona) RETURN count(e) AS value",
+    "rel_parte_de_org_total": "MATCH (:Persona)-[r:PARTE_DE]->(:Org) RETURN count(r) AS value",
+    "rel_identifica_a_total": "MATCH ()-[r:IDENTIFICA_A]->() RETURN count(r) AS value",
 }
 
 

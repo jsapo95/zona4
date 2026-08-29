@@ -19,14 +19,21 @@ from zona4_graph_loader.db.cypher import (
     CYPHER_APPLY_SAFE_PLACE_MERGES,
     CYPHER_CLEAN_ALL,
     CYPHER_CLEAN_PROJECT,
+    CYPHER_LINK_ALIAS_PERSONA,
     CYPHER_LINK_DIRECCION_CCD_LUGAR,
+    CYPHER_LINK_PERSONA_ENTIDAD,
     CYPHER_LINK_PERSONA_LUGAR_DYNAMIC,
     CYPHER_LINK_LUGAR_PARENT,
     CYPHER_UPSERT_ALIAS_LUGAR,
+    CYPHER_UPSERT_ALIAS_PERSONA,
     CYPHER_UPSERT_CANDIDATO_MERGE,
+    CYPHER_UPSERT_CARGO,
     CYPHER_UPSERT_DIRECCION_CCD,
+    CYPHER_UPSERT_INSTITUCION,
     CYPHER_UPSERT_LUGARES,
+    CYPHER_UPSERT_ORG,
     CYPHER_UPSERT_PERSONAS,
+    CYPHER_UPSERT_PROFESION,
     CYPHER_UPSERT_PROTAGONISTAS,
     CYPHER_UPSERT_REL_FAMILIAR,
     CYPHER_UPSERT_REL_PERSONA,
@@ -137,6 +144,22 @@ def run_load(args: argparse.Namespace) -> None:
 
     persona_lugar_links = consolidated.get("eventos_espaciales", [])
 
+    entidades = consolidated.get("entidades_contexto", [])
+    orgs = [e for e in entidades if e.get("tipo_entidad") == "Org"]
+    instituciones = [e for e in entidades if e.get("tipo_entidad") == "Institucion"]
+    profesiones = [e for e in entidades if e.get("tipo_entidad") == "Profesion"]
+    cargos = [e for e in entidades if e.get("tipo_entidad") == "Cargo"]
+    alias_personas = [e for e in entidades if e.get("tipo_entidad") == "AliasPersona"]
+
+    rel_contexto = [
+        r for r in consolidated.get("relaciones_contexto", [])
+        if r.get("tipo_relacion") != "IDENTIFICA_A"
+    ]
+    rel_alias_persona = [
+        r for r in consolidated.get("relaciones_contexto", [])
+        if r.get("tipo_relacion") == "IDENTIFICA_A"
+    ]
+
     # 5. Build Safe Place Merges and Identity Reconciliations
     safe_place_merges = (
         build_safe_place_merge_rows(consolidated)
@@ -172,6 +195,15 @@ def run_load(args: argparse.Namespace) -> None:
         # Ingest Person roles
         run_batches(session, CYPHER_UPSERT_PERSONAS, personas_detalles, "personas_detalles", BATCH_SIZE)
         run_batches(session, CYPHER_UPSERT_PROTAGONISTAS, protagonistas, "protagonistas_nietx", BATCH_SIZE)
+
+        # Ingest context entities (V1.2)
+        run_batches(session, CYPHER_UPSERT_ORG, orgs, "orgs", BATCH_SIZE)
+        run_batches(session, CYPHER_UPSERT_INSTITUCION, instituciones, "instituciones", BATCH_SIZE)
+        run_batches(session, CYPHER_UPSERT_PROFESION, profesiones, "profesiones", BATCH_SIZE)
+        run_batches(session, CYPHER_UPSERT_CARGO, cargos, "cargos", BATCH_SIZE)
+        run_batches(session, CYPHER_UPSERT_ALIAS_PERSONA, alias_personas, "alias_personas", BATCH_SIZE)
+        run_batches(session, CYPHER_LINK_PERSONA_ENTIDAD, rel_contexto, "rel_contexto", BATCH_SIZE)
+        run_batches(session, CYPHER_LINK_ALIAS_PERSONA, rel_alias_persona, "rel_alias_persona", BATCH_SIZE)
 
         # Ingest Family and Interpersonal relationships
         run_batches(session, CYPHER_UPSERT_REL_FAMILIAR, rel_familiares, "relaciones_familiares_nietx", BATCH_SIZE)

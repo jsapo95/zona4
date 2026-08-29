@@ -9,6 +9,8 @@ class CanonicalDataset(TypedDict, total=False):
     relaciones_interpersonales: List[Dict[str, Any]]
     eventos_espaciales: List[Dict[str, Any]]
     jerarquias: List[Dict[str, Any]]
+    entidades_contexto: List[Dict[str, Any]]
+    relaciones_contexto: List[Dict[str, Any]]
 
 
 class SourceBuilder(Protocol):

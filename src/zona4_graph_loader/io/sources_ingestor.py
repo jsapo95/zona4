@@ -11,6 +11,8 @@ ALLOWED_SOURCE_KEYS = {
     "relaciones_interpersonales",
     "eventos_espaciales",
     "jerarquias",
+    "entidades_contexto",
+    "relaciones_contexto",
 }
 
 METADATA_KEYS = {"source_id", "description", "version"}

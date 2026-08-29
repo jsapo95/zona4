@@ -23,6 +23,8 @@ CONSTRAINTS = [
     "CREATE INDEX lugar_tipo_ccd_idx IF NOT EXISTS FOR (l:Lugar) ON (l.tipoGeopolitico, l.id_ccd)",
     "CREATE INDEX lugar_geo_idx IF NOT EXISTS FOR (l:Lugar) ON (l.geo_point)",
     "CREATE INDEX alias_lugar_norm_idx IF NOT EXISTS FOR (a:AliasLugar) ON (a.alias_norm)",
+
+    "CREATE CONSTRAINT entidad_contexto_key_unique IF NOT EXISTS FOR (e:EntidadContexto) REQUIRE e.entidad_key IS UNIQUE",
 ]
 
 # UPSERT Base Person (labels dinámicas según row.roles)
@@ -241,4 +243,84 @@ SET src.merged_into = row.target_key,
     src.merge_reason = row.reason,
     src.merge_score = row.score
 DETACH DELETE src
+"""
+
+# --- Entidades de contexto (V1.2) ---
+# Todas llevan la label técnica :EntidadContexto, que sostiene el índice único
+# de entidad_key compartido entre los cinco tipos.
+
+CYPHER_UPSERT_ORG = """
+UNWIND $rows AS row
+MERGE (e:EntidadContexto {entidad_key: row.entidad_key})
+SET e:Org,
+    e.nombre = row.nombre,
+    e.tipoOrg = coalesce(row.tipoOrg, e.tipoOrg),
+    e.fuente = row.fuente
+"""
+
+CYPHER_UPSERT_INSTITUCION = """
+UNWIND $rows AS row
+MERGE (e:EntidadContexto {entidad_key: row.entidad_key})
+SET e:Institución,
+    e.nombre = row.nombre,
+    e.fuente = row.fuente
+"""
+
+CYPHER_UPSERT_PROFESION = """
+UNWIND $rows AS row
+MERGE (e:EntidadContexto {entidad_key: row.entidad_key})
+SET e:Profesión,
+    e.descripcion = row.descripcion,
+    e.fuente = row.fuente
+"""
+
+CYPHER_UPSERT_CARGO = """
+UNWIND $rows AS row
+MERGE (e:EntidadContexto {entidad_key: row.entidad_key})
+SET e:Cargo,
+    e.titulo = row.titulo,
+    e.fuente = row.fuente
+"""
+
+CYPHER_UPSERT_ALIAS_PERSONA = """
+UNWIND $rows AS row
+MERGE (e:EntidadContexto {entidad_key: row.entidad_key})
+SET e:AliasPersona,
+    e.alias = row.alias,
+    e.fuente = row.fuente
+"""
+
+# Persona -> entidad de contexto (PARTE_DE, FUNDO, EJERCIO, ESTUDIO_EN, TRABAJO_EN)
+CYPHER_LINK_PERSONA_ENTIDAD = """
+UNWIND $rows AS row
+MATCH (p:Persona {persona_key: row.persona_key})
+MATCH (e:EntidadContexto {entidad_key: row.entidad_key})
+WITH p, e, row
+CALL apoc.merge.relationship(
+    p,
+    row.tipo_relacion,
+    {origen: row.origen},
+    {fecha: coalesce(row.fecha, "DESCONOCIDA")},
+    e,
+    {}
+) YIELD rel
+RETURN count(*)
+"""
+
+# AliasPersona -> Persona. Va invertida respecto de las demás: la arista
+# IDENTIFICA_A nace en el alias y apunta a la persona real.
+CYPHER_LINK_ALIAS_PERSONA = """
+UNWIND $rows AS row
+MATCH (e:EntidadContexto:AliasPersona {entidad_key: row.entidad_key})
+MATCH (p:Persona {persona_key: row.persona_key})
+WITH p, e, row
+CALL apoc.merge.relationship(
+    e,
+    "IDENTIFICA_A",
+    {origen: row.origen},
+    {fecha: coalesce(row.fecha, "DESCONOCIDA")},
+    p,
+    {}
+) YIELD rel
+RETURN count(*)
 """
