@@ -25,15 +25,21 @@ CONSTRAINTS = [
     "CREATE INDEX alias_lugar_norm_idx IF NOT EXISTS FOR (a:AliasLugar) ON (a.alias_norm)",
 ]
 
-# UPSERT Base Person (labeled: Persona:Victima)
+# UPSERT Base Person (labels dinámicas según row.roles)
 CYPHER_UPSERT_PERSONAS = """
 UNWIND $rows AS row
 MERGE (p:Persona {persona_key: row.persona_key})
 SET p.nombre = row.nombre,
     p.genero = row.genero,
     p.fuente = row.fuente,
-    p.registro = coalesce(row.registro, p.registro)
-SET p:Victima
+    p.registro = coalesce(row.registro, p.registro),
+    p.fecha_nacimiento = coalesce(row.fecha_nacimiento, p.fecha_nacimiento),
+    p.fecha_secuestro = coalesce(row.fecha_secuestro, p.fecha_secuestro),
+    p.claves_alt = coalesce(row.claves_alt, p.claves_alt),
+    p.tipo = coalesce(row.complice_tipo, p.tipo)
+WITH p, row
+CALL apoc.create.addLabels(p, row.roles) YIELD node
+RETURN count(*)
 """
 
 # UPSERT Grandkid Person (labeled: Persona:Nietx)

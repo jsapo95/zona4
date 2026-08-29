@@ -33,6 +33,7 @@ from zona4_graph_loader.db.cypher import (
 )
 from zona4_graph_loader.db.qa import run_qa_report
 from zona4_graph_loader.db.writer import run_batches
+from zona4_graph_loader.domain.roles import normalize_roles
 from zona4_graph_loader.io.sources_ingestor import empty_canonical_dataset, load_direct_sources
 from zona4_graph_loader.io.files import CCDS_PATH, DETALLES_PATH, NIETXS_PATH, read_json
 
@@ -98,11 +99,14 @@ def run_load(args: argparse.Namespace) -> None:
         _merge_datasets(consolidated, direct_rows)
 
     # 4. Extract entities and relationships from the unificated CDM for Cypher execution
+    for persona in consolidated.get("personas", []):
+        persona["roles"] = normalize_roles(persona)
+
     personas_detalles = [
-        p for p in consolidated.get("personas", []) if not p.get("es_nietx")
+        p for p in consolidated.get("personas", []) if "NIETX" not in p["roles"]
     ]
     protagonistas = [
-        p for p in consolidated.get("personas", []) if p.get("es_nietx")
+        p for p in consolidated.get("personas", []) if "NIETX" in p["roles"]
     ]
 
     rel_familiares = [

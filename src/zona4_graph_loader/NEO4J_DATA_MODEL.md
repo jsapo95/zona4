@@ -1,6 +1,6 @@
 # ESPECIFICACIÓN FORMAL DE MODELO DE DATOS EN GRAFOS (NEO4J)
 ## Dominio: Reconstrucción Histórica, Memoria y Derechos Humanos
-## Versión: 1.1 — Rigor de Producción para Agentes de IA
+## Versión: 1.2 — Rigor de Producción para Agentes de IA
 
 Este documento define la arquitectura exacta e inmutable del grafo en Neo4j. Cualquier proceso de extracción, estructuración o ingesta automática de datos ejecutado por un LLM debe adherirse estrictamente a las reglas, etiquetas, relaciones y propiedades declaradas a continuación. Está prohibido inventar o inferir entidades intermedias.
 
@@ -13,6 +13,8 @@ Este documento define la arquitectura exacta e inmutable del grafo en Neo4j. Cua
     - fecha: String (Valor puntual o rango temporal descriptivo).
     - origen: String (Fuente documental, testimonio o registro judicial que valida el vínculo).
 1.3 DIRECCIONALIDAD RÍGIDA: Todas las relaciones poseen un sentido explícito que define la semántica operacional del grafo.
+1.4 ROLES COMO LABELS DINÁMICAS: El cargador asigna las labels de rol a partir
+del campo `roles` del CDM. Una fila sin `roles` recibe `["VICTIMA"]`.
 
 ---
 
@@ -22,6 +24,11 @@ Este documento define la arquitectura exacta e inmutable del grafo en Neo4j. Cua
   * nombre [String] (Obligatorio)
   * genero [String] (Obligatorio)
   * fuente [String] (Obligatorio)
+  * fecha_nacimiento [String ISO] (Opcional, V1.2)
+  * fecha_secuestro [String ISO] (Opcional, V1.2) — se persiste en el nodo cuando
+    no hay lugar asociado que permita construir la arista :SECUESTRADO_EN.
+  * claves_alt [List[String]] (Opcional, V1.2) — claves de otras fuentes
+    absorbidas por la reconciliación de identidades.
 - :Victima (Label de Rol secundario conectado a :Persona)
 - :Represor (Label de Rol secundario conectado a :Persona)
 - :Complice (Label de Rol secundario conectado a :Persona)
