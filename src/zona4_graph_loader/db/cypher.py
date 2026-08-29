@@ -65,11 +65,18 @@ SET t.nombre = coalesce(row.target_nombre, t.nombre),
     t.genero = coalesce(row.target_genero, t.genero, "INDETERMINADO"),
     t.fuente = coalesce(row.target_fuente, t.fuente, row.fuente)
 WITH s, t, row
-CALL apoc.create.relationship(s, row.tipo, {fecha: coalesce(row.fecha, "DESCONOCIDA"), origen: row.fuente}, t) YIELD rel
+CALL apoc.merge.relationship(
+    s,
+    row.tipo,
+    {origen: row.fuente},
+    {fecha: coalesce(row.fecha, "DESCONOCIDA")},
+    t,
+    {fecha: coalesce(row.fecha, "DESCONOCIDA")}
+) YIELD rel
 RETURN count(*)
 """
 
-# Dynamic Person relationship (uses apoc.create.relationship for specific V1.1 labels)
+# Dynamic Person relationship (uses apoc.merge.relationship for specific V1.1 labels, idempotent per origen)
 CYPHER_UPSERT_REL_PERSONA = """
 UNWIND $rows AS row
 MATCH (s:Persona {persona_key: row.source_key})
@@ -78,17 +85,31 @@ SET t.nombre = coalesce(row.target_nombre, t.nombre),
     t.genero = coalesce(row.target_genero, t.genero, "INDETERMINADO"),
     t.fuente = coalesce(row.target_fuente, t.fuente, row.fuente)
 WITH s, t, row
-CALL apoc.create.relationship(s, row.tipo, {fecha: coalesce(row.fecha, "DESCONOCIDA"), origen: row.fuente}, t) YIELD rel
+CALL apoc.merge.relationship(
+    s,
+    row.tipo,
+    {origen: row.fuente},
+    {fecha: coalesce(row.fecha, "DESCONOCIDA")},
+    t,
+    {fecha: coalesce(row.fecha, "DESCONOCIDA")}
+) YIELD rel
 RETURN count(*)
 """
 
-# Dynamic spatiotemporal relationship Persona -> Lugar (uses apoc.create.relationship for dynamic event mapping)
+# Dynamic spatiotemporal relationship Persona -> Lugar (uses apoc.merge.relationship, idempotent per origen)
 CYPHER_LINK_PERSONA_LUGAR_DYNAMIC = """
 UNWIND $rows AS row
 MATCH (p:Persona {persona_key: row.persona_key})
 MATCH (l:Lugar {lugar_key: row.lugar_key})
 WITH p, l, row
-CALL apoc.create.relationship(p, row.tipo_relacion, {fecha: coalesce(row.fecha, "DESCONOCIDA"), origen: row.origen}, l) YIELD rel
+CALL apoc.merge.relationship(
+    p,
+    row.tipo_relacion,
+    {origen: row.origen},
+    {fecha: coalesce(row.fecha, "DESCONOCIDA")},
+    l,
+    {fecha: coalesce(row.fecha, "DESCONOCIDA")}
+) YIELD rel
 RETURN count(*)
 """
 

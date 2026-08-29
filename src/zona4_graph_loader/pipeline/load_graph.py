@@ -53,6 +53,23 @@ def _merge_datasets(dest: CanonicalDataset, src: CanonicalDataset) -> None:
             dest[key].extend(rows)
 
 
+def contar_eventos_huerfanos(dataset: CanonicalDataset) -> List[Dict[str, Any]]:
+    """Eventos espaciales cuyo lugar_key no existe como nodo :Lugar en el CDM.
+
+    El Cypher de eventos hace MATCH sobre el lugar, así que estas filas se
+    descartarían en silencio. Se reportan en vez de perderse.
+    """
+    lugar_keys = {
+        l.get("lugar_key")
+        for l in dataset.get("lugares", [])
+        if l.get("tipo_entidad") == "Lugar"
+    }
+    return [
+        e for e in dataset.get("eventos_espaciales", [])
+        if e.get("lugar_key") not in lugar_keys
+    ]
+
+
 def run_load(args: argparse.Namespace) -> None:
     # 1. Read input JSON files from data/sources
     detalles = read_json(DETALLES_PATH)
@@ -143,6 +160,15 @@ def run_load(args: argparse.Namespace) -> None:
     ]
 
     persona_lugar_links = consolidated.get("eventos_espaciales", [])
+
+    eventos_huerfanos = contar_eventos_huerfanos(consolidated)
+    if eventos_huerfanos:
+        por_tipo: Dict[str, int] = {}
+        for evento in eventos_huerfanos:
+            tipo = evento.get("tipo_relacion", "DESCONOCIDO")
+            por_tipo[tipo] = por_tipo.get(tipo, 0) + 1
+        detalle = ", ".join(f"{k}={v}" for k, v in sorted(por_tipo.items()))
+        print(f"Warning: {len(eventos_huerfanos)} eventos espaciales sin lugar resuelto ({detalle})")
 
     entidades = consolidated.get("entidades_contexto", [])
     orgs = [e for e in entidades if e.get("tipo_entidad") == "Org"]
