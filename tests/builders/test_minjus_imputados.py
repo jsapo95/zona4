@@ -86,10 +86,16 @@ def test_victima_sin_url_no_genera_arista():
 
 
 def test_sentencia_fuera_del_index_usa_origen_generico():
+    """Slug real (`1-quinto-cuerpo-del-ejercito-bayon`) pero índice vacío: el
+    origen se deriva del slug de la sentencia (`minjus_sentencias:{slug}`), no
+    de un literal por-builder. Así, si el mismo hecho también aparece en la
+    víctima (builder minjus_victimas) sobre un índice vacío, ambos coinciden
+    en `fuente` por construcción en lugar de por coincidencia.
+    """
     imputado = dict(IMPUTADO)
     dataset = build_minjus_imputados_rows([imputado], sentencias_index={})
     arista = dataset["relaciones_interpersonales"][0]
-    assert arista["fuente"] == "minjus_imputados"
+    assert arista["fuente"] == "minjus_sentencias:1-quinto-cuerpo-del-ejercito-bayon"
     assert arista["fecha"] == "DESCONOCIDA"
 
 

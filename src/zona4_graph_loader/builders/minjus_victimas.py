@@ -5,7 +5,11 @@ from typing import Any, Dict, List
 from zona4_graph_loader.builders.base import CanonicalDataset
 from zona4_graph_loader.builders.minjus_ccds import slug_ccd
 from zona4_graph_loader.builders.minjus_imputados import slug_persona_minjus
-from zona4_graph_loader.builders.minjus_sentencias import slug_sentencia
+from zona4_graph_loader.builders.minjus_sentencias import FUENTE as FUENTE_SENTENCIAS
+from zona4_graph_loader.builders.minjus_sentencias import (
+    FUENTE_TORTURO_A_SIN_SENTENCIA,
+    slug_sentencia,
+)
 from zona4_graph_loader.domain.date_norm import parse_ddmmyyyy
 from zona4_graph_loader.domain.text_norm import clean_text, slugify_name
 
@@ -33,7 +37,28 @@ def build_minjus_victimas_rows(
     entidades: Dict[str, Dict[str, Any]] = {}
     rel_contexto: List[Dict[str, Any]] = []
 
-    def registrar_entidad(entidad_key, tipo_entidad, campo, valor, tipo_relacion, persona_key):
+    def registrar_entidad(entidad_key, tipo_entidad, campo, valor, tipo_relacion, persona_key, *, slug_valor):
+        """Registra una entidad de contexto y su arista, salvo que `slug_valor`
+        (el slug del valor de origen, antes de mezclarlo con ningún otro
+        componente de la clave) sea vacío.
+
+        MinJus usa el guión largo "–" (y a veces un "." suelto) como placeholder
+        de "sin dato" en varios campos de `datos_personales`, y ninguno de los
+        dos está en el conjunto de centinelas de `clean_text` (que es compartido
+        por todos los builders). `slugify_name` reduce ambos a la cadena vacía,
+        así que un slug vacío es la señal de que el valor de origen no era un
+        dato real. Sin este guardia, esos placeholders se convierten en nodos
+        reales (`org:`, `institucion:`, `profesion:`) que actúan como atractores
+        falsos: docenas de víctimas terminarían compartiendo una "organización"
+        u "oficio" que nunca existió. Para el alias, `entidad_key` lleva además
+        el slug de la persona (`alias_persona:{slug}|{persona_slug}`), que nunca
+        es vacío, así que hay que chequear `slug_valor` (el término del apodo)
+        por separado en vez de derivarlo de `entidad_key`. El fix se localiza
+        aquí, no en `text_norm.clean_text`, porque ese sentinel set es
+        compartido por todos los builders del proyecto.
+        """
+        if not slug_valor:
+            return
         entidades.setdefault(entidad_key, {
             "entidad_key": entidad_key,
             "tipo_entidad": tipo_entidad,
@@ -69,30 +94,44 @@ def build_minjus_victimas_rows(
 
         militancia = clean_text(datos.get("militancia"))
         if militancia:
+            slug_militancia = slugify_name(militancia.upper())
             registrar_entidad(
-                f"org:{slugify_name(militancia.upper())}", "Org", "nombre",
+                f"org:{slug_militancia}", "Org", "nombre",
                 militancia.upper(), "PARTE_DE", persona_key,
+                slug_valor=slug_militancia,
             )
 
         trabajo = clean_text(datos.get("lugar_de_trabajo"))
         if trabajo:
+            slug_trabajo = slugify_name(trabajo.upper())
             registrar_entidad(
-                f"institucion:{slugify_name(trabajo.upper())}", "Institucion", "nombre",
+                f"institucion:{slug_trabajo}", "Institucion", "nombre",
                 trabajo.upper(), "TRABAJO_EN", persona_key,
+                slug_valor=slug_trabajo,
             )
 
+        # `dónde_estudió` son instituciones (facultades, colegios, universidades:
+        # "UBA", "UNLP", "Facultad de Medicina"), no oficios. Un mismo valor
+        # puede coincidir con `lugar_de_trabajo` para alguien que trabajó y
+        # estudió en el mismo sitio: eso es correcto, no una colisión a
+        # desambiguar — un solo nodo Institucion con dos aristas de tipo
+        # distinto (TRABAJO_EN, ESTUDIO_EN).
         estudios = clean_text(datos.get("dónde_estudió"))
         if estudios:
+            slug_estudios = slugify_name(estudios.upper())
             registrar_entidad(
-                f"profesion:{slugify_name(estudios.upper())}", "Profesion", "descripcion",
-                estudios.upper(), "EJERCIO", persona_key,
+                f"institucion:{slug_estudios}", "Institucion", "nombre",
+                estudios.upper(), "ESTUDIO_EN", persona_key,
+                slug_valor=slug_estudios,
             )
 
         apodo = clean_text(datos.get("apodo"))
         if apodo:
+            slug_apodo = slugify_name(apodo)
             registrar_entidad(
-                f"alias_persona:{slugify_name(apodo)}|{slug}", "AliasPersona", "alias",
+                f"alias_persona:{slug_apodo}|{slug}", "AliasPersona", "alias",
                 apodo, "IDENTIFICA_A", persona_key,
+                slug_valor=slug_apodo,
             )
 
         for ccd in item.get("centros_clandestinos") or []:
@@ -110,9 +149,21 @@ def build_minjus_victimas_rows(
 
         for sentencia in item.get("sentencias") or []:
             slug_sent = slug_sentencia(sentencia.get("sentencia_url"))
-            meta = sentencias_index.get(slug_sent or "", {})
-            origen = meta.get("origen") or FUENTE
-            fecha = meta.get("fecha") or "DESCONOCIDA"
+            meta = sentencias_index.get(slug_sent or "")
+            if meta:
+                origen = meta["origen"]
+                fecha = meta.get("fecha") or "DESCONOCIDA"
+            elif slug_sent:
+                # Slug real pero fuera del índice (sentencia no encontrada en el
+                # archivo de sentencias). Se deriva del propio slug, no de un
+                # literal por-builder, para que el mismo hecho compartido con el
+                # builder de imputados produzca el mismo `fuente` aunque el
+                # índice cambie entre corridas.
+                origen = f"{FUENTE_SENTENCIAS}:{slug_sent}"
+                fecha = "DESCONOCIDA"
+            else:
+                origen = FUENTE_TORTURO_A_SIN_SENTENCIA
+                fecha = "DESCONOCIDA"
 
             for imputado in sentencia.get("imputados") or []:
                 slug_imputado = slug_persona_minjus(imputado.get("imputado_url"), "imputado")

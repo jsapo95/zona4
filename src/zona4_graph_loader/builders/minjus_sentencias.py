@@ -7,6 +7,13 @@ from zona4_graph_loader.domain.text_norm import clean_text
 
 FUENTE = "minjus_sentencias"
 
+# Fallback compartido por los builders de imputados y víctimas para las aristas
+# TORTURO_A cuyo bloque de sentencia no trae ninguna URL de sentencia (no hay
+# slug del que derivar un origen específico). Al ser una constante compartida
+# en lugar de un literal por-builder, ambos lados de una misma arista TORTURO_A
+# terminan de acuerdo por construcción, no por coincidencia.
+FUENTE_TORTURO_A_SIN_SENTENCIA = "minjus_sentencias:desconocida"
+
 
 def slug_sentencia(url: Optional[str]) -> Optional[str]:
     """Extrae el identificador de sentencia de cualquiera de las formas de URL.

@@ -3,7 +3,11 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 from zona4_graph_loader.builders.base import CanonicalDataset
-from zona4_graph_loader.builders.minjus_sentencias import slug_sentencia
+from zona4_graph_loader.builders.minjus_sentencias import FUENTE as FUENTE_SENTENCIAS
+from zona4_graph_loader.builders.minjus_sentencias import (
+    FUENTE_TORTURO_A_SIN_SENTENCIA,
+    slug_sentencia,
+)
 from zona4_graph_loader.domain.date_norm import parse_ddmmyyyy
 from zona4_graph_loader.domain.text_norm import clean_text, slugify_name
 
@@ -92,9 +96,21 @@ def build_minjus_imputados_rows(
 
         for bloque in item.get("sentencias_y_victimas") or []:
             slug_sent = slug_sentencia(bloque.get("sentencia_url"))
-            meta = sentencias_index.get(slug_sent or "", {})
-            origen = meta.get("origen") or FUENTE
-            fecha = meta.get("fecha") or "DESCONOCIDA"
+            meta = sentencias_index.get(slug_sent or "")
+            if meta:
+                origen = meta["origen"]
+                fecha = meta.get("fecha") or "DESCONOCIDA"
+            elif slug_sent:
+                # Slug real pero fuera del índice (sentencia no encontrada en el
+                # archivo de sentencias). Se deriva del propio slug, no de un
+                # literal por-builder, para que el mismo hecho compartido con el
+                # builder de víctimas produzca el mismo `fuente` aunque el índice
+                # cambie entre corridas.
+                origen = f"{FUENTE_SENTENCIAS}:{slug_sent}"
+                fecha = "DESCONOCIDA"
+            else:
+                origen = FUENTE_TORTURO_A_SIN_SENTENCIA
+                fecha = "DESCONOCIDA"
 
             for victima in bloque.get("victimas_asociadas") or []:
                 slug_victima = slug_persona_minjus(victima.get("victima_url"), "victima")
