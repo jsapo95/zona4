@@ -12,6 +12,7 @@ from zona4_graph_loader.builders.base import CanonicalDataset
 from zona4_graph_loader.builders.candidatos import build_v3_candidate_rows
 from zona4_graph_loader.builders.ccds import build_ccd_rows
 from zona4_graph_loader.builders.eaaf_lugares import build_eaaf_lugares_rows
+from zona4_graph_loader.builders.juicios_condenados import build_juicios_condenados_rows
 from zona4_graph_loader.builders.lugares import build_lugar_layer_rows, build_safe_place_merge_rows
 from zona4_graph_loader.builders.personas import build_detalles_rows, build_nietx_protagonistas
 from zona4_graph_loader.builders.relaciones import build_detalles_rel_rows, build_nietx_rel_rows
@@ -122,6 +123,10 @@ def run_load(args: argparse.Namespace) -> None:
         _merge_datasets(
             consolidated,
             build_archivo_memoria_rows(read_raw_json("archivo_memoria_san_martin.json")),
+        )
+        _merge_datasets(
+            consolidated,
+            build_juicios_condenados_rows(read_raw_json("juicios_lesa_humanidad_condenados.json")),
         )
 
     # 3. Load and merge direct static sources
