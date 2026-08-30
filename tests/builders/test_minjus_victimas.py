@@ -108,6 +108,37 @@ def test_placeholder_de_minjus_no_genera_entidad_ni_relacion():
     assert dataset["relaciones_contexto"] == []
 
 
+def test_par_sin_delito_de_tormentos_da_imputado_por():
+    """Espejo de la misma prueba en test_minjus_imputados.py: ejemplo real de
+    la auditoría (C1), Cabandié imputado por sustracción de menor, no por
+    tormentos."""
+    victima = dict(
+        VICTIMA,
+        source_url="https://derechoshumanos.mjus.gba.gob.ar/victima/3031-cabandie-juan",
+        nombre="Cabandié Juan",
+        sentencias=[
+            {
+                "sentencia_nombre": "Plan Sistematico de apropiacion de menores II",
+                "sentencia_url": "/sentencia/29-plan-sistematico",
+                "imputados": [
+                    {
+                        "imputado_nombre": "Acosta, Jorge Eduardo",
+                        "imputado_url": "/imputado/2-acosta-jorge-eduardo",
+                        "delitos": ["Sustracción de menor"],
+                    }
+                ],
+            }
+        ],
+    )
+    dataset = build_minjus_victimas_rows(
+        [victima], ccd_key_by_slug=CCD_KEYS, sentencias_index={}
+    )
+    aristas = dataset["relaciones_interpersonales"]
+    assert len(aristas) == 1
+    assert aristas[0]["tipo"] == "IMPUTADO_POR"
+    assert aristas[0]["delitos"] == ["Sustracción de menor"]
+
+
 def test_torturo_a_usa_metadatos_de_la_sentencia():
     """Espejo de la misma prueba en test_minjus_imputados.py: la fuente no
     registra cuándo ocurrió la tortura (el hecho), así que `fecha` debe
@@ -143,6 +174,8 @@ def test_torturo_a_usa_metadatos_de_la_sentencia():
     assert arista["fecha"] == "DESCONOCIDA"
     assert arista["fecha_sentencia"] == "2012-05-10"
     assert arista["fuente"] == "minjus_sentencias:1-quinto-cuerpo-del-ejercito-bayon"
+    assert arista["tipo"] == "TORTURO_A"
+    assert arista["delitos"] == ["Tormentos"]
 
 
 def test_registro_sin_url_se_descarta():
@@ -228,6 +261,64 @@ def test_ambos_builders_acuerdan_fuente_con_indice_vacio():
     fuente_imputados = dataset_imputados["relaciones_interpersonales"][0]["fuente"]
     fuente_victimas = dataset_victimas["relaciones_interpersonales"][0]["fuente"]
     assert fuente_imputados == fuente_victimas
+
+
+def test_ambos_builders_acuerdan_tipo_y_delitos_para_un_par_sin_tormentos():
+    """Fix C1: la clasificación TORTURO_A/IMPUTADO_POR se calcula con la
+    misma función compartida (`clasificar_relacion_por_delitos`) en ambos
+    builders. Si un lado clasificara distinto que el otro para el mismo
+    hecho, quedarían dos aristas paralelas de tipo distinto para el mismo par
+    imputado-víctima -exactamente el riesgo que este test cubre, usando un
+    par sin ningún delito de la familia de tormentos.
+    """
+    sentencia_url = "/sentencia/29-plan-sistematico"
+    delitos = ["Sustracción de menor"]
+    imputado = {
+        "source_url": "https://derechoshumanos.mjus.gba.gob.ar/imputado/2-acosta-jorge-eduardo",
+        "nombre": "Acosta, Jorge Eduardo",
+        "datos_personales": {},
+        "sentencias_y_victimas": [
+            {
+                "sentencia_nombre": "Plan Sistematico de apropiacion de menores II",
+                "sentencia_url": sentencia_url,
+                "victimas_asociadas": [
+                    {
+                        "victima_nombre": "Cabandié Juan",
+                        "victima_url": "/victima/3031-cabandie-juan",
+                        "delitos": delitos,
+                    }
+                ],
+            }
+        ],
+    }
+    victima = dict(
+        VICTIMA,
+        source_url="https://derechoshumanos.mjus.gba.gob.ar/victima/3031-cabandie-juan",
+        nombre="Cabandié Juan",
+        sentencias=[
+            {
+                "sentencia_nombre": "Plan Sistematico de apropiacion de menores II",
+                "sentencia_url": sentencia_url,
+                "imputados": [
+                    {
+                        "imputado_nombre": "Acosta, Jorge Eduardo",
+                        "imputado_url": "/imputado/2-acosta-jorge-eduardo",
+                        "delitos": delitos,
+                    }
+                ],
+            }
+        ],
+    )
+
+    dataset_imputados = build_minjus_imputados_rows([imputado], sentencias_index={})
+    dataset_victimas = build_minjus_victimas_rows(
+        [victima], ccd_key_by_slug=CCD_KEYS, sentencias_index={}
+    )
+
+    arista_imputados = dataset_imputados["relaciones_interpersonales"][0]
+    arista_victimas = dataset_victimas["relaciones_interpersonales"][0]
+    assert arista_imputados["tipo"] == arista_victimas["tipo"] == "IMPUTADO_POR"
+    assert arista_imputados["delitos"] == arista_victimas["delitos"] == delitos
 
 
 def test_sobre_el_archivo_real():

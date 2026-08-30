@@ -14,6 +14,12 @@ QA_QUERIES = {
     "lugares_total": "MATCH (l:Lugar) RETURN count(l) AS value",
     "alias_lugar_total": "MATCH (a:AliasLugar) RETURN count(a) AS value",
     "rel_familiares_total": "MATCH ()-[r:HIJE_DE|PADRE_DE|MADRE_DE|NIETX_DE|ABUELX_DE|HERMANX_DE|PAREJA_DE|CUÑADX_DE|SUEGRX_DE|YERNX_NUERX_DE]->() RETURN count(r) AS value",
+    # Fix C1/A (V1.3): TORTURO_A queda restringido a los pares imputado-víctima
+    # cuya sentencia condena por tormentos; el resto de los pares de MinJus
+    # recibe IMPUTADO_POR. Contadores separados para que la restricción sea
+    # auditable en cada corrida.
+    "rel_torturo_a_total": "MATCH ()-[r:TORTURO_A]->() RETURN count(r) AS value",
+    "rel_imputado_por_total": "MATCH ()-[r:IMPUTADO_POR]->() RETURN count(r) AS value",
     "rel_secuestrado_en_total": "MATCH ()-[r:SECUESTRADO_EN]->() RETURN count(r) AS value",
     "rel_asesinado_en_total": "MATCH ()-[r:ASESINADO_EN]->() RETURN count(r) AS value",
     "rel_presente_en_total": "MATCH ()-[r:PRESENTE_EN]->() RETURN count(r) AS value",

@@ -77,9 +77,12 @@ RETURN count(*)
 """
 
 # Dynamic Person relationship (uses apoc.merge.relationship for specific V1.1 labels, idempotent per origen)
-# `fecha_sentencia` (Fix 9) sólo la pueblan las filas TORTURO_A de los
-# builders de MinJus; para el resto de los tipos de relación `row.fecha_sentencia`
+# `fecha_sentencia` (Fix 9) sólo la pueblan las filas TORTURO_A/IMPUTADO_POR de
+# los builders de MinJus; para el resto de los tipos de relación `row.fecha_sentencia`
 # es null y coalesce la deja en "DESCONOCIDA" sin efecto alguno.
+# `delitos` (Fix C1/A, V1.3): idem, sólo la pueblan TORTURO_A/IMPUTADO_POR; para
+# el resto `row.delitos` es null y Neo4j no escribe la propiedad (no hay
+# coalesce a un valor por defecto, a diferencia de fecha_sentencia).
 CYPHER_UPSERT_REL_PERSONA = """
 UNWIND $rows AS row
 MATCH (s:Persona {persona_key: row.source_key})
@@ -92,9 +95,9 @@ CALL apoc.merge.relationship(
     s,
     row.tipo,
     {origen: row.fuente},
-    {fecha: coalesce(row.fecha, "DESCONOCIDA"), fecha_sentencia: coalesce(row.fecha_sentencia, "DESCONOCIDA")},
+    {fecha: coalesce(row.fecha, "DESCONOCIDA"), fecha_sentencia: coalesce(row.fecha_sentencia, "DESCONOCIDA"), delitos: row.delitos},
     t,
-    {fecha: coalesce(row.fecha, "DESCONOCIDA"), fecha_sentencia: coalesce(row.fecha_sentencia, "DESCONOCIDA")}
+    {fecha: coalesce(row.fecha, "DESCONOCIDA"), fecha_sentencia: coalesce(row.fecha_sentencia, "DESCONOCIDA"), delitos: row.delitos}
 ) YIELD rel
 RETURN count(*)
 """

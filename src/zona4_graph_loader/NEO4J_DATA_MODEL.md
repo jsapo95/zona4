@@ -1,6 +1,17 @@
 # ESPECIFICACIÓN FORMAL DE MODELO DE DATOS EN GRAFOS (NEO4J)
 ## Dominio: Reconstrucción Histórica, Memoria y Derechos Humanos
-## Versión: 1.2 — Rigor de Producción para Agentes de IA
+## Versión: 1.3 — Rigor de Producción para Agentes de IA
+
+### Novedades V1.3 (auditoría semántica 2026-08-29, Fix A)
+- Se declara `(:Persona)-[:IMPUTADO_POR]->(:Persona)` (§3.2): la sentencia
+  imputa a esta persona un delito contra la otra, sin que ese delito sea
+  necesariamente tormentos. Antes de este fix, todo par imputado-víctima de
+  MinJus recibía `TORTURO_A` sin mirar el campo `delitos` de la fuente, que
+  trae el listado exacto de cargos por par (22,5 % de los pares no tenían
+  ningún cargo de tormentos — ver auditoría, hallazgo C1). `TORTURO_A` queda
+  restringido a los pares donde `delitos` incluye la familia de tormentos.
+  Ambos tipos de arista llevan `delitos [List[String]]` como propiedad, con
+  el texto de la fuente preservado, para que la clasificación sea auditable.
 
 Este documento define la arquitectura exacta e inmutable del grafo en Neo4j. Cualquier proceso de extracción, estructuración o ingesta automática de datos ejecutado por un LLM debe adherirse estrictamente a las reglas, etiquetas, relaciones y propiedades declaradas a continuación. Está prohibido inventar o inferir entidades intermedias.
 
@@ -78,7 +89,7 @@ del campo `roles` del CDM. Una fila sin `roles` recibe `["VICTIMA"]`.
 - (:Persona)-[:CUÑADX_DE]->(:Persona)
 - (:Persona)-[:SUEGRX_DE]->(:Persona)
 - (:Persona)-[:YERNX_NUERX_DE]->(:Persona)
-- (:Persona)-[:TORTURO_A]->(:Persona) // Semántica restrictiva: (:Represor)-[:TORTURO_A]->(:Victima).
+- (:Persona)-[:TORTURO_A]->(:Persona) // Semántica restrictiva: (:Represor)-[:TORTURO_A]->(:Victima). Emitida SOLO cuando `delitos` (ver abajo) incluye la familia de tormentos ("Tormentos" / "Tormentos seguidos de muerte") para ese par específico (V1.3, Fix A/C1).
   * fecha [String] — la fuente MinJus no registra cuándo ocurrió la tortura
     (el hecho); queda en "DESCONOCIDA" en vez de asumir la fecha del fallo
     judicial (V1.2, Fix 9: inferirla sería inventar el hecho central que este
@@ -87,6 +98,14 @@ del campo `roles` del CDM. Una fila sin `roles` recibe `["VICTIMA"]`.
     la sentencia que documenta el hecho. Es procedencia, no el hecho (regla
     1.2: `fecha` describe la relación, `origen` identifica la fuente que la
     valida); se conserva como propiedad propia en vez de perderse.
+  * delitos [List[String]] (V1.3) — el listado completo de cargos que la
+    sentencia imputa a esta persona respecto de esta víctima en particular,
+    tal como los nombra la fuente (incluye "Tormentos" y puede incluir otros:
+    Homicidio, Privación Ilegítima de la libertad, etc.).
+- (:Persona)-[:IMPUTADO_POR]->(:Persona) // V1.3, Fix A/C1. Misma dirección y misma fuente (MinJus GBA) que TORTURO_A: la sentencia imputa a esta persona un delito contra la otra, SIN que la familia de tormentos esté entre los cargos de ese par (p.ej. sólo Sustracción de menor, o sólo Homicidio). Se emite exactamente cuando TORTURO_A no aplica, nunca junto con TORTURO_A para el mismo par.
+  * fecha [String] — igual semántica que en TORTURO_A: "DESCONOCIDA", la fuente no registra la fecha del hecho.
+  * fecha_sentencia [String] (Opcional) — igual semántica que en TORTURO_A.
+  * delitos [List[String]] — igual semántica que en TORTURO_A; nunca contiene un cargo de la familia de tormentos (si lo contuviera, el par habría recibido TORTURO_A en su lugar).
 - (:Persona)-[:VIO_A]->(:Persona)     // Verbo VER. Avistamiento o constatación visual de la presencia del destino por el origen.
 - (:Persona)-[:MILITO_CON]->(:Persona)// Relación de co-militancia orientada desde la perspectiva del registro.
 

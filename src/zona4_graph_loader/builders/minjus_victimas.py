@@ -8,6 +8,8 @@ from zona4_graph_loader.builders.minjus_imputados import slug_persona_minjus
 from zona4_graph_loader.builders.minjus_sentencias import FUENTE as FUENTE_SENTENCIAS
 from zona4_graph_loader.builders.minjus_sentencias import (
     FUENTE_TORTURO_A_SIN_SENTENCIA,
+    clasificar_relacion_por_delitos,
+    limpiar_delitos,
     slug_sentencia,
 )
 from zona4_graph_loader.domain.date_norm import parse_ddmmyyyy
@@ -169,10 +171,19 @@ def build_minjus_victimas_rows(
                 slug_imputado = slug_persona_minjus(imputado.get("imputado_url"), "imputado")
                 if not slug_imputado:
                     continue
+                delitos = imputado.get("delitos")
                 relaciones.append({
                     "source_key": f"minjus_imputado:{slug_imputado}",
                     "target_key": persona_key,
-                    "tipo": "TORTURO_A",
+                    # Fix C1: sólo TORTURO_A cuando la sentencia condena por
+                    # tormentos a esta víctima en particular; el resto de los
+                    # pares (p.ej. sustracción de menor) recibe IMPUTADO_POR.
+                    # Ambos tipos llevan `delitos` para que la arista sea
+                    # auditable frente a la sentencia real. Misma función
+                    # compartida que usa el builder de imputados, para que
+                    # ambos lados de un mismo par clasifiquen igual.
+                    "tipo": clasificar_relacion_por_delitos(delitos),
+                    "delitos": limpiar_delitos(delitos),
                     # La fuente no registra cuándo ocurrió la tortura (el
                     # hecho): "fecha" queda en DESCONOCIDA en vez de tomar la
                     # fecha del fallo, que es procedencia (Fix 9), no el hecho.
