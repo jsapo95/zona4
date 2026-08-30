@@ -50,6 +50,43 @@ UNKNOWN_PLACE_VALUES = {
     "DESCONOCIDO",
 }
 
+# Fix E (auditoría 2026-08-29, hallazgo I3d): valores de `Fuerza`
+# (juicios_condenados, minjus_imputados) que no nombran una organización
+# real, sino la ausencia de un dato o -en el caso de "CIVIL"- la ausencia
+# misma de fuerza represiva. Materializarlos como :Org con aristas PARTE_DE
+# afirma que centenares de represores distintos comparten membresía en una
+# única organización llamada "SIN ESPECIFICAR" (109 casos reales,
+# combinando ambas fuentes) o "CIVIL" (87 casos reales) -ninguna de las dos
+# es una organización. Derivado de la distribución real de `Fuerza` en
+# ambas fuentes (sólo coincidencia exacta tras upper(); no se recorta
+# ningún prefijo, para no descartar de más un valor real que simplemente
+# mencione "sin especificar" como parte de un nombre más largo -no se
+# encontró ningún caso así en los datos).
+SENTINEL_ORG_VALUES = {
+    "SIN ESPECIFICAR",
+    "POLICIA (SIN ESPECIFICAR)",
+    "CIVIL",
+    "NO ESPECIFICADO",
+    "NO DETERMINADO",
+    "DESCONOCIDA",
+    "DESCONOCIDO",
+}
+
+# Fix E (auditoría 2026-08-29, hallazgo I3d): mismo problema, para
+# `lugar_de_trabajo`/`dónde_estudió` (minjus_victimas) que alimentan
+# :Institución vía TRABAJO_EN/ESTUDIO_EN. Coincidencia exacta únicamente:
+# los valores narrativos más largos que empiezan con una de estas palabras
+# pero agregan información real ("DESCONOCIDO, PERO LA VICTIMA ESTUDIABA
+# PARA SER MAESTRO...") no son sentinels puros y quedan fuera de este
+# hallazgo (ver hallazgo I3c, no arreglado en este fix).
+SENTINEL_INSTITUCION_VALUES = {
+    "NO DETERMINADO",
+    "NO ESPECIFICADO",
+    "NO ESPECIFICA",
+    "DESCONOCIDO",
+    "DESCONOCIDA",
+}
+
 EQUIV_CITIES = {
     "CAPITAL": ("CIUDAD", "CIUDAD AUTONOMA DE BUENOS AIRES", None),
     "CAPITAL FEDERAL": ("CIUDAD", "CIUDAD AUTONOMA DE BUENOS AIRES", None),

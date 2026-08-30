@@ -98,6 +98,28 @@ def test_militancia_trabajo_estudios_y_apodo_generan_contexto():
     assert relaciones == {"PARTE_DE", "TRABAJO_EN", "ESTUDIO_EN", "IDENTIFICA_A"}
 
 
+def test_trabajo_y_estudio_sentinel_no_generan_institucion():
+    """Fix E (auditoría 2026-08-29, hallazgo I3d): "NO DETERMINADO" y
+    "NO ESPECIFICADO" no nombran una institución -son la ausencia del dato.
+    """
+    victima = dict(
+        VICTIMA,
+        datos_personales={
+            **VICTIMA["datos_personales"],
+            "lugar_de_trabajo": "No determinado",
+            "dónde_estudió": "No especificado",
+        },
+    )
+    dataset = build_minjus_victimas_rows(
+        [victima], ccd_key_by_slug=CCD_KEYS, sentencias_index={}
+    )
+    tipos_relacion = {r["tipo_relacion"] for r in dataset["relaciones_contexto"]}
+    assert "TRABAJO_EN" not in tipos_relacion
+    assert "ESTUDIO_EN" not in tipos_relacion
+    instituciones = [e for e in dataset["entidades_contexto"] if e["tipo_entidad"] == "Institucion"]
+    assert instituciones == []
+
+
 def test_placeholder_de_minjus_no_genera_entidad_ni_relacion():
     """MinJus usa el guión largo "–" como placeholder de "sin dato" en varios
     campos de `datos_personales`. `clean_text` no lo filtra (no está en su
@@ -360,3 +382,10 @@ def test_sobre_el_archivo_real():
     con_fecha = [p for p in dataset["personas"] if p["fecha_secuestro"]]
     assert len(con_fecha) > 2900
     assert dataset["eventos_espaciales"] == []  # sin ccd_key_by_slug no hay lugares
+
+    # Fix E (hallazgo I3d): ninguna :Institución generada por esta fuente
+    # debe tener un nombre sentinel puro.
+    from zona4_graph_loader.constants import SENTINEL_INSTITUCION_VALUES
+
+    instituciones = [e for e in dataset["entidades_contexto"] if e["tipo_entidad"] == "Institucion"]
+    assert all(inst["nombre"] not in SENTINEL_INSTITUCION_VALUES for inst in instituciones)

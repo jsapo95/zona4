@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any, Dict, List
 
 from zona4_graph_loader.builders.base import CanonicalDataset
+from zona4_graph_loader.constants import SENTINEL_INSTITUCION_VALUES
 from zona4_graph_loader.builders.minjus_ccds import slug_ccd
 from zona4_graph_loader.builders.minjus_imputados import slug_persona_minjus
 from zona4_graph_loader.builders.minjus_sentencias import FUENTE as FUENTE_SENTENCIAS
@@ -110,8 +111,18 @@ def build_minjus_victimas_rows(
                 slug_valor=slug_militancia,
             )
 
+        # Fix E (auditoría 2026-08-29, hallazgo I3d): "NO DETERMINADO",
+        # "NO ESPECIFICADO", "NO ESPECIFICA", "DESCONOCIDO"/"DESCONOCIDA" no
+        # nombran una institución -son la ausencia del dato. Materializarlos
+        # crea un puñado de nodos :Institución que agrupan falsamente a
+        # personas sin ningún vínculo real entre sí más que "la fuente no
+        # sabía dónde trabajaban/estudiaban". Coincidencia exacta únicamente:
+        # valores narrativos más largos que empiezan con una de estas
+        # palabras pero agregan información real ("DESCONOCIDO, PERO LA
+        # VICTIMA ESTUDIABA PARA SER MAESTRO...") no son sentinels puros y
+        # quedan fuera de este fix (hallazgo I3c, no arreglado).
         trabajo = clean_text(datos.get("lugar_de_trabajo"))
-        if trabajo:
+        if trabajo and trabajo.upper() not in SENTINEL_INSTITUCION_VALUES:
             slug_trabajo = slugify_name(trabajo.upper())
             registrar_entidad(
                 f"institucion:{slug_trabajo}", "Institucion", "nombre",
@@ -126,7 +137,7 @@ def build_minjus_victimas_rows(
         # desambiguar — un solo nodo Institucion con dos aristas de tipo
         # distinto (TRABAJO_EN, ESTUDIO_EN).
         estudios = clean_text(datos.get("dónde_estudió"))
-        if estudios:
+        if estudios and estudios.upper() not in SENTINEL_INSTITUCION_VALUES:
             slug_estudios = slugify_name(estudios.upper())
             registrar_entidad(
                 f"institucion:{slug_estudios}", "Institucion", "nombre",

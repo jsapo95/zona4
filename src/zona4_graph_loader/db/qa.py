@@ -75,6 +75,20 @@ QA_QUERIES = {
         "WHERE r.fecha <> 'DESCONOCIDA' AND (r.fecha < '1966-01-01' OR r.fecha > '1990-12-31') "
         "RETURN count(r) AS value"
     ),
+    # Fix E (V1.3, hallazgo I3d): "SIN ESPECIFICAR"/"CIVIL"/etc. ya no deben
+    # generar :Org ni :Institución con aristas -deberían dar 0 en toda carga
+    # futura.
+    "orgs_sentinel_total": (
+        "MATCH (e:Org) WHERE e.nombre IN "
+        "['SIN ESPECIFICAR', 'POLICIA (SIN ESPECIFICAR)', 'CIVIL', "
+        "'NO ESPECIFICADO', 'NO DETERMINADO', 'DESCONOCIDA', 'DESCONOCIDO'] "
+        "RETURN count(e) AS value"
+    ),
+    "instituciones_sentinel_total": (
+        "MATCH (e:Institución) WHERE e.nombre IN "
+        "['NO DETERMINADO', 'NO ESPECIFICADO', 'NO ESPECIFICA', 'DESCONOCIDO', 'DESCONOCIDA'] "
+        "RETURN count(e) AS value"
+    ),
 }
 
 

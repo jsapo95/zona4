@@ -80,6 +80,14 @@ del campo `roles` del CDM. Una fila sin `roles` recibe `["VICTIMA"]`.
     institución que la fuente nunca nombra. Nunca se escribe `false`: la
     ausencia del campo no es evidencia de que la persona no haya sido
     estudiante universitaria.
+  * fuerza [String] (Opcional, V1.3, Fix E, hallazgo I3d) — sólo la
+    puebla `juicios_condenados`/`minjus_imputados` (`Fuerza`/`fuerza`).
+    Se persiste el valor crudo tal como lo da la fuente, incluidos los
+    sentinels ("SIN ESPECIFICAR", "CIVIL", "POLICIA (SIN ESPECIFICAR)",
+    "NO ESPECIFICADO", "NO DETERMINADO", "DESCONOCIDO/A"): esos valores NO
+    generan `:Org`/`PARTE_DE` (ver más abajo), así que este atributo es la
+    única forma en que el dato ("no se sabe la fuerza" / "era civil") queda
+    en el grafo.
 - :Victima (Label de Rol secundario conectado a :Persona)
 - :Represor (Label de Rol secundario conectado a :Persona)
 - :Complice (Label de Rol secundario conectado a :Persona)
@@ -130,10 +138,10 @@ del campo `roles` del CDM. Una fila sin `roles` recibe `["VICTIMA"]`.
 #### 3.1 Persona -> Entidades de Contexto
 - (:Persona)-[:EJERCIO]->(:Profesión)
 - (:Persona)-[:EJERCIO]->(:Cargo)
-- (:Persona)-[:PARTE_DE]->(:Org)   // Relación de pertenencia o militancia activa.
+- (:Persona)-[:PARTE_DE]->(:Org)   // Relación de pertenencia o militancia activa. NUNCA se emite cuando `Fuerza` es un sentinel (V1.3, Fix E, hallazgo I3d): "SIN ESPECIFICAR"/"CIVIL"/"POLICIA (SIN ESPECIFICAR)"/"NO ESPECIFICADO"/"NO DETERMINADO"/"DESCONOCIDO(A)" no son organizaciones, son la ausencia del dato -materializarlos agrupaba falsamente a cientos de represores bajo una membresía compartida inexistente (109 casos reales de "SIN ESPECIFICAR", 87 de "CIVIL"). El valor crudo se persiste en `Persona.fuerza` en su lugar.
 - (:Persona)-[:FUNDO]->(:Org)      // Acto explícito de fundación (verbo fundar).
-- (:Persona)-[:ESTUDIO_EN]->(:Institución)
-- (:Persona)-[:TRABAJO_EN]->(:Institución)
+- (:Persona)-[:ESTUDIO_EN]->(:Institución)  // NUNCA se emite cuando el valor de la fuente es un sentinel puro ("NO DETERMINADO"/"NO ESPECIFICADO"/"NO ESPECIFICA"/"DESCONOCIDO(A)", V1.3, Fix E, hallazgo I3d).
+- (:Persona)-[:TRABAJO_EN]->(:Institución)  // Misma regla que ESTUDIO_EN.
 - (:AliasPersona)-[:IDENTIFICA_A]->(:Persona) // El alias apunta a la entidad real de la persona.
 
 #### 3.2 Relaciones Interpersonales (Persona -> Persona)

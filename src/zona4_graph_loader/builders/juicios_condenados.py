@@ -5,6 +5,7 @@ from datetime import date
 from typing import Any, Dict, List, Optional
 
 from zona4_graph_loader.builders.base import CanonicalDataset
+from zona4_graph_loader.constants import SENTINEL_ORG_VALUES
 from zona4_graph_loader.domain.date_norm import validar_fecha_de_nacimiento
 from zona4_graph_loader.domain.text_norm import clean_text, slugify_name
 
@@ -58,6 +59,9 @@ def build_juicios_condenados_rows(payload: Dict[str, Any]) -> CanonicalDataset:
             roles.append("COMPLICE")
             complice_tipo = "CIVIL"
 
+        fuerza = clean_text(datos.get("Fuerza"))
+        fuerza_upper = fuerza.upper() if fuerza else None
+
         personas.append({
             "persona_key": persona_key,
             "nombre": nombre,
@@ -72,12 +76,23 @@ def build_juicios_condenados_rows(payload: Dict[str, Any]) -> CanonicalDataset:
             # de 1983") valga para todo el grafo, no sólo donde ya se
             # encontró el defecto.
             "fecha_nacimiento": validar_fecha_de_nacimiento(_parse_nacimiento(datos.get("Nacimiento"))),
+            # Fix E (auditoría 2026-08-29, hallazgo I3d): se persiste el
+            # valor crudo de `Fuerza` en la persona incluso cuando es un
+            # sentinel ("SIN ESPECIFICAR", "CIVIL") y por eso no genera
+            # :Org/PARTE_DE más abajo -el dato ("no se sabe la fuerza" /
+            # "era civil") no se pierde, sólo deja de fabricar una
+            # organización falsa para sostenerlo.
+            "fuerza": fuerza_upper,
         })
 
-        fuerza = clean_text(datos.get("Fuerza"))
-        if not fuerza:
+        if not fuerza_upper or fuerza_upper in SENTINEL_ORG_VALUES:
+            # Fix E (hallazgo I3d): "SIN ESPECIFICAR" / "CIVIL" / etc. no son
+            # organizaciones -son la ausencia de un dato o la ausencia misma
+            # de fuerza represiva. Materializarlas como :Org agrupa a
+            # cientos de represores distintos bajo una membresía compartida
+            # falsa (109 casos reales de "SIN ESPECIFICAR", 87 de "CIVIL",
+            # combinando esta fuente con minjus_imputados).
             continue
-        fuerza_upper = fuerza.upper()
         entidad_key = f"org:{slugify_name(fuerza_upper)}"
         entidades.setdefault(entidad_key, {
             "entidad_key": entidad_key,

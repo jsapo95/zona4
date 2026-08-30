@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 from zona4_graph_loader.builders.base import CanonicalDataset
+from zona4_graph_loader.constants import SENTINEL_ORG_VALUES
 from zona4_graph_loader.builders.minjus_sentencias import FUENTE as FUENTE_SENTENCIAS
 from zona4_graph_loader.builders.minjus_sentencias import (
     FUENTE_TORTURO_A_SIN_SENTENCIA,
@@ -50,6 +51,8 @@ def build_minjus_imputados_rows(
 
         persona_key = f"minjus_imputado:{slug}"
         datos = item.get("datos_personales") or {}
+        fuerza = clean_text(datos.get("fuerza"))
+        fuerza_upper = fuerza.upper() if fuerza else None
 
         personas.append({
             "persona_key": persona_key,
@@ -67,11 +70,18 @@ def build_minjus_imputados_rows(
             "fecha_nacimiento": validar_fecha_de_nacimiento(
                 parse_ddmmyyyy(clean_text(datos.get("fecha_de_nacimiento")))
             ),
+            # Fix E (auditoría 2026-08-29, hallazgo I3d): igual que en
+            # juicios_condenados.py -se persiste el valor crudo aunque sea
+            # un sentinel, y por eso no genera :Org/PARTE_DE más abajo.
+            "fuerza": fuerza_upper,
         })
 
-        fuerza = clean_text(datos.get("fuerza"))
-        if fuerza:
-            fuerza_upper = fuerza.upper()
+        if fuerza_upper and fuerza_upper not in SENTINEL_ORG_VALUES:
+            # Fix E (hallazgo I3d): "SIN ESPECIFICAR" / "CIVIL" / "POLICIA
+            # (SIN ESPECIFICAR)" no son organizaciones -combinando esta
+            # fuente con juicios_condenados.py, agrupaban falsamente a 109,
+            # 87 y 46 represores distintos respectivamente bajo una única
+            # membresía compartida.
             entidad_key = f"org:{slugify_name(fuerza_upper)}"
             entidades.setdefault(entidad_key, {
                 "entidad_key": entidad_key,

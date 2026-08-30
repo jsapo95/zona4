@@ -88,6 +88,33 @@ def test_sin_fuerza_no_genera_org():
     assert dataset["relaciones_contexto"] == []
 
 
+def test_fuerza_se_persiste_en_la_persona():
+    persona = build_juicios_condenados_rows(_payload(MILITAR))["personas"][0]
+    assert persona["fuerza"] == "POLICIA FEDERAL ARGENTINA"
+
+
+def test_fuerza_sentinel_no_genera_org_pero_se_persiste_en_la_persona():
+    """Fix E (auditoría 2026-08-29, hallazgo I3d): "SIN ESPECIFICAR" no es
+    una organización -materializarlo agrupaba a 109 represores distintos
+    (combinando esta fuente con minjus_imputados) bajo una membresía
+    compartida falsa. El dato no se pierde: se persiste en
+    `Persona.fuerza`.
+    """
+    condenado = dict(MILITAR, Fuerza="SIN ESPECIFICAR")
+    dataset = build_juicios_condenados_rows(_payload(condenado))
+    assert dataset["entidades_contexto"] == []
+    assert dataset["relaciones_contexto"] == []
+    assert dataset["personas"][0]["fuerza"] == "SIN ESPECIFICAR"
+
+
+def test_fuerza_civil_no_genera_org():
+    # "CIVIL" no es una organización: es la ausencia de fuerza represiva.
+    condenado = dict(MILITAR, Fuerza="Civil")
+    dataset = build_juicios_condenados_rows(_payload(condenado))
+    assert dataset["entidades_contexto"] == []
+    assert dataset["personas"][0]["fuerza"] == "CIVIL"
+
+
 def test_registro_sin_impu_id_se_descarta():
     dataset = build_juicios_condenados_rows(_payload(dict(MILITAR, impu_id=None)))
     assert dataset["personas"] == []
@@ -102,3 +129,21 @@ def test_sobre_el_archivo_real():
     assert len(complices) == 197
     assert all(p["complice_tipo"] == "CIVIL" for p in complices)
     assert len([p for p in dataset["personas"] if p["fecha_nacimiento"]]) == 1232
+
+    # Fix E (hallazgo I3d): ningún :Org generado a partir de esta fuente
+    # debe llevar un nombre sentinel.
+    from zona4_graph_loader.constants import SENTINEL_ORG_VALUES
+
+    orgs = [e for e in dataset["entidades_contexto"] if e["tipo_entidad"] == "Org"]
+    assert all(org["nombre"] not in SENTINEL_ORG_VALUES for org in orgs)
+
+    # 85 represores reales tienen Fuerza:"SIN ESPECIFICAR" y 65 "CIVIL"
+    # (verificado sobre el archivo crudo); ninguno debe generar PARTE_DE, y
+    # el valor debe seguir presente en Persona.fuerza.
+    sin_especificar = [p for p in dataset["personas"] if p.get("fuerza") == "SIN ESPECIFICAR"]
+    civiles_fuerza = [p for p in dataset["personas"] if p.get("fuerza") == "CIVIL"]
+    assert len(sin_especificar) == 85
+    assert len(civiles_fuerza) == 65
+    entidad_keys_con_parte_de = {r["entidad_key"] for r in dataset["relaciones_contexto"]}
+    assert "org:sin_especificar" not in entidad_keys_con_parte_de
+    assert "org:civil" not in entidad_keys_con_parte_de

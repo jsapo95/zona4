@@ -57,6 +57,25 @@ def test_imputado_es_represor():
     assert persona["fuente"] == "minjus_imputados"
 
 
+def test_fuerza_genera_org_y_se_persiste_en_la_persona():
+    dataset = build_minjus_imputados_rows([IMPUTADO], sentencias_index=INDEX)
+    org = next(e for e in dataset["entidades_contexto"] if e["tipo_entidad"] == "Org")
+    assert org["nombre"] == "POLICIA PROVINCIAL"
+    assert dataset["personas"][0]["fuerza"] == "POLICIA PROVINCIAL"
+
+
+def test_fuerza_sentinel_no_genera_org_pero_se_persiste():
+    """Fix E (auditoría 2026-08-29, hallazgo I3d)."""
+    imputado = dict(
+        IMPUTADO,
+        datos_personales={**IMPUTADO["datos_personales"], "fuerza": "SIN ESPECIFICAR"},
+    )
+    dataset = build_minjus_imputados_rows([imputado], sentencias_index=INDEX)
+    orgs = [e for e in dataset["entidades_contexto"] if e["tipo_entidad"] == "Org"]
+    assert orgs == []
+    assert dataset["personas"][0]["fuerza"] == "SIN ESPECIFICAR"
+
+
 def test_fecha_nacimiento_imposible_no_se_persiste():
     """Fix E (auditoría 2026-08-29, hallazgo I6). Caso real:
     Massera, Emilio Eduardo -- la fuente trae "08/11/2010" (probablemente
@@ -201,6 +220,20 @@ def test_sobre_el_archivo_real():
     assert all(p["roles"] == ["REPRESOR"] for p in dataset["personas"])
     orgs = [e for e in dataset["entidades_contexto"] if e["tipo_entidad"] == "Org"]
     assert len(orgs) > 5
+
+    # Fix E (hallazgo I3d): ningún :Org de esta fuente debe ser un sentinel;
+    # 24 imputados reales con Fuerza:"SIN ESPECIFICAR" y 22 con "CIVIL" no
+    # deben generar PARTE_DE, pero sí conservar el dato en Persona.fuerza.
+    from zona4_graph_loader.constants import SENTINEL_ORG_VALUES
+
+    assert all(org["nombre"] not in SENTINEL_ORG_VALUES for org in orgs)
+    sin_especificar = [p for p in dataset["personas"] if p.get("fuerza") == "SIN ESPECIFICAR"]
+    civiles_fuerza = [p for p in dataset["personas"] if p.get("fuerza") == "CIVIL"]
+    assert len(sin_especificar) == 24
+    assert len(civiles_fuerza) == 22
+    entidad_keys_con_parte_de = {r["entidad_key"] for r in dataset["relaciones_contexto"]}
+    assert "org:sin_especificar" not in entidad_keys_con_parte_de
+    assert "org:civil" not in entidad_keys_con_parte_de
 
 
 def test_sobre_el_archivo_real_ninguna_torturo_a_sin_delito_de_tormentos():

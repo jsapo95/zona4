@@ -48,7 +48,8 @@ SET p.nombre = row.nombre,
     p.edad = coalesce(row.edad, p.edad),
     p.claves_alt = coalesce(row.claves_alt, p.claves_alt),
     p.tipo = coalesce(row.complice_tipo, p.tipo),
-    p.estudiante_universitario = coalesce(row.estudiante_universitario, p.estudiante_universitario)
+    p.estudiante_universitario = coalesce(row.estudiante_universitario, p.estudiante_universitario),
+    p.fuerza = coalesce(row.fuerza, p.fuerza)
 WITH p, row
 CALL apoc.create.addLabels(p, row.role_labels) YIELD node
 RETURN count(*)
