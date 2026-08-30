@@ -32,6 +32,10 @@ CONSTRAINTS = [
 ]
 
 # UPSERT Base Person (labels dinámicas según row.roles)
+# `estudiante_universitario` (Fix E, V1.3, hallazgo I4): sólo la puebla
+# `archivo_memoria` (True cuando la fuente lo trae; nunca False). Se lee con
+# coalesce igual que `fecha_nacimiento`/`fecha_secuestro` para no perder el
+# valor si la persona ya existía por otra fuente sin este dato.
 CYPHER_UPSERT_PERSONAS = """
 UNWIND $rows AS row
 MERGE (p:Persona {persona_key: row.persona_key})
@@ -42,7 +46,8 @@ SET p.nombre = row.nombre,
     p.fecha_nacimiento = coalesce(row.fecha_nacimiento, p.fecha_nacimiento),
     p.fecha_secuestro = coalesce(row.fecha_secuestro, p.fecha_secuestro),
     p.claves_alt = coalesce(row.claves_alt, p.claves_alt),
-    p.tipo = coalesce(row.complice_tipo, p.tipo)
+    p.tipo = coalesce(row.complice_tipo, p.tipo),
+    p.estudiante_universitario = coalesce(row.estudiante_universitario, p.estudiante_universitario)
 WITH p, row
 CALL apoc.create.addLabels(p, row.role_labels) YIELD node
 RETURN count(*)

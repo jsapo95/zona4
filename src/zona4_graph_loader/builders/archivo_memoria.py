@@ -6,7 +6,6 @@ from zona4_graph_loader.builders.base import CanonicalDataset
 from zona4_graph_loader.domain.text_norm import clean_text
 
 FUENTE = "archivo_memoria"
-INSTITUCION_UNIVERSITARIA_KEY = "institucion:universidad_sin_especificar"
 
 
 def build_archivo_memoria_rows(data: List[Dict[str, Any]]) -> CanonicalDataset:
@@ -45,10 +44,21 @@ def build_archivo_memoria_rows(data: List[Dict[str, Any]]) -> CanonicalDataset:
     geográficas desde archivo_memoria; antes 303 `SECUESTRADO_EN`). Es el
     foco geográfico declarado del proyecto para esta fuente, así que se
     reporta sin atenuantes en el reporte de fixes.
+
+    Fix E (auditoría 2026-08-29, hallazgo I4): `estudiante_universitario` es
+    un booleano en la fuente (True en 56 de 303 registros, ausente -no
+    "false"- en el resto). El builder materializaba un único nodo
+    `:Institución "UNIVERSIDAD SIN ESPECIFICAR"` y una arista `ESTUDIO_EN`
+    hacia él para esos 56 registros, afirmando que asistieron a una
+    institución que la fuente nunca nombra -y falsamente relacionando entre
+    sí a 56 personas que no necesariamente asistieron a la misma
+    universidad. Un booleano es un atributo de la persona, no una entidad
+    externa: ahora se persiste como `Persona.estudiante_universitario` (sólo
+    cuando la fuente trae `true`; nunca se escribe `false`, porque la
+    ausencia del campo no es evidencia de que la persona no haya sido
+    estudiante universitaria).
     """
     personas: List[Dict[str, Any]] = []
-    entidades: Dict[str, Dict[str, Any]] = {}
-    rel_contexto: List[Dict[str, Any]] = []
 
     for indice, item in enumerate(data):
         nombre = clean_text(item.get("nombre"))
@@ -56,7 +66,7 @@ def build_archivo_memoria_rows(data: List[Dict[str, Any]]) -> CanonicalDataset:
             continue
 
         persona_key = f"{FUENTE}:{indice}"
-        personas.append({
+        persona: Dict[str, Any] = {
             "persona_key": persona_key,
             "nombre": nombre,
             "genero": "INDETERMINADO",
@@ -64,25 +74,9 @@ def build_archivo_memoria_rows(data: List[Dict[str, Any]]) -> CanonicalDataset:
             "roles": ["VICTIMA"],
             "fecha_nacimiento": clean_text(item.get("fecha_nacimiento")),
             "fecha_secuestro": clean_text(item.get("fecha_desaparicion_normalizada")),
-        })
+        }
+        if item.get("estudiante_universitario") is True:
+            persona["estudiante_universitario"] = True
+        personas.append(persona)
 
-        if item.get("estudiante_universitario"):
-            entidades.setdefault(INSTITUCION_UNIVERSITARIA_KEY, {
-                "entidad_key": INSTITUCION_UNIVERSITARIA_KEY,
-                "tipo_entidad": "Institucion",
-                "nombre": "UNIVERSIDAD SIN ESPECIFICAR",
-                "fuente": FUENTE,
-            })
-            rel_contexto.append({
-                "persona_key": persona_key,
-                "entidad_key": INSTITUCION_UNIVERSITARIA_KEY,
-                "tipo_relacion": "ESTUDIO_EN",
-                "fecha": "DESCONOCIDA",
-                "origen": FUENTE,
-            })
-
-    return {
-        "personas": personas,
-        "entidades_contexto": list(entidades.values()),
-        "relaciones_contexto": rel_contexto,
-    }
+    return {"personas": personas}

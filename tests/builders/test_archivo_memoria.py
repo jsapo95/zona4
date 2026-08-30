@@ -41,26 +41,31 @@ def test_registro_sin_nombre_se_descarta():
     assert dataset["personas"] == []
 
 
-def test_estudiante_universitario_genera_institucion():
+def test_estudiante_universitario_se_persiste_como_atributo_no_como_institucion():
+    """Fix E (auditoría C5, hallazgo I4): `estudiante_universitario` es un
+    booleano en la fuente, no el nombre de una institución. Antes de este
+    fix, el builder materializaba un único nodo
+    `:Institución "UNIVERSIDAD SIN ESPECIFICAR"` y conectaba a él a las 56
+    personas con este campo en `true` -afirmando una institución que la
+    fuente nunca nombra y relacionando falsamente entre sí a esas 56
+    personas. Ahora es sólo un atributo de `Persona`.
+    """
     dataset = build_archivo_memoria_rows([REGISTRO])
-    instituciones = [e for e in dataset["entidades_contexto"]
-                     if e["tipo_entidad"] == "Institucion"]
-    assert len(instituciones) == 1
-    rel = [r for r in dataset["relaciones_contexto"]
-           if r["tipo_relacion"] == "ESTUDIO_EN"]
-    assert len(rel) == 1
-    assert rel[0]["persona_key"] == "archivo_memoria:0"
-    assert rel[0]["origen"] == "archivo_memoria"
-    # Auditoría de aristas: toda relación lleva fecha, aunque sea DESCONOCIDA;
-    # el brief original omitía este campo, inconsistente con el resto de los
-    # builders (ver builders/relaciones.py) y con la Cypher que lo consume.
-    assert rel[0]["fecha"] == "DESCONOCIDA"
+    persona = dataset["personas"][0]
+    assert persona["estudiante_universitario"] is True
+    assert dataset.get("entidades_contexto", []) == []
+    assert dataset.get("relaciones_contexto", []) == []
 
 
-def test_no_universitario_no_genera_institucion():
-    registro = dict(REGISTRO, estudiante=True, estudiante_universitario=False)
+def test_ausencia_del_campo_no_afirma_false():
+    # La fuente nunca trae `estudiante_universitario: false` -está ausente en
+    # 247 de 303 registros. No hay que inventar ese valor: el atributo debe
+    # quedar ausente en la persona, no en `False`.
+    registro = dict(REGISTRO)
+    del registro["estudiante_universitario"]
     dataset = build_archivo_memoria_rows([registro])
-    assert dataset["entidades_contexto"] == []
+    persona = dataset["personas"][0]
+    assert "estudiante_universitario" not in persona
 
 
 def test_no_genera_ningun_evento_espacial_ni_lugar():
@@ -92,3 +97,9 @@ def test_sobre_el_archivo_real():
     assert dataset.get("lugares", []) == []
     con_fecha = [p for p in dataset["personas"] if p["fecha_secuestro"]]
     assert len(con_fecha) == 303
+    # Hallazgo I4: 56 de 303 registros reales traen `estudiante_universitario:
+    # true`; ninguno debe generar entidad ni relación de contexto.
+    universitarios = [p for p in dataset["personas"] if p.get("estudiante_universitario") is True]
+    assert len(universitarios) == 56
+    assert dataset.get("entidades_contexto", []) == []
+    assert dataset.get("relaciones_contexto", []) == []

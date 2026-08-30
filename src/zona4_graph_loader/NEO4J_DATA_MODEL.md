@@ -57,6 +57,14 @@ del campo `roles` del CDM. Una fila sin `roles` recibe `["VICTIMA"]`.
     no hay lugar asociado que permita construir la arista :SECUESTRADO_EN.
   * claves_alt [List[String]] (Opcional, V1.2) — claves de otras fuentes
     absorbidas por la reconciliación de identidades.
+  * estudiante_universitario [Boolean] (Opcional, V1.3, Fix E, hallazgo I4) —
+    sólo la puebla `archivo_memoria`. La fuente trae un booleano
+    (`true` en 56 de 303 registros; ausente, no `false`, en el resto). Antes
+    de este fix se materializaba como una arista `ESTUDIO_EN` hacia un nodo
+    fijo `:Institución "UNIVERSIDAD SIN ESPECIFICAR"`, afirmando una
+    institución que la fuente nunca nombra. Nunca se escribe `false`: la
+    ausencia del campo no es evidencia de que la persona no haya sido
+    estudiante universitaria.
 - :Victima (Label de Rol secundario conectado a :Persona)
 - :Represor (Label de Rol secundario conectado a :Persona)
 - :Complice (Label de Rol secundario conectado a :Persona)
