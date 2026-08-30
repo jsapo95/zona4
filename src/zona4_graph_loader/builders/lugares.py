@@ -13,6 +13,13 @@ from zona4_graph_loader.domain.date_norm import parse_ddmmyyyy
 from zona4_graph_loader.domain.place_norm import extract_specific_address, resolve_place
 from zona4_graph_loader.domain.text_norm import clean_text, slugify_name
 
+# Fuente compartida para los nodos de geografía (:Lugar) que cualquier builder
+# de nuevas fuentes crea como andamiaje (PAIS/PROVINCIA/DEPARTAMENTO/CIUDAD) al
+# armar una jerarquía: son geografía compartida entre fuentes, no propiedad
+# exclusiva de la fuente que primero los tocó, así que nunca deben llevar el
+# nombre de esa fuente puntual como `fuente`.
+FUENTE_JERARQUIA = "normalizacion_lugar"
+
 
 def node_from_lugar_key(lugar_key: str) -> Dict[str, str]:
     core = lugar_key.split("|", 1)[0]
@@ -82,7 +89,7 @@ def build_lugar_layer_rows(
             "nombre": "ARGENTINA",
             "tipoGeopolitico": "PAIS",
             "pais_code": "AR",
-            "fuente": "normalizacion_lugar",
+            "fuente": FUENTE_JERARQUIA,
             "tipo_entidad": "Lugar",
         }
     }
@@ -104,7 +111,7 @@ def build_lugar_layer_rows(
             "nombre": node["nombre"],
             "tipoGeopolitico": node["tipoGeopolitico"],
             "pais_code": pais_code,
-            "fuente": "normalizacion_lugar",
+            "fuente": FUENTE_JERARQUIA,
             "tipo_entidad": "Lugar",
         }
 
@@ -120,7 +127,7 @@ def build_lugar_layer_rows(
             "nombre": place["nombre_canonico"],
             "tipoGeopolitico": place["tipo"],
             "pais_code": place.get("pais_code") or "AR",
-            "fuente": "normalizacion_lugar",
+            "fuente": FUENTE_JERARQUIA,
             "tipo_entidad": "Lugar",
         }
         hierarchy_keys = place.get("hierarchy_keys")

@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Dict, List
 
 from zona4_graph_loader.builders.base import CanonicalDataset
-from zona4_graph_loader.builders.lugares import expand_lugar_ancestors
+from zona4_graph_loader.builders.lugares import FUENTE_JERARQUIA, expand_lugar_ancestors
 from zona4_graph_loader.constants import GEOREF_AMBIGUITY_DELTA, GEOREF_MIN_SCORE
 from zona4_graph_loader.domain.place_norm import resolve_place
 from zona4_graph_loader.domain.text_norm import clean_text
@@ -74,7 +74,14 @@ def build_archivo_memoria_rows(
 
         # resolve_place devuelve sólo el nodo hoja: los contenedores (provincia,
         # país) hay que materializarlos o las aristas PARTE_DE se descartan.
-        ancestros, saltos = expand_lugar_ancestors(lugar_key, FUENTE)
+        # Se usa FUENTE_JERARQUIA (no FUENTE) para todo el andamiaje geográfico
+        # -incluido el nodo hoja-: son geografía compartida entre fuentes (ver
+        # convención en builders/lugares.py, que atribuye a "normalizacion_lugar"
+        # incluso sus propios lugares resueltos), no propiedad exclusiva de
+        # archivo_memoria. Sin esto, provincias y países terminan con
+        # fuente="archivo_memoria" pese a anclar víctimas de todas las demás
+        # fuentes.
+        ancestros, saltos = expand_lugar_ancestors(lugar_key, FUENTE_JERARQUIA)
         for nodo in ancestros:
             lugares.setdefault(nodo["lugar_key"], nodo)
         lugares[lugar_key]["nombre"] = resuelto["nombre_canonico"]

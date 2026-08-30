@@ -3,15 +3,11 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 from zona4_graph_loader.builders.base import CanonicalDataset
+from zona4_graph_loader.builders.lugares import FUENTE_JERARQUIA
 from zona4_graph_loader.domain.place_norm import make_lugar_key
 from zona4_graph_loader.domain.text_norm import clean_text, slugify_name
 
 FUENTE = "eaaf_lugares"
-
-# Fuente para los nodos de andamiaje geográfico (PAIS/PROVINCIA/CIUDAD) que este
-# builder crea al armar la jerarquía; sigue la misma convención que
-# builders/lugares.py para no inflar el conteo de sitios propios del EAAF.
-FUENTE_JERARQUIA = "normalizacion_lugar"
 
 # CEM = cementerio, CCD = centro clandestino, EP = enterramiento en predio.
 TIPO_SITIO = {

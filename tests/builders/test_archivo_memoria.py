@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from zona4_graph_loader.builders.archivo_memoria import build_archivo_memoria_rows
+from zona4_graph_loader.builders.lugares import FUENTE_JERARQUIA
 from zona4_graph_loader.io.raw_files import read_raw_json
 
 REGISTRO = {
@@ -77,3 +78,18 @@ def test_sobre_el_archivo_real():
     assert len(dataset["personas"]) == 303
     assert all(p["fuente"] == "archivo_memoria" for p in dataset["personas"])
     assert len({p["persona_key"] for p in dataset["personas"]}) == 303
+
+
+def test_lugares_de_geografia_llevan_fuente_compartida_no_archivo_memoria():
+    """lugar:PAIS y lugar:PROVINCIA (y cualquier otro nodo de andamiaje
+    geográfico, incluida la ciudad hoja) son geografía compartida entre
+    fuentes: miles de víctimas de otras fuentes cuelgan de esos mismos
+    nodos. Atribuirles fuente="archivo_memoria" sería una afirmación de
+    procedencia falsa (Fix 5). Deben llevar la misma fuente compartida que
+    usa builders/lugares.py para su propio andamiaje.
+    """
+    dataset = build_archivo_memoria_rows([REGISTRO], use_georef=False)
+    lugares = [l for l in dataset["lugares"] if l["tipo_entidad"] == "Lugar"]
+    assert lugares
+    assert all(l["fuente"] == FUENTE_JERARQUIA for l in lugares)
+    assert all(l["fuente"] != "archivo_memoria" for l in lugares)
