@@ -29,6 +29,29 @@
   no permite saber si el motivo es "todavía no identificadx" o
   "identificadx pero sin fecha de ADN registrada en esta fuente". Ver §2 y
   §4 para el detalle.
+- Fix E (mismos auditoría y bump): `PARIO_EN` deja de emitirse sobre
+  registros de género masculino (hallazgo I1); `PRESENTE_EN`/`PARIO_EN` de
+  `ccds_json` agregan `fecha_fin`/`precision_fecha` en vez de fabricar
+  precisión de día (I2); `estudiante_universitario` pasa de una arista
+  `ESTUDIO_EN` fabricada a un atributo booleano de `:Persona` (I4); valores
+  sentinel de `Fuerza`/`lugar_de_trabajo`/`dónde_estudió` ("SIN
+  ESPECIFICAR", "CIVIL", "NO DETERMINADO"...) dejan de generar
+  `:Org`/`:Institución` falsos, y `Persona.fuerza` conserva el dato crudo
+  (I3d); `:DirecciónCCD` declara `tipo_direccion` ("CCD" /
+  "HECHO_NARRATIVO" / "CEMENTERIO"/"ENTERRAMIENTO"/"SITIO_HALLAZGO") para
+  distinguir un centro clandestino real de un domicilio o un cementerio
+  (I5); fechas de nacimiento/secuestro/asesinato fuera de un rango
+  históricamente plausible (verificado contra los datos reales, ver
+  `domain/date_norm.py`) se descartan a `"DESCONOCIDA"` en vez de
+  persistirse, y se agrega `Persona.edad` para que las contradicciones
+  entre edad y fecha sean auditables (I6); `CANDIDATO_MERGE` ya no se
+  propone entre roles mutuamente excluyentes (víctima/nietx vs.
+  represor/cómplice) sin ninguna fecha que lo respalde, y su propiedad
+  `score` se renombra a `score_nombre` (I7); `fecha_sentencia` deja de
+  filtrarse a las 2.710 aristas de parentesco que no tienen nada que ver
+  con una sentencia judicial (M1). Ver `semantic-fixes-report.md` para el
+  detalle completo, los conteos y lo que queda deliberadamente sin arreglar
+  (I3a, I3b, I3c).
 
 Este documento define la arquitectura exacta e inmutable del grafo en Neo4j. Cualquier proceso de extracción, estructuración o ingesta automática de datos ejecutado por un LLM debe adherirse estrictamente a las reglas, etiquetas, relaciones y propiedades declaradas a continuación. Está prohibido inventar o inferir entidades intermedias.
 
