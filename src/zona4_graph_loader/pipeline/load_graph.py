@@ -8,7 +8,7 @@ from typing import Any, Dict, List, LiteralString, cast
 from neo4j import GraphDatabase, Query
 
 from zona4_graph_loader.builders.archivo_memoria import build_archivo_memoria_rows
-from zona4_graph_loader.builders.base import CanonicalDataset
+from zona4_graph_loader.builders.base import TIPOS_ENTIDAD_CONTEXTO, CanonicalDataset
 from zona4_graph_loader.builders.candidatos import build_v3_candidate_rows
 from zona4_graph_loader.builders.ccds import build_ccd_rows
 from zona4_graph_loader.builders.eaaf_lugares import build_eaaf_lugares_rows
@@ -92,6 +92,20 @@ def contar_eventos_huerfanos(
         if l.get("tipo_entidad") == "Lugar"
     }
     return [e for e in eventos if e.get("lugar_key") not in lugar_keys]
+
+
+def contar_relaciones_source_huerfanas(
+    rows: List[Dict[str, Any]], persona_keys: set
+) -> List[Dict[str, Any]]:
+    """Filas de relaciones Persona->Persona cuyo `source_key` no está entre las
+    personas consolidadas.
+
+    CYPHER_UPSERT_REL_PERSONA (y CYPHER_UPSERT_REL_FAMILIAR) hacen MATCH -no
+    MERGE- sobre `source_key`: si ese nodo no existe como :Persona, la fila
+    entera se descarta en silencio, incluida su arista (p.ej. TORTURO_A). Se
+    reportan en vez de perderse.
+    """
+    return [r for r in rows if r.get("source_key") not in persona_keys]
 
 
 def run_load(args: argparse.Namespace) -> None:
@@ -277,12 +291,48 @@ def run_load(args: argparse.Namespace) -> None:
         else:
             print(f"Warning: {len(eventos_huerfanos)} eventos espaciales sin lugar resuelto ({detalle})")
 
+    # CYPHER_UPSERT_REL_PERSONA/CYPHER_UPSERT_REL_FAMILIAR hacen MATCH (no
+    # MERGE) sobre source_key: una fila cuyo perpetrador/origen no tiene nodo
+    # :Persona propio se descarta en silencio, incluida su arista (p.ej.
+    # TORTURO_A). Se cuenta ANTES de escribir, sobre las personas ya
+    # consolidadas (post identity resolution), para que el aviso refleje lo
+    # que de verdad se va a escribir.
+    persona_keys_existentes = {
+        p.get("persona_key") for p in consolidated.get("personas", [])
+    }
+    relaciones_huerfanas = contar_relaciones_source_huerfanas(rel_personas, persona_keys_existentes)
+    relaciones_huerfanas += contar_relaciones_source_huerfanas(rel_familiares, persona_keys_existentes)
+    if relaciones_huerfanas:
+        por_tipo_rel: Dict[str, int] = {}
+        for fila in relaciones_huerfanas:
+            tipo = fila.get("tipo", "DESCONOCIDO")
+            por_tipo_rel[tipo] = por_tipo_rel.get(tipo, 0) + 1
+        detalle_rel = ", ".join(f"{k}={v}" for k, v in sorted(por_tipo_rel.items()))
+        print(
+            f"Warning: {len(relaciones_huerfanas)} relaciones interpersonales con source_key "
+            f"sin nodo :Persona, se descartarán ({detalle_rel})"
+        )
+
     entidades = consolidated.get("entidades_contexto", [])
     orgs = [e for e in entidades if e.get("tipo_entidad") == "Org"]
     instituciones = [e for e in entidades if e.get("tipo_entidad") == "Institucion"]
     profesiones = [e for e in entidades if e.get("tipo_entidad") == "Profesion"]
     cargos = [e for e in entidades if e.get("tipo_entidad") == "Cargo"]
     alias_personas = [e for e in entidades if e.get("tipo_entidad") == "AliasPersona"]
+
+    entidades_sin_particion = [
+        e for e in entidades if e.get("tipo_entidad") not in TIPOS_ENTIDAD_CONTEXTO
+    ]
+    if entidades_sin_particion:
+        por_tipo_entidad: Dict[str, int] = {}
+        for entidad in entidades_sin_particion:
+            tipo = entidad.get("tipo_entidad", "DESCONOCIDO")
+            por_tipo_entidad[tipo] = por_tipo_entidad.get(tipo, 0) + 1
+        detalle_entidad = ", ".join(f"{k}={v}" for k, v in sorted(por_tipo_entidad.items()))
+        print(
+            f"Warning: {len(entidades_sin_particion)} entidades de contexto con tipo_entidad "
+            f"no reconocido, descartadas de toda partición ({detalle_entidad})"
+        )
 
     rel_contexto = [
         r for r in consolidated.get("relaciones_contexto", [])
@@ -377,8 +427,14 @@ def run_load(args: argparse.Namespace) -> None:
                 session, CYPHER_UPSERT_CANDIDATO_MERGE, identity_candidatos, "identity_candidatos", BATCH_SIZE
             )
 
-        # Run QA closure report
+        # Run QA closure report. candidatos_merge_total se reporta si CUALQUIERA
+        # de los dos batches de CANDIDATO_MERGE corrió: con --skip-v3-candidates
+        # pero identity resolution activa (o viceversa), la arista se escribe
+        # igual y el contador no debe suprimirse (Fix 8).
         if not args.skip_qa_report:
-            run_qa_report(session, include_candidates=not args.skip_v3_candidates)
+            algun_batch_de_candidatos_corrio = (
+                not args.skip_v3_candidates or not args.skip_identity_resolution
+            )
+            run_qa_report(session, include_candidates=algun_batch_de_candidatos_corrio)
 
     driver.close()
