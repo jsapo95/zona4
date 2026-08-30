@@ -70,6 +70,13 @@ EQUIV_CITIES = {
     # lo que "JOSE LEON SUAREZ SAN MARTIN" (arriba) nunca se dispara para
     # esta fuente; se agrega la clave sin sufijo para cubrirla.
     "JOSE LEON SUAREZ": ("CIUDAD", "VILLA JOSE LEON SUAREZ", "BUENOS AIRES"),
+    # La menos específica de las tres: "San Andrés" también nombra el
+    # archipiélago colombiano y una localidad de Lavalle, Mendoza. Como
+    # EQUIV_CITIES se consulta antes que _resolve_foreign_place (ver
+    # resolve_place), un "San Andrés" colombiano de una fuente futura
+    # (ej. exilio/asilo) caería silenciosamente en Buenos Aires en vez de
+    # reconocerse como extranjero. "San Andrés de Giles" normaliza a otra
+    # clave distinta y no se ve afectado.
     "SAN ANDRES": ("CIUDAD", "VILLA SAN ANDRES", "BUENOS AIRES"),
     "VILLA CONCEPCION": ("CIUDAD", "VILLA CONCEPCION", "BUENOS AIRES"),
 }
