@@ -108,6 +108,43 @@ def test_placeholder_de_minjus_no_genera_entidad_ni_relacion():
     assert dataset["relaciones_contexto"] == []
 
 
+def test_torturo_a_usa_metadatos_de_la_sentencia():
+    """Espejo de la misma prueba en test_minjus_imputados.py: la fuente no
+    registra cuándo ocurrió la tortura (el hecho), así que `fecha` debe
+    quedar en DESCONOCIDA sin importar la sentencia. La fecha del fallo
+    (procedencia, no el hecho) se conserva aparte en `fecha_sentencia`
+    (Fix 9).
+    """
+    index = {
+        "1-quinto-cuerpo-del-ejercito-bayon": {
+            "titulo": "Quinto Cuerpo del Ejército – Bayón",
+            "tribunal": "TOF BAHIA BLANCA",
+            "fecha_sentencia": "2012-05-10",
+            "origen": "minjus_sentencias:1-quinto-cuerpo-del-ejercito-bayon",
+        }
+    }
+    victima = dict(VICTIMA, sentencias=[
+        {
+            "sentencia_nombre": "Quinto Cuerpo del Ejército – Bayón",
+            "sentencia_url": "/sentencia/1-quinto-cuerpo-del-ejercito-bayon",
+            "imputados": [
+                {
+                    "imputado_nombre": "Abelleira, Héctor Jorge",
+                    "imputado_url": "/imputado/1-abelleira-hector-jorge",
+                    "delitos": ["Tormentos"],
+                }
+            ],
+        }
+    ])
+    dataset = build_minjus_victimas_rows(
+        [victima], ccd_key_by_slug=CCD_KEYS, sentencias_index=index
+    )
+    arista = dataset["relaciones_interpersonales"][0]
+    assert arista["fecha"] == "DESCONOCIDA"
+    assert arista["fecha_sentencia"] == "2012-05-10"
+    assert arista["fuente"] == "minjus_sentencias:1-quinto-cuerpo-del-ejercito-bayon"
+
+
 def test_registro_sin_url_se_descarta():
     dataset = build_minjus_victimas_rows(
         [dict(VICTIMA, source_url="")], ccd_key_by_slug=CCD_KEYS, sentencias_index={}
@@ -139,6 +176,7 @@ def test_sentencia_fuera_del_index_usa_origen_generico():
     arista = dataset["relaciones_interpersonales"][0]
     assert arista["fuente"] == "minjus_sentencias:1-quinto-cuerpo-del-ejercito-bayon"
     assert arista["fecha"] == "DESCONOCIDA"
+    assert arista["fecha_sentencia"] == "DESCONOCIDA"
 
 
 def test_ambos_builders_acuerdan_fuente_con_indice_vacio():

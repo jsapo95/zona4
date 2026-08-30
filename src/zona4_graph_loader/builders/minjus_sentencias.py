@@ -33,7 +33,9 @@ def build_sentencias_index(data: List[Dict[str, Any]]) -> Dict[str, Dict[str, An
     """Índice slug -> metadatos de sentencia.
 
     No genera nodos: el modelo V1.2 no tiene :Sentencia ni :Causa. Los metadatos
-    alimentan `origen` y `fecha` de las aristas TORTURO_A.
+    alimentan `origen` y `fecha_sentencia` de las aristas TORTURO_A. `fecha_sentencia`
+    es la fecha del fallo, no la del hecho: TORTURO_A.fecha se deja en
+    "DESCONOCIDA" porque la fuente no registra cuándo ocurrió la tortura.
     """
     index: Dict[str, Dict[str, Any]] = {}
     for item in data:
@@ -44,7 +46,14 @@ def build_sentencias_index(data: List[Dict[str, Any]]) -> Dict[str, Dict[str, An
         index[slug] = {
             "titulo": clean_text(item.get("titulo")),
             "tribunal": clean_text(tecnicos.get("tribunal")),
-            "fecha": parse_ddmmyyyy(clean_text(tecnicos.get("fecha"))),
+            # Renombrado de "fecha" a "fecha_sentencia" (Fix 9): es la fecha en
+            # que el tribunal dictó la sentencia, no la fecha del hecho (la
+            # tortura) que la arista TORTURO_A describe. Llamarla "fecha" a
+            # secas invitaba a que los builders la volcaran directamente en
+            # TORTURO_A.fecha, afirmando que el hecho ocurrió el día del fallo
+            # -décadas después del secuestro en los casos medidos sobre datos
+            # reales.
+            "fecha_sentencia": parse_ddmmyyyy(clean_text(tecnicos.get("fecha"))),
             "origen": f"{FUENTE}:{slug}",
         }
     return index

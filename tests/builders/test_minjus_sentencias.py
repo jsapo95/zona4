@@ -34,14 +34,14 @@ def test_index_expone_tribunal_y_fecha_iso():
     entrada = index["31-abo-atletico-banco-olimpo"]
     assert entrada["titulo"] == "ABO (Atletico – Banco – Olimpo)"
     assert entrada["tribunal"] == "TOF 2 CAPITAL FEDERAL"
-    assert entrada["fecha"] == "2010-12-21"
+    assert entrada["fecha_sentencia"] == "2010-12-21"
     assert entrada["origen"] == "minjus_sentencias:31-abo-atletico-banco-olimpo"
 
 
 def test_sentencia_sin_fecha_queda_en_none():
     sentencia = dict(SENTENCIA, datos_tecnicos={"tribunal": "TOF 1"})
     index = build_sentencias_index([sentencia])
-    assert index["31-abo-atletico-banco-olimpo"]["fecha"] is None
+    assert index["31-abo-atletico-banco-olimpo"]["fecha_sentencia"] is None
 
 
 def test_sobre_el_archivo_real():

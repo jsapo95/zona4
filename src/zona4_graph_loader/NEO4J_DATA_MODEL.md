@@ -78,7 +78,15 @@ del campo `roles` del CDM. Una fila sin `roles` recibe `["VICTIMA"]`.
 - (:Persona)-[:CUÑADX_DE]->(:Persona)
 - (:Persona)-[:SUEGRX_DE]->(:Persona)
 - (:Persona)-[:YERNX_NUERX_DE]->(:Persona)
-- (:Persona)-[:TORTURO_A]->(:Persona) // Semántica restrictiva: (:Represor)-[:TORTURO_A]->(:Victima)
+- (:Persona)-[:TORTURO_A]->(:Persona) // Semántica restrictiva: (:Represor)-[:TORTURO_A]->(:Victima).
+  * fecha [String] — la fuente MinJus no registra cuándo ocurrió la tortura
+    (el hecho); queda en "DESCONOCIDA" en vez de asumir la fecha del fallo
+    judicial (V1.2, Fix 9: inferirla sería inventar el hecho central que este
+    dataset existe para preservar).
+  * fecha_sentencia [String] (Opcional, V1.2) — fecha en que el tribunal dictó
+    la sentencia que documenta el hecho. Es procedencia, no el hecho (regla
+    1.2: `fecha` describe la relación, `origen` identifica la fuente que la
+    valida); se conserva como propiedad propia en vez de perderse.
 - (:Persona)-[:VIO_A]->(:Persona)     // Verbo VER. Avistamiento o constatación visual de la presencia del destino por el origen.
 - (:Persona)-[:MILITO_CON]->(:Persona)// Relación de co-militancia orientada desde la perspectiva del registro.
 

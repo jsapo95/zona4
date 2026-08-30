@@ -37,7 +37,7 @@ INDEX = {
     "1-quinto-cuerpo-del-ejercito-bayon": {
         "titulo": "Quinto Cuerpo del Ejército – Bayón",
         "tribunal": "TOF BAHIA BLANCA",
-        "fecha": "2012-05-10",
+        "fecha_sentencia": "2012-05-10",
         "origen": "minjus_sentencias:1-quinto-cuerpo-del-ejercito-bayon",
     }
 }
@@ -69,13 +69,20 @@ def test_apodo_genera_alias_persona_con_arista_identifica_a():
 
 
 def test_torturo_a_usa_metadatos_de_la_sentencia():
+    """La fuente no registra cuándo ocurrió la tortura (el hecho): `fecha`
+    debe quedar en DESCONOCIDA sin importar la sentencia. La fecha del fallo
+    (procedencia, no el hecho) se conserva aparte, en `fecha_sentencia`
+    (Fix 9: antes esta prueba afirmaba que la tortura ocurrió el día del
+    fallo, décadas después del hecho real).
+    """
     dataset = build_minjus_imputados_rows([IMPUTADO], sentencias_index=INDEX)
     aristas = [r for r in dataset["relaciones_interpersonales"] if r["tipo"] == "TORTURO_A"]
     assert len(aristas) == 1  # la víctima sin URL no genera arista
     arista = aristas[0]
     assert arista["source_key"] == "minjus_imputado:1-abelleira-hector-jorge"
     assert arista["target_key"] == "minjus_victima:1870-rossi-dario-jose"
-    assert arista["fecha"] == "2012-05-10"
+    assert arista["fecha"] == "DESCONOCIDA"
+    assert arista["fecha_sentencia"] == "2012-05-10"
     assert arista["fuente"] == "minjus_sentencias:1-quinto-cuerpo-del-ejercito-bayon"
 
 
@@ -97,6 +104,7 @@ def test_sentencia_fuera_del_index_usa_origen_generico():
     arista = dataset["relaciones_interpersonales"][0]
     assert arista["fuente"] == "minjus_sentencias:1-quinto-cuerpo-del-ejercito-bayon"
     assert arista["fecha"] == "DESCONOCIDA"
+    assert arista["fecha_sentencia"] == "DESCONOCIDA"
 
 
 def test_sobre_el_archivo_real():

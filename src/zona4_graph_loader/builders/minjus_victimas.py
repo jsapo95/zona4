@@ -152,7 +152,7 @@ def build_minjus_victimas_rows(
             meta = sentencias_index.get(slug_sent or "")
             if meta:
                 origen = meta["origen"]
-                fecha = meta.get("fecha") or "DESCONOCIDA"
+                fecha_sentencia = meta.get("fecha_sentencia") or "DESCONOCIDA"
             elif slug_sent:
                 # Slug real pero fuera del índice (sentencia no encontrada en el
                 # archivo de sentencias). Se deriva del propio slug, no de un
@@ -160,10 +160,10 @@ def build_minjus_victimas_rows(
                 # builder de imputados produzca el mismo `fuente` aunque el
                 # índice cambie entre corridas.
                 origen = f"{FUENTE_SENTENCIAS}:{slug_sent}"
-                fecha = "DESCONOCIDA"
+                fecha_sentencia = "DESCONOCIDA"
             else:
                 origen = FUENTE_TORTURO_A_SIN_SENTENCIA
-                fecha = "DESCONOCIDA"
+                fecha_sentencia = "DESCONOCIDA"
 
             for imputado in sentencia.get("imputados") or []:
                 slug_imputado = slug_persona_minjus(imputado.get("imputado_url"), "imputado")
@@ -173,7 +173,11 @@ def build_minjus_victimas_rows(
                     "source_key": f"minjus_imputado:{slug_imputado}",
                     "target_key": persona_key,
                     "tipo": "TORTURO_A",
-                    "fecha": fecha,
+                    # La fuente no registra cuándo ocurrió la tortura (el
+                    # hecho): "fecha" queda en DESCONOCIDA en vez de tomar la
+                    # fecha del fallo, que es procedencia (Fix 9), no el hecho.
+                    "fecha": "DESCONOCIDA",
+                    "fecha_sentencia": fecha_sentencia,
                     "fuente": origen,
                     "target_nombre": nombre,
                     "target_genero": "INDETERMINADO",
