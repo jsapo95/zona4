@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from zona4_graph_loader.builders.archivo_memoria import build_archivo_memoria_rows
-from zona4_graph_loader.builders.lugares import FUENTE_JERARQUIA
 from zona4_graph_loader.io.raw_files import read_raw_json
 
 REGISTRO = {
@@ -9,7 +8,11 @@ REGISTRO = {
     "fecha_desaparicion": "13 de julio de 1976",
     "estudiante": True,
     "estudiante_universitario": True,
-    "descripcion": "Nació el 13 de diciembre de 1951. Su apodo era “Nechi”.",
+    "descripcion": (
+        "Nació el 13 de diciembre de 1951. Su apodo era “Nechi”. Tenía 24 "
+        "años cuando fue secuestrado el 13 de julio de 1976 en la vía "
+        "pública, en Barrancas de Belgrano."
+    ),
     "lugar": "Billinghurst",
     "fecha_nacimiento": "1951-12-13",
     "fecha_desaparicion_normalizada": "1976-07-13",
@@ -18,7 +21,7 @@ REGISTRO = {
 
 
 def test_genera_persona_con_rol_victima():
-    dataset = build_archivo_memoria_rows([REGISTRO], use_georef=False)
+    dataset = build_archivo_memoria_rows([REGISTRO])
     persona = dataset["personas"][0]
     assert persona["persona_key"] == "archivo_memoria:0"
     assert persona["nombre"] == "Bellantuono Herrero, Jorge"
@@ -28,18 +31,18 @@ def test_genera_persona_con_rol_victima():
 
 
 def test_persiste_fechas_normalizadas():
-    persona = build_archivo_memoria_rows([REGISTRO], use_georef=False)["personas"][0]
+    persona = build_archivo_memoria_rows([REGISTRO])["personas"][0]
     assert persona["fecha_nacimiento"] == "1951-12-13"
     assert persona["fecha_secuestro"] == "1976-07-13"
 
 
 def test_registro_sin_nombre_se_descarta():
-    dataset = build_archivo_memoria_rows([dict(REGISTRO, nombre=None)], use_georef=False)
+    dataset = build_archivo_memoria_rows([dict(REGISTRO, nombre=None)])
     assert dataset["personas"] == []
 
 
 def test_estudiante_universitario_genera_institucion():
-    dataset = build_archivo_memoria_rows([REGISTRO], use_georef=False)
+    dataset = build_archivo_memoria_rows([REGISTRO])
     instituciones = [e for e in dataset["entidades_contexto"]
                      if e["tipo_entidad"] == "Institucion"]
     assert len(instituciones) == 1
@@ -56,20 +59,24 @@ def test_estudiante_universitario_genera_institucion():
 
 def test_no_universitario_no_genera_institucion():
     registro = dict(REGISTRO, estudiante=True, estudiante_universitario=False)
-    dataset = build_archivo_memoria_rows([registro], use_georef=False)
+    dataset = build_archivo_memoria_rows([registro])
     assert dataset["entidades_contexto"] == []
 
 
-def test_evento_secuestrado_en_apunta_a_lugar_del_dataset():
-    dataset = build_archivo_memoria_rows([REGISTRO], use_georef=False)
-    eventos = dataset["eventos_espaciales"]
-    if not eventos:
-        return  # sin Georef el topónimo puede no resolver; no es un fallo del builder
-    lugar_keys = {l["lugar_key"] for l in dataset["lugares"]
-                  if l["tipo_entidad"] == "Lugar"}
-    assert eventos[0]["tipo_relacion"] == "SECUESTRADO_EN"
-    assert eventos[0]["lugar_key"] in lugar_keys
-    assert eventos[0]["fecha"] == "1976-07-13"
+def test_no_genera_ningun_evento_espacial_ni_lugar():
+    """Fix B (auditoría C2): `lugar` es la categoría barrial con la que el
+    archivo municipal organiza cada ficha (11 valores para 303 registros,
+    todos barrios del Partido de San Martín), no el lugar del secuestro. En
+    el propio registro de ejemplo (Bellantuono), `lugar` dice "Billinghurst"
+    pero `descripcion` dice explícitamente que fue secuestrado en
+    "Barrancas de Belgrano" (CABA, otra jurisdicción) -contradicción real de
+    la fuente, no hipotética. El builder ya no genera ninguna arista
+    geográfica ni nodo :Lugar a partir de este campo.
+    """
+    dataset = build_archivo_memoria_rows([REGISTRO])
+    assert dataset.get("eventos_espaciales", []) == []
+    assert dataset.get("lugares", []) == []
+    assert dataset.get("jerarquias", []) == []
 
 
 def test_sobre_el_archivo_real():
@@ -78,18 +85,10 @@ def test_sobre_el_archivo_real():
     assert len(dataset["personas"]) == 303
     assert all(p["fuente"] == "archivo_memoria" for p in dataset["personas"])
     assert len({p["persona_key"] for p in dataset["personas"]}) == 303
-
-
-def test_lugares_de_geografia_llevan_fuente_compartida_no_archivo_memoria():
-    """lugar:PAIS y lugar:PROVINCIA (y cualquier otro nodo de andamiaje
-    geográfico, incluida la ciudad hoja) son geografía compartida entre
-    fuentes: miles de víctimas de otras fuentes cuelgan de esos mismos
-    nodos. Atribuirles fuente="archivo_memoria" sería una afirmación de
-    procedencia falsa (Fix 5). Deben llevar la misma fuente compartida que
-    usa builders/lugares.py para su propio andamiaje.
-    """
-    dataset = build_archivo_memoria_rows([REGISTRO], use_georef=False)
-    lugares = [l for l in dataset["lugares"] if l["tipo_entidad"] == "Lugar"]
-    assert lugares
-    assert all(l["fuente"] == FUENTE_JERARQUIA for l in lugares)
-    assert all(l["fuente"] != "archivo_memoria" for l in lugares)
+    # Fix B: cero aristas geográficas desde esta fuente (antes 303
+    # SECUESTRADO_EN); la fecha de desaparición sigue viva en
+    # Persona.fecha_secuestro para cada registro que la trae.
+    assert dataset.get("eventos_espaciales", []) == []
+    assert dataset.get("lugares", []) == []
+    con_fecha = [p for p in dataset["personas"] if p["fecha_secuestro"]]
+    assert len(con_fecha) == 303

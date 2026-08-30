@@ -3,32 +3,52 @@ from __future__ import annotations
 from typing import Any, Dict, List
 
 from zona4_graph_loader.builders.base import CanonicalDataset
-from zona4_graph_loader.builders.lugares import FUENTE_JERARQUIA, expand_lugar_ancestors
-from zona4_graph_loader.constants import GEOREF_AMBIGUITY_DELTA, GEOREF_MIN_SCORE
-from zona4_graph_loader.domain.place_norm import resolve_place
 from zona4_graph_loader.domain.text_norm import clean_text
 
 FUENTE = "archivo_memoria"
 INSTITUCION_UNIVERSITARIA_KEY = "institucion:universidad_sin_especificar"
 
 
-def build_archivo_memoria_rows(
-    data: List[Dict[str, Any]],
-    *,
-    use_georef: bool = True,
-) -> CanonicalDataset:
+def build_archivo_memoria_rows(data: List[Dict[str, Any]]) -> CanonicalDataset:
     """Convierte el Archivo de la Memoria de San Martín al CDM.
 
-    El campo `lugar` es un topónimo corto (ej. "Billinghurst"), no una dirección
-    narrativa, así que `resolve_place` lo maneja sin parsing adicional.
+    Fix B (auditoría 2026-08-29, hallazgo C2): este builder generaba una
+    arista `SECUESTRADO_EN` a partir del campo `lugar`. Se investigó qué
+    denota `lugar` en los 303 registros y NO es el lugar del secuestro:
+
+    - `lugar` sólo toma 11 valores distintos, todos barrios del Partido de
+      General San Martín (San Martín, Villa Ballester, José León Suárez,
+      Villa Lynch, Villa Maipú, San Andrés, Villa Concepción, Billinghurst,
+      Tropezón, Villa Zagala, Villa Libertad) — es la categoría barrial bajo
+      la que el archivo municipal organiza cada ficha, no un dato extraído
+      del hecho.
+    - En 159/303 registros (52 %) la frase de secuestro de `descripcion`
+      nombra explícitamente OTRO lugar (a veces otra jurisdicción: Barrancas
+      de Belgrano/CABA, Vicente López, Morón, Don Torcuato, La Tablada,
+      Boulogne/San Isidro, etc.), contradiciendo a `lugar`.
+    - En 64/303 registros (21 %) el valor de `lugar` ni siquiera aparece en
+      ningún lugar del texto de `descripcion` (ni como domicilio, ni como
+      lugar de trabajo, ni como residencia familiar): es metadata curatorial
+      del archivo, no un hecho biográfico verificable en la propia fuente.
+
+    Re-tipar la arista a `PRESENTE_EN` (presencia genérica) tampoco es
+    honesto: no hay ninguna fecha ni evidencia de que la persona haya estado
+    en ese barrio en un momento dado -y mezclaría entidades geopolíticas de
+    barrio en un tipo de arista que hoy apunta 100% a `:Lugar` de tipo CCD.
+    Por eso se elige NO generar ningún evento espacial ni nodo `:Lugar` a
+    partir de `lugar`: el dato no soporta ninguna arista geográfica del
+    modelo sin inventar lo que la fuente no dice. La fecha de desaparición
+    se sigue persistiendo en `Persona.fecha_secuestro`, igual que hace
+    MinJus con su propio `lugar_de_secuestro` narrativo.
+
+    Efecto: esta fuente pierde su capa espacial completa (0 aristas
+    geográficas desde archivo_memoria; antes 303 `SECUESTRADO_EN`). Es el
+    foco geográfico declarado del proyecto para esta fuente, así que se
+    reporta sin atenuantes en el reporte de fixes.
     """
     personas: List[Dict[str, Any]] = []
-    lugares: Dict[str, Dict[str, Any]] = {}
-    jerarquias: List[Dict[str, Any]] = []
-    eventos: List[Dict[str, Any]] = []
     entidades: Dict[str, Dict[str, Any]] = {}
     rel_contexto: List[Dict[str, Any]] = []
-    pares_parte_de: set[tuple[str, str]] = set()
 
     for indice, item in enumerate(data):
         nombre = clean_text(item.get("nombre"))
@@ -61,52 +81,8 @@ def build_archivo_memoria_rows(
                 "origen": FUENTE,
             })
 
-        resuelto = resolve_place(
-            item.get("lugar"),
-            use_georef=use_georef,
-            georef_min_score=GEOREF_MIN_SCORE,
-            georef_ambiguity_delta=GEOREF_AMBIGUITY_DELTA,
-        )
-        if not resuelto:
-            continue
-
-        lugar_key = resuelto["lugar_key"]
-
-        # resolve_place devuelve sólo el nodo hoja: los contenedores (provincia,
-        # país) hay que materializarlos o las aristas PARTE_DE se descartan.
-        # Se usa FUENTE_JERARQUIA (no FUENTE) para todo el andamiaje geográfico
-        # -incluido el nodo hoja-: son geografía compartida entre fuentes (ver
-        # convención en builders/lugares.py, que atribuye a "normalizacion_lugar"
-        # incluso sus propios lugares resueltos), no propiedad exclusiva de
-        # archivo_memoria. Sin esto, provincias y países terminan con
-        # fuente="archivo_memoria" pese a anclar víctimas de todas las demás
-        # fuentes.
-        ancestros, saltos = expand_lugar_ancestors(lugar_key, FUENTE_JERARQUIA)
-        for nodo in ancestros:
-            lugares.setdefault(nodo["lugar_key"], nodo)
-        lugares[lugar_key]["nombre"] = resuelto["nombre_canonico"]
-        lugares[lugar_key]["tipoGeopolitico"] = resuelto["tipo"]
-
-        for salto in saltos:
-            par = (salto["child_key"], salto["parent_key"])
-            if par in pares_parte_de:
-                continue
-            pares_parte_de.add(par)
-            jerarquias.append(salto)
-
-        eventos.append({
-            "persona_key": persona_key,
-            "lugar_key": lugar_key,
-            "tipo_relacion": "SECUESTRADO_EN",
-            "fecha": clean_text(item.get("fecha_desaparicion_normalizada")) or "DESCONOCIDA",
-            "origen": FUENTE,
-        })
-
     return {
         "personas": personas,
-        "lugares": list(lugares.values()),
-        "jerarquias": jerarquias,
-        "eventos_espaciales": eventos,
         "entidades_contexto": list(entidades.values()),
         "relaciones_contexto": rel_contexto,
     }
