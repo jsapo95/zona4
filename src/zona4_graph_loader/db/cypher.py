@@ -219,12 +219,16 @@ SET r.fecha = "ETERNA",
 """
 
 # Reconciled Candidate links
+# `score_nombre` (Fix E, V1.3, hallazgo I7): antes `score`. Es similitud de
+# cadena tras normalización de erratas, no una confianza de identidad -el
+# nombre viejo invitaba a leerlo como tal (un par víctima-represor con
+# `score` 1.0 y `confianza` "baja" a la vez).
 CYPHER_UPSERT_CANDIDATO_MERGE = """
 UNWIND $rows AS row
 MATCH (p:Persona {persona_key: row.placeholder_key})
 MATCH (c:Persona {persona_key: row.candidate_key})
 MERGE (p)-[r:CANDIDATO_MERGE {metodo: row.metodo}]->(c)
-SET r.score = row.score,
+SET r.score_nombre = row.score_nombre,
     r.slug = row.slug,
     r.confianza = row.confianza,
     r.fuente = row.fuente,

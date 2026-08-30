@@ -77,6 +77,83 @@ def test_nombre_igual_sin_fecha_genera_candidato_no_merge():
     }
 
 
+def test_candidato_expone_score_nombre_no_score():
+    # Fix E (auditoría 2026-08-29, hallazgo I7): `score` medía similitud de
+    # cadena, no confianza de identidad, y se prestaba a lecturas erróneas
+    # (un par víctima-represor con "score" 1.0 leído como certeza). Renombrado
+    # a `score_nombre` para que el nombre de la propiedad diga qué mide.
+    dataset = {
+        "personas": [
+            _persona("registro:1", "Juan Perez", "detalles_personas"),
+            _persona("minjus_victima:5", "Juan Perez", "minjus_victimas"),
+        ],
+    }
+    report = resolve_identities(dataset)
+    candidato = report.candidatos[0]
+    assert "score_nombre" in candidato
+    assert "score" not in candidato
+    assert candidato["score_nombre"] == 0.9
+
+
+def test_nombre_igual_sin_fecha_no_propone_candidato_entre_victima_y_represor():
+    """Fix E (auditoría 2026-08-29, hallazgo I7): 14 de los 23 pares
+    víctima-represor con `score` 0,9-1,0 que encontró la auditoría eran
+    exactamente este caso -mismo nombre exacto, SIN ninguna fecha que
+    confirme ni contradiga (a diferencia de
+    `test_merge_veta_cuando_los_roles_son_victima_y_represor`, donde la
+    fecha SÍ confirma y el candidato se sigue proponiendo con confianza
+    alta). Sin ninguna fecha de por medio, proponer que una víctima y un
+    represor son la misma persona es la combinación de menor evidencia con
+    la peor hipótesis posible en este dominio: no se debe proponer.
+    """
+    dataset = {
+        "personas": [
+            _persona("registro:1", "Juan Perez", "detalles_personas"),
+            _persona("juicios_condenado:3", "Juan Perez", "juicios_condenados",
+                     roles=["REPRESOR"]),
+        ],
+    }
+    report = resolve_identities(dataset)
+    assert report.merges == []
+    assert report.candidatos == []
+
+
+def test_fuzzy_no_propone_candidato_entre_victima_y_represor():
+    """Fix E (auditoría 2026-08-29, hallazgo I7): 9 de los 23 pares
+    víctima-represor de la auditoría venían del matcher fuzzy (Paso 2), que
+    antes de este fix no miraba roles en absoluto -"Rivera, Ernesto" es
+    exactamente el ejemplo real de la auditoría (víctima) emparejado con
+    "Rivero, Ernesto" (represor), similitud de nombre 1.0 sin ninguna fecha
+    de por medio.
+    """
+    dataset = {
+        "personas": [
+            _persona("registro:1", "Rivera, Ernesto", "detalles_personas"),
+            _persona("juicios_condenado:9", "Rivero, Ernesto", "juicios_condenados",
+                     roles=["REPRESOR"]),
+        ],
+    }
+    report = resolve_identities(dataset)
+    assert report.merges == []
+    assert report.candidatos == []
+
+
+def test_fuzzy_sigue_proponiendo_candidatos_entre_roles_compatibles():
+    # Control: el mismo par de nombres, ambos víctimas, debe seguir generando
+    # el candidato fuzzy de siempre -el fix no debe silenciar el camino
+    # entero, sólo los pares víctima-represor.
+    dataset = {
+        "personas": [
+            _persona("registro:1", "Rivera, Ernesto", "detalles_personas"),
+            _persona("minjus_victima:9", "Rivero, Ernesto", "minjus_victimas"),
+        ],
+    }
+    report = resolve_identities(dataset)
+    assert report.merges == []
+    assert len(report.candidatos) == 1
+    assert report.candidatos[0]["metodo"] == "set_dice_typo_v1"
+
+
 def test_fechas_distintas_no_mergean():
     dataset = {
         "personas": [

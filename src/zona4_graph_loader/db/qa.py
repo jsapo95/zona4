@@ -33,6 +33,16 @@ QA_QUERIES = {
     "rel_murio_en_total": "MATCH ()-[r:MURIO_EN]->() RETURN count(r) AS value",
     "rel_liberado_en_total": "MATCH ()-[r:LIBERADO_EN]->() RETURN count(r) AS value",
     "candidatos_merge_total": "MATCH ()-[r:CANDIDATO_MERGE]->() RETURN count(r) AS value",
+    # Fix E (V1.3, hallazgo I7): ya no se proponen candidatos víctima-represor
+    # sin ninguna fecha que los respalde. Los que persisten (si los hay)
+    # deberían venir todos con `metodo:"nombre_exacto_roles_incompatibles"`
+    # -evidencia real detrás, revisión humana pendiente- nunca de
+    # "nombre_exacto_sin_fecha" ni "set_dice_typo_v1".
+    "candidatos_merge_victima_represor_total": (
+        "MATCH (a:Persona)-[r:CANDIDATO_MERGE]->(b:Persona) "
+        "WHERE (a:Victima AND b:Represor) OR (a:Represor AND b:Victima) "
+        "RETURN count(r) AS value"
+    ),
     "orgs_total": "MATCH (e:Org) RETURN count(e) AS value",
     "instituciones_total": "MATCH (e:Institución) RETURN count(e) AS value",
     "profesiones_total": "MATCH (e:Profesión) RETURN count(e) AS value",
@@ -46,7 +56,7 @@ QA_QUERIES = {
 def run_qa_report(session, include_candidates: bool = True) -> None:
     report: Dict[str, int] = {}
     for key, query in QA_QUERIES.items():
-        if key == "candidatos_merge_total" and not include_candidates:
+        if key in {"candidatos_merge_total", "candidatos_merge_victima_represor_total"} and not include_candidates:
             continue
         rec = session.run(Query(cast(LiteralString, query))).single()
         report[key] = int(rec["value"]) if rec and rec["value"] is not None else 0

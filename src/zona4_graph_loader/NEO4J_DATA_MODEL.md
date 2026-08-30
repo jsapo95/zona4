@@ -187,6 +187,27 @@ del campo `roles` del CDM. Una fila sin `roles` recibe `["VICTIMA"]`.
 - (:AliasLugar)-[:ALIAS_DE]->(:Lugar)
 - (:Lugar)-[:PARTE_DE]->(:Lugar)       // RELACIÓN RECURSIVA CRÍTICA. Modela la jerarquía anidada. Va del contenedor menor al contenedor de orden político superior (Ej: Localidad -> Partido -> Provincia).
 
+#### 3.5 Candidatos de reconciliación de identidad (V1.3, Fix E, hallazgo I7)
+- (:Persona)-[:CANDIDATO_MERGE]->(:Persona) // NO es una fusión: es una SUGERENCIA para revisión humana entre dos nodos :Persona que podrían ser la misma persona y que la reconciliación automática (identity_resolution.py) no fusionó -o porque no hay fecha que lo confirme, o porque los roles son mutuamente excluyentes. La dirección del par es arbitraria (orden alfabético de las claves), no semántica.
+  * fecha [String] — siempre `"PROBABILÍSTICA"` (no es un hecho fechado).
+  * origen [String] — siempre `"name_similarity"`.
+  * metodo [String] — cómo se generó el candidato: `"nombre_exacto_sin_fecha"` (mismo nombre exacto, ninguna fecha compartida confirma ni contradice), `"nombre_exacto_fecha_contradictoria"` (mismo nombre, fechas que se contradicen), `"nombre_exacto_clique_incompleto"` (fecha confirma pero un tercer registro rompe el clique), `"nombre_exacto_roles_incompatibles"` (fecha confirma pero los roles son víctima/nietx vs. represor/cómplice — el bloqueo de merge más fuerte, pero con evidencia real detrás), `"set_dice_typo_v1"` (similitud de cadena entre nombres distintos, sin coincidencia exacta), `"slug_exacto"` (V3, reconciliación asistida contra placeholders sin resolver).
+  * score_nombre [Float] — similitud de cadena entre los nombres normalizados (0 a 1). **No es una confianza de identidad**: dos nombres distintos con errata típica pueden dar `score_nombre` 1.0 con `confianza` "baja" (antes de V1.3 esta propiedad se llamaba `score`, invitando a leerla como certeza).
+  * confianza [String] — `"alta"` | `"media"` | `"baja"`, la lectura que sí hay que usar para priorizar revisión.
+  * slug [String] — el nombre normalizado que originó el candidato.
+  * fuente [String] — `"reconciliacion_cross_fuente"` (Paso 1/2 de `identity_resolution.py`) o `"v3_reconciliacion_asistida"` (`builders/candidatos.py`).
+
+  **Nunca se propone un candidato entre roles mutuamente excluyentes
+  (víctima/nietx vs. represor/cómplice) si no hay ninguna fecha que lo
+  respalde** (hallazgo I7): proponer que una víctima y un represor son la
+  misma persona, sin ninguna evidencia más que una coincidencia o similitud
+  de nombre, es la peor hipótesis de este dominio con la menor evidencia
+  posible. Cuando SÍ hay una fecha que confirma la coincidencia, el
+  candidato se sigue proponiendo (con `metodo:
+  "nombre_exacto_roles_incompatibles"`, `confianza: "alta"`) para que un
+  humano lo revise -ahí hay evidencia real detrás, aunque el merge nunca se
+  ejecute automáticamente.
+
 ---
 
 ### 4. DDL DE INTEGRIDAD (NEO4J CYPHER)

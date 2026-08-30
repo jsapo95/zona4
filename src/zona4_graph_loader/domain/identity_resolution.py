@@ -157,7 +157,13 @@ def _candidato(a: str, b: str, metodo: str, score: float, slug: str, confianza: 
         "placeholder_key": origen,
         "candidate_key": destino,
         "metodo": metodo,
-        "score": round(score, 3),
+        # Fix E (auditoría 2026-08-29, hallazgo I7): renombrado de `score` a
+        # `score_nombre`. Es similitud de cadena tras normalización de
+        # erratas, NO una confianza de identidad -un analista que ordenara
+        # por `score` veía "1.0" en pares víctima-represor y lo leía como
+        # certeza, cuando `confianza` para esos mismos pares es "baja". El
+        # nombre ahora dice explícitamente qué mide.
+        "score_nombre": round(score, 3),
         "slug": slug,
         "confianza": confianza,
         "fuente": "reconciliacion_cross_fuente",
@@ -279,7 +285,10 @@ def resolve_identities(dataset: CanonicalDataset) -> IdentityReport:
         #   1. Fechas confirman pero los roles son mutuamente excluyentes
         #      (víctima/nietx vs. represor/cómplice): el veto de Fix 3. Es la
         #      evidencia más fuerte de todas, pero fusionar sería el peor error
-        #      posible en este dominio, así que nunca se fusiona.
+        #      posible en este dominio, así que nunca se fusiona. Como la
+        #      fecha SÍ confirma, hay evidencia real detrás del candidato -se
+        #      sigue proponiendo, con confianza "alta" y un método que deja
+        #      explícito el motivo del bloqueo, para revisión humana.
         #   2. Fechas confirman pero el merge quedó bloqueado porque la
         #      componente conexa no era un clique completo (Fix 6): evidencia
         #      igual de fuerte que un merge real, solo que un tercer registro
@@ -291,7 +300,15 @@ def resolve_identities(dataset: CanonicalDataset) -> IdentityReport:
         #      distintas.
         #   4. Ninguna fecha compartida confirma ni contradice: el caso
         #      "mismo nombre sin fecha" de siempre, sin evidencia en ningún
-        #      sentido.
+        #      sentido. Fix E (auditoría 2026-08-29, hallazgo I7): cuando
+        #      además los roles son mutuamente excluyentes (víctima/nietx vs.
+        #      represor/cómplice), NO se propone el candidato. A diferencia
+        #      del grupo 1, acá no hay ninguna fecha que respalde la
+        #      coincidencia de nombre -es la combinación de menor evidencia
+        #      posible (sólo el nombre) con la peor hipótesis posible en este
+        #      dominio (víctima = represor). 14 de los 23 pares
+        #      víctima-represor que encontró la auditoría con score 0,9-1,0
+        #      "nombre_exacto_sin_fecha" caían acá.
         sobrevivientes = [p for p in ordenado if p["persona_key"] not in absorbidas]
         for i, a in enumerate(sobrevivientes):
             for b in sobrevivientes[i + 1:]:
@@ -313,7 +330,7 @@ def resolve_identities(dataset: CanonicalDataset) -> IdentityReport:
                         _candidato(a["persona_key"], b["persona_key"],
                                    "nombre_exacto_fecha_contradictoria", 0.5, slug, "baja")
                     )
-                else:
+                elif not _roles_incompatibles(a, b):
                     report.candidatos.append(
                         _candidato(a["persona_key"], b["persona_key"],
                                    "nombre_exacto_sin_fecha", 0.9, slug, "media")
@@ -332,11 +349,13 @@ def resolve_identities(dataset: CanonicalDataset) -> IdentityReport:
 
     claves_por_slug: Dict[str, List[str]] = defaultdict(list)
     fuente_por_clave: Dict[str, Optional[str]] = {}
+    persona_por_clave: Dict[str, Dict[str, Any]] = {}
     for persona in dataset["personas"]:
         if not persona.get("nombre"):
             continue
         claves_por_slug[slugify_name(persona["nombre"])].append(persona["persona_key"])
         fuente_por_clave[persona["persona_key"]] = persona.get("fuente")
+        persona_por_clave[persona["persona_key"]] = persona
 
     vistos: Set[Tuple[str, str]] = set()
     for slug in slugs:
@@ -362,6 +381,18 @@ def resolve_identities(dataset: CanonicalDataset) -> IdentityReport:
             for clave_a in claves_por_slug[slug]:
                 for clave_b in claves_por_slug[otro_slug]:
                     if fuente_por_clave[clave_a] == fuente_por_clave[clave_b]:
+                        continue
+                    # Fix E (auditoría 2026-08-29, hallazgo I7): a diferencia
+                    # del Paso 1, este camino nunca miraba roles en absoluto.
+                    # Es justamente donde caían 9 de los 23 pares
+                    # víctima-represor con `score` 1,0 que encontró la
+                    # auditoría (typos entre apellidos distintos, p.ej.
+                    # "FERNÁNDEZ" represor / "Hernández" víctima) -y acá,
+                    # a diferencia del bucket "nombre_exacto_sin_fecha", ni
+                    # siquiera coincide el nombre completo: es sólo similitud
+                    # de cadena. Sin ninguna fecha que lo respalde, no se
+                    # propone el candidato.
+                    if _roles_incompatibles(persona_por_clave[clave_a], persona_por_clave[clave_b]):
                         continue
                     report.candidatos.append(
                         _candidato(clave_a, clave_b, "set_dice_typo_v1", score, slug, "baja")
