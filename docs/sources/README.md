@@ -22,6 +22,18 @@ A continuación se listan las fuentes de información actualmente activas y norm
 *   **Paquete R - Presentes**:
     *   *Descripción*: Datos consolidados de militancia, detenciones y trayectorias del paquete analítico "Presentes".
     *   *Documentación*: [paquete_r_presentes.md](file:///Users/a4649783/Documents/UNSAM/zona4/docs/sources/paquete_r_presentes.md)
+*   **Archivo de la Memoria de San Martín**:
+    *   *Descripción*: Víctimas del partido de San Martín (Zona IV), con lugar de secuestro y fecha normalizada.
+    *   *Documentación*: [archivo_memoria_san_martin.md](file:///Users/a4649783/Documents/UNSAM/zona4/docs/sources/archivo_memoria_san_martin.md)
+*   **EAAF — La Búsqueda**:
+    *   *Descripción*: Sitios de hallazgo de restos del Equipo Argentino de Antropología Forense; el CSV de identificados de la misma fuente queda fuera del grafo (ver ficha).
+    *   *Documentación*: [eaaf.md](file:///Users/a4649783/Documents/UNSAM/zona4/docs/sources/eaaf.md)
+*   **MinJus GBA**:
+    *   *Descripción*: Centros clandestinos, imputados, víctimas y sentencias de la consulta interactiva de Derechos Humanos de la Provincia de Buenos Aires.
+    *   *Documentación*: [minjus_gba.md](file:///Users/a4649783/Documents/UNSAM/zona4/docs/sources/minjus_gba.md)
+*   **Juicios de Lesa Humanidad**:
+    *   *Descripción*: Condenados por lesa humanidad; las causas de Argentina y del exterior quedan fuera del grafo (ver ficha).
+    *   *Documentación*: [juicios_lesa_humanidad.md](file:///Users/a4649783/Documents/UNSAM/zona4/docs/sources/juicios_lesa_humanidad.md)
 
 ---
 

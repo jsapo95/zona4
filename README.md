@@ -34,32 +34,52 @@ La veracidad de la información utilizada se encuentra ligada mayormente al cont
 
 ### Fuentes de datos
 
-| Nombre | Estado | Url | Glosario |
-| ------ | ------ | --- | -------- |
-| Archivo de la Memoria de San Martín | Procesado | https://sitiosale.cdn.prismic.io/sitiosale/Z9luiTiBA97GimGK_M_ArchivodeMemoria-1-.pdf | |
-| Base de datos - Parque de la memoria | Procesado | https://basededatos.parquedelamemoria.org.ar/registros/ | [Ver glosario](/docs/base_de_datos/parque_de_la_memoria.md) |
-| Niños desaparecidos. Jóvenes localizados 1975 - 2015 | Pendiente | https://www.unq.edu.ar/wp-content/uploads/migracion/documentos/5594327fb5347.pdf | |
-| Nietas y nietos - Abuelas de Plaza de Mayo | Procesado | https://www.abuelas.org.ar/nietas-y-nietos/buscador | [Ver glosario](/docs/base_de_datos/nietos_y_nietas.md) |
-| Centros clandestinos de detención | Pendiente | https://es.wikipedia.org/wiki/Centro_clandestino_de_detenci%C3%B3n_(Argentina) | |
-| Listado de Centros Clandestinos de Detención | Procesado | https://www.argentina.gob.ar/sites/default/files/6._anexo_v_listado_de_ccd-investigacion_ruvte-ilid.pdf | [Ver glosario](/docs/base_de_datos/ccds.md) |
-| Listado de casos sin denuncia formal | Pendiente | https://www.argentina.gob.ar/sites/default/files/3._anexo_ii_listado_de_casos_sin_dcia_formal-investigacion_ruvte-ilid.pdf | |
-| Registro Unificado de Víctimas del Terrorismo de Estado (RUVTE) | Pendiente | https://www.argentina.gob.ar/derechoshumanos/ANM/ruvte/2015 | |
-| Centros Clandestinos de Detención durante la dictadura cívico-militar entre 1976 y 1982 | Pendiente | https://observatorioconurbano.ungs.edu.ar/?p=5392 | |
-| Paquete R - presentes | Procesado | https://diegokoz.github.io/presentes/ | [Ver glosario](/docs/base_de_datos/paquete_r_presentes.md) |
-| Documentos desclasificados EE.UU. | Pendiente |https://desclasificados.org.ar/ | |
-| Datos de represores, victimas, sentencias y ccds en GBA | Procesado | https://derechoshumanos.mjus.gba.gob.ar/consulta-interactiva/ | |
-| Imputados | Pendiente | https://www.mpf.gob.ar/plan-condor/imputados/zona-iv-santiago-omar-riveros/ | |
-| Archivo provincial de la memoria | Pendiente | https://apm.gov.ar/presentes/detalle/2716 | |
-| Semblanza de las dictaduras civico-militares del 55' al 83' | Pendiente | https://robertobaschetti.com/ | |
-| Leyes de la dictadura | Procesado | https://www.lasleyesdeladictadura.com.ar/index.php?a=PublicView&name=LeyesPublic | |
-| Condor Atlanta | Pendiente | https://condor-atlanta.org/ | |
-| Juicios de Lesa Humanidad | Procesado | http://www.juiciosdelesahumanidad.ar/ | |
-| Nizkor | Pendiente | https://www.derechos.org/nizkor/arg/ | |
-| Fiscales juicios | Pendiente | https://www.fiscales.gob.ar/lesa-humanidad/?tipo-entrada=agenda | |
-| Webinar IA y DDHH | Pendiente | https://www.cipdh.gob.ar/inteligencia-artificial-y-derechos-humanos/ | |
-| Juicios | Pendiente | https://www.mpf.gob.ar/lesa/jurisprudencia/ | |
-| Juicios PBA | Pendiente | https://derechoshumanos.mjus.gba.gob.ar/lesa-humanidad/ | |
-| EAFF La Busqueda | Procesado | https://labusqueda.eaaf.org.ar/ | |
+`Extraído` indica que el dato fue efectivamente descargado/parseado a
+`data/raw/` o `data/sources/`. `En grafo` indica que existe un builder
+registrado en `pipeline/load_graph.py` que lo escribe en Neo4j. Antes de esta
+iteración ambas columnas eran una sola (`Estado: Procesado/Pendiente`), y
+"Procesado" se usaba para lo primero aunque nunca llegara al grafo — la
+verdad de cada fila fue verificada contra el código, no copiada del estado
+anterior.
+
+| Nombre | Extraído | En grafo | Url | Glosario |
+| ------ | -------- | -------- | --- | -------- |
+| Archivo de la Memoria de San Martín | Sí | Sí (303 víctimas) | https://sitiosale.cdn.prismic.io/sitiosale/Z9luiTiBA97GimGK_M_ArchivodeMemoria-1-.pdf | [Ver ficha](/docs/sources/archivo_memoria_san_martin.md) |
+| Base de datos - Parque de la memoria | Sí | Sí | https://basededatos.parquedelamemoria.org.ar/registros/ | [Ver glosario](/docs/sources/parque_de_la_memoria.md) |
+| Niños desaparecidos. Jóvenes localizados 1975 - 2015 | No | No | https://www.unq.edu.ar/wp-content/uploads/migracion/documentos/5594327fb5347.pdf | |
+| Nietas y nietos - Abuelas de Plaza de Mayo | Sí | Sí | https://www.abuelas.org.ar/nietas-y-nietos/buscador | [Ver glosario](/docs/sources/nietos_y_nietas.md) |
+| Centros clandestinos de detención | No | No | https://es.wikipedia.org/wiki/Centro_clandestino_de_detenci%C3%B3n_(Argentina) | |
+| Listado de Centros Clandestinos de Detención (RUVTE) | Sí | Sí | https://www.argentina.gob.ar/sites/default/files/6._anexo_v_listado_de_ccd-investigacion_ruvte-ilid.pdf | [Ver glosario](/docs/sources/ccds.md) |
+| Listado de casos sin denuncia formal | No | No | https://www.argentina.gob.ar/sites/default/files/3._anexo_ii_listado_de_casos_sin_dcia_formal-investigacion_ruvte-ilid.pdf | |
+| Registro Unificado de Víctimas del Terrorismo de Estado (RUVTE) | No | No | https://www.argentina.gob.ar/derechoshumanos/ANM/ruvte/2015 | |
+| Centros Clandestinos de Detención durante la dictadura cívico-militar entre 1976 y 1982 | No | No | https://observatorioconurbano.ungs.edu.ar/?p=5392 | |
+| Paquete R - presentes | No¹ | No | https://diegokoz.github.io/presentes/ | |
+| Documentos desclasificados EE.UU. | No | No | https://desclasificados.org.ar/ | |
+| MinJus GBA - centros clandestinos | Sí | Sí (87: 19 dedup. contra RUVTE, 68 nuevos) | https://derechoshumanos.mjus.gba.gob.ar/consulta-interactiva/ | [Ver ficha](/docs/sources/minjus_gba.md) |
+| MinJus GBA - imputados | Sí | Sí (454 represores) | https://derechoshumanos.mjus.gba.gob.ar/consulta-interactiva/ | [Ver ficha](/docs/sources/minjus_gba.md) |
+| MinJus GBA - víctimas | Sí | Sí (3257) | https://derechoshumanos.mjus.gba.gob.ar/consulta-interactiva/ | [Ver ficha](/docs/sources/minjus_gba.md) |
+| MinJus GBA - sentencias | Sí | Sí² (113 registros, sin nodos propios) | https://derechoshumanos.mjus.gba.gob.ar/consulta-interactiva/ | [Ver ficha](/docs/sources/minjus_gba.md) |
+| Imputados (Plan Cóndor) | No | No | https://www.mpf.gob.ar/plan-condor/imputados/zona-iv-santiago-omar-riveros/ | |
+| Archivo provincial de la memoria | No | No | https://apm.gov.ar/presentes/detalle/2716 | |
+| Semblanza de las dictaduras civico-militares del 55' al 83' | Sí³ | No | https://robertobaschetti.com/ | |
+| Leyes de la dictadura | Sí⁴ | No | https://www.lasleyesdeladictadura.com.ar/index.php?a=PublicView&name=LeyesPublic | |
+| Condor Atlanta | No | No | https://condor-atlanta.org/ | |
+| Juicios de Lesa Humanidad - condenados | Sí | Sí (1237 represores, 197 cómplices civiles) | http://www.juiciosdelesahumanidad.ar/ | [Ver ficha](/docs/sources/juicios_lesa_humanidad.md) |
+| Juicios de Lesa Humanidad - causas (Argentina/exterior) | Sí⁵ | No | http://www.juiciosdelesahumanidad.ar/ | [Ver ficha](/docs/sources/juicios_lesa_humanidad.md) |
+| Nizkor | No | No | https://www.derechos.org/nizkor/arg/ | |
+| Fiscales juicios | No | No | https://www.fiscales.gob.ar/lesa-humanidad/?tipo-entrada=agenda | |
+| Webinar IA y DDHH | No | No | https://www.cipdh.gob.ar/inteligencia-artificial-y-derechos-humanos/ | |
+| Juicios | No | No | https://www.mpf.gob.ar/lesa/jurisprudencia/ | |
+| Juicios PBA | No | No | https://derechoshumanos.mjus.gba.gob.ar/lesa-humanidad/ | |
+| EAAF - sitios de hallazgo | Sí | Sí (91 lugares, 100% con coordenadas) | https://labusqueda.eaaf.org.ar/ | [Ver ficha](/docs/sources/eaaf.md) |
+| EAAF - identificados | Sí (877 filas, encoding dañado) | No⁶ | https://labusqueda.eaaf.org.ar/ | [Ver ficha](/docs/sources/eaaf.md) |
+
+¹ No se encontró archivo de datos ni builder para esta fuente en el repositorio, pese a estar documentada con un glosario en versiones previas del README.
+² No genera nodos propios (el modelo no tiene `:Sentencia` ni `:Causa`); sus metadatos (`origen`, `fecha`) se usan sólo para las aristas `TORTURO_A` que aportan los builders de imputados y víctimas.
+³ Existe el PDF original y una versión de texto ya limpiada (`data/raw/semblanza_limpio.txt`), pero no hay builder que la consuma.
+⁴ El archivo `data/raw/leyes_dictadura.xlsx` existe, pero no tiene extractor ni consumidor rastreable en `src/` (ninguna referencia a "leyes" en el código).
+⁵ `juicios_lesa_humanidad_argentina.json` (369 causas) está completo; `juicios_lesa_humanidad_exterior.json` está incompleto: su propio `metadata.totalItems` declara 64 y el archivo trae 41. Ninguno de los dos entra al grafo: el modelo no tiene nodo `:Causa`. Ver `docs/sources/juicios_lesa_humanidad.md`.
+⁶ Descartado: no tiene columna de nombre (casos anonimizados) y `:Persona.nombre` es obligatorio en el modelo. Ver `docs/sources/eaaf.md`.
 
 
 ## Procesamiento de los datos y Arquitectura Decoplada
@@ -121,6 +141,9 @@ NEO4J_DATABASE=neo4j \
 - `--skip-direct-sources`: Deshabilita la ingesta de fuentes directas en formato JSON ubicadas en `data/sources/`.
 - `--validate-sources-only`: Valida la correctitud de las fuentes directas en `data/sources/` y sale sin inyectar datos en Neo4j.
 - `--skip-qa-report`: Evita calcular e imprimir el reporte QA de cierre al terminar la carga.
+- `--skip-nuevas-fuentes`: No integra los builders que leen de `data/raw/` (EAAF, Archivo de la Memoria de San Martín, MinJus GBA, condenados de Juicios de Lesa Humanidad).
+- `--skip-identity-resolution`: No reconcilia identidades entre fuentes antes de cargar (ver sección 2.8 de [ingesta_fuentes.md](/docs/operations/ingesta_fuentes.md)).
+- `--dump-cdm <path>`: Vuelca el CDM consolidado a un JSON en `<path>`, para auditoría sin necesidad de una base Neo4j corriendo.
 
 ### Configuración del Entorno Local (Docker):
 - El archivo `docker-compose.yml` en la raíz define e inicializa el contenedor local de Neo4j con los plugins `apoc` y `graph-data-science` (GDS) habilitados por defecto.
