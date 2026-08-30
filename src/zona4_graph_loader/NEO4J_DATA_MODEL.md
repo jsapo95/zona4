@@ -36,11 +36,19 @@ del campo `roles` del CDM. Una fila sin `roles` recibe `["VICTIMA"]`.
 - :Nietx (Label de Rol secundario conectado a :Persona)
   * caso [String] (Obligatorio)
   * ADN [String] (Obligatorio)
-- :AliasPersona -> alias [String]
-- :Profesión -> descripcion [String]
-- :Cargo -> titulo [String]
-- :Org -> nombre [String], tipoOrg [String]
-- :Institución -> nombre [String]
+- :EntidadContexto (Label técnica compartida por los cinco tipos de contexto
+  de abajo; sostiene el índice único de `entidad_key`, la clave con la que
+  todo upsert de contexto hace MERGE. No se usa sola: siempre coexiste con
+  una de las labels semánticas siguientes en el mismo nodo físico, igual que
+  `:Persona` coexiste con sus labels de rol.)
+  * entidad_key [String] (Obligatorio, único)
+- :AliasPersona (+ :EntidadContexto) -> alias [String], fuente [String]
+- :Profesión (+ :EntidadContexto) -> descripcion [String], fuente [String]
+  (V1.2: el upsert existe pero ningún builder emite esta entidad todavía.)
+- :Cargo (+ :EntidadContexto) -> titulo [String], fuente [String]
+  (V1.2: el upsert existe pero ningún builder emite esta entidad todavía.)
+- :Org (+ :EntidadContexto) -> nombre [String], tipoOrg [String], fuente [String]
+- :Institución (+ :EntidadContexto) -> nombre [String], fuente [String]
 - :DirecciónCCD (Punto geográfico preciso / Centro Clandestino de Detención) -> coordenadas [String], direccionExacta [String]
 - :Lugar (Entidad geopolítica abstracta anidada) -> nombre [String], tipoGeopolitico [String]
 - :AliasLugar -> nombreAlternativo [String]
@@ -109,3 +117,10 @@ CREATE CONSTRAINT nietx_adn_exist IF NOT EXISTS FOR (n:Nietx) REQUIRE n.ADN IS N
 
 // Restricciones de Existencia para el Rol Cómplice
 CREATE CONSTRAINT complice_tipo_exist IF NOT EXISTS FOR (c:Complice) REQUIRE c.tipo IS NOT NULL;
+
+// Restricción técnica única para las entidades de contexto (V1.2): todo
+// upsert de :Org, :Institución, :Profesión, :Cargo y :AliasPersona hace
+// MERGE sobre la label técnica compartida :EntidadContexto, no sobre su
+// label semántica.
+CREATE CONSTRAINT entidad_contexto_key_unique IF NOT EXISTS FOR (e:EntidadContexto) REQUIRE e.entidad_key IS UNIQUE;
+```
