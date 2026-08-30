@@ -62,6 +62,16 @@ EQUIV_CITIES = {
     "SAN MIGUEL DE TUCUMAN": ("CIUDAD", "SAN MIGUEL DE TUCUMAN", "TUCUMAN"),
     "JOSE LEON SUAREZ SAN MARTIN": ("CIUDAD", "VILLA JOSE LEON SUAREZ", "BUENOS AIRES"),
     "LIBERTADOR GENERAL SAN MARTIN": ("CIUDAD", "SAN MARTIN", "BUENOS AIRES"),
+    # Task 14: localidades reales del partido de General San Martín (Buenos
+    # Aires) que, sin esta entrada, quedan mal georresueltas por
+    # `_resolve_segmented_place` hacia una provincia distinta (ver
+    # tests/domain/test_place_norm_san_martin.py). El valor crudo de
+    # `archivo_memoria_san_martin.json` no trae el sufijo "SAN MARTIN", por
+    # lo que "JOSE LEON SUAREZ SAN MARTIN" (arriba) nunca se dispara para
+    # esta fuente; se agrega la clave sin sufijo para cubrirla.
+    "JOSE LEON SUAREZ": ("CIUDAD", "VILLA JOSE LEON SUAREZ", "BUENOS AIRES"),
+    "SAN ANDRES": ("CIUDAD", "VILLA SAN ANDRES", "BUENOS AIRES"),
+    "VILLA CONCEPCION": ("CIUDAD", "VILLA CONCEPCION", "BUENOS AIRES"),
 }
 
 PROVINCE_ABBR = {
