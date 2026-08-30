@@ -52,9 +52,24 @@ del campo `roles` del CDM. Una fila sin `roles` recibe `["VICTIMA"]`.
   * nombre [String] (Obligatorio)
   * genero [String] (Obligatorio)
   * fuente [String] (Obligatorio)
-  * fecha_nacimiento [String ISO] (Opcional, V1.2)
+  * fecha_nacimiento [String ISO] (Opcional, V1.2) — validada (V1.3, Fix E,
+    hallazgo I6): cualquier valor parseado posterior al 31/12/1983 se
+    descarta en el builder (nunca llega a persistirse) en vez de afirmar un
+    nacimiento imposible. No se corrige el dato -la fuente puede tener una
+    errata real, como Massera, Emilio Eduardo (represor, fuente:
+    "08/11/2010", probablemente confundido con su fecha de fallecimiento
+    real; nació en 1925)- se descarta.
   * fecha_secuestro [String ISO] (Opcional, V1.2) — se persiste en el nodo cuando
     no hay lugar asociado que permita construir la arista :SECUESTRADO_EN.
+    Validada (V1.3, Fix E, hallazgo I6): cualquier valor fuera de
+    [1966, 1990] se descarta antes de persistirse (12 registros reales
+    tenían fechas entre 1997 y 2077).
+  * edad [String] (Opcional, V1.3, Fix E, hallazgo I6) — sólo la puebla
+    `detalles_personas` (Parque de la Memoria, presente en sus 8.948
+    registros). Se persiste tal como la da la fuente, sin validar contra
+    ninguna fecha: existe específicamente para que una contradicción entre
+    edad y fecha de nacimiento/secuestro (que antes de este fix era
+    invisible porque `Edad` no se cargaba) sea auditable desde el grafo.
   * claves_alt [List[String]] (Opcional, V1.2) — claves de otras fuentes
     absorbidas por la reconciliación de identidades.
   * estudiante_universitario [Boolean] (Opcional, V1.3, Fix E, hallazgo I4) —
@@ -154,10 +169,10 @@ del campo `roles` del CDM. Una fila sin `roles` recibe `["VICTIMA"]`.
 - (:Persona)-[:MILITO_CON]->(:Persona)// Relación de co-militancia orientada desde la perspectiva del registro.
 
 #### 3.3 Persona -> Espacio Geopolítico
-- (:Persona)-[:NACIO_EN]->(:Lugar)
-- (:Persona)-[:SECUESTRADO_EN]->(:Lugar)
-- (:Persona)-[:ASESINADO_EN]->(:Lugar)
-- (:Persona)-[:PRESENTE_EN]->(:Lugar)
+- (:Persona)-[:NACIO_EN]->(:Lugar) // `fecha` validada (V1.3, Fix E, hallazgo I6): un valor posterior al 31/12/1983 se descarta a "DESCONOCIDA" en vez de afirmar un nacimiento imposible (7 registros reales tenían fechas entre 2021 y 2052).
+- (:Persona)-[:SECUESTRADO_EN]->(:Lugar) // `fecha` validada (V1.3, Fix E, hallazgo I6): un valor fuera de [1966, 1990] se descarta a "DESCONOCIDA".
+- (:Persona)-[:ASESINADO_EN]->(:Lugar) // `fecha` validada (V1.3, Fix E, hallazgo I6): mismo rango que SECUESTRADO_EN.
+- (:Persona)-[:PRESENTE_EN]->(:Lugar) // `fecha` proveniente de `fecha_secuestro` (minjus_victimas) validada (V1.3, Fix E, hallazgo I6): un valor fuera de [1966, 1990] se descarta a "DESCONOCIDA" antes de propagarse a esta arista.
   * fecha_fin [String ISO] (Opcional, V1.3, Fix E, hallazgo I2) — sólo la
     puebla `ccds_json` (`builders/ccds.py`). La fuente trae la fecha de CCD
     en formato `AAAA/MM` (245 de 278 valores) o `AAAA` (23 de 278); sólo 10

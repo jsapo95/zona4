@@ -58,6 +58,15 @@ def test_nacimiento_con_fecha_de_fallecimiento_toma_solo_el_nacimiento():
     assert persona["fecha_nacimiento"] == "1948-04-09"
 
 
+def test_nacimiento_imposible_no_se_persiste():
+    # Fix E (auditoría 2026-08-29, hallazgo I6): mismo guardia que en
+    # minjus_imputados.py, aplicado por consistencia aunque esta fuente no
+    # tenga hoy ningún valor fuera de rango (verificado: 1923-1979).
+    condenado = dict(MILITAR, Nacimiento="09-04-2010")
+    persona = build_juicios_condenados_rows(_payload(condenado))["personas"][0]
+    assert persona["fecha_nacimiento"] is None
+
+
 def test_fuerza_genera_org_y_relacion_parte_de():
     dataset = build_juicios_condenados_rows(_payload(MILITAR))
     org = dataset["entidades_contexto"][0]

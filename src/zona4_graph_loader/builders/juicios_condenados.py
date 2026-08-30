@@ -5,6 +5,7 @@ from datetime import date
 from typing import Any, Dict, List, Optional
 
 from zona4_graph_loader.builders.base import CanonicalDataset
+from zona4_graph_loader.domain.date_norm import validar_fecha_de_nacimiento
 from zona4_graph_loader.domain.text_norm import clean_text, slugify_name
 
 FUENTE = "juicios_condenados"
@@ -64,7 +65,13 @@ def build_juicios_condenados_rows(payload: Dict[str, Any]) -> CanonicalDataset:
             "fuente": FUENTE,
             "roles": sorted(roles),
             "complice_tipo": complice_tipo,
-            "fecha_nacimiento": _parse_nacimiento(datos.get("Nacimiento")),
+            # Fix E (auditoría 2026-08-29, hallazgo I6): mismo guardia que en
+            # minjus_imputados.py; sobre los datos reales de esta fuente no
+            # hay ningún valor fuera de rango hoy (1923-1979), pero se aplica
+            # igual para que la invariante ("ninguna fecha_nacimiento después
+            # de 1983") valga para todo el grafo, no sólo donde ya se
+            # encontró el defecto.
+            "fecha_nacimiento": validar_fecha_de_nacimiento(_parse_nacimiento(datos.get("Nacimiento"))),
         })
 
         fuerza = clean_text(datos.get("Fuerza"))

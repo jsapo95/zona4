@@ -10,7 +10,7 @@ from zona4_graph_loader.builders.minjus_sentencias import (
     limpiar_delitos,
     slug_sentencia,
 )
-from zona4_graph_loader.domain.date_norm import parse_ddmmyyyy
+from zona4_graph_loader.domain.date_norm import parse_ddmmyyyy, validar_fecha_de_nacimiento
 from zona4_graph_loader.domain.text_norm import clean_text, slugify_name
 
 FUENTE = "minjus_imputados"
@@ -57,7 +57,16 @@ def build_minjus_imputados_rows(
             "genero": "INDETERMINADO",
             "fuente": FUENTE,
             "roles": ["REPRESOR"],
-            "fecha_nacimiento": parse_ddmmyyyy(clean_text(datos.get("fecha_de_nacimiento"))),
+            # Fix E (auditoría 2026-08-29, hallazgo I6): un valor imposible
+            # (p.ej. Massera, Emilio Eduardo: fuente "08/11/2010", cuando en
+            # verdad nació en 1925 y murió en 2010 -la fuente probablemente
+            # confundió fecha de nacimiento con fecha de fallecimiento)
+            # queda en None (persistido luego como "DESCONOCIDA" si
+            # corresponde) en vez de afirmar una fecha de nacimiento
+            # imposible. No se corrige el valor: se descarta.
+            "fecha_nacimiento": validar_fecha_de_nacimiento(
+                parse_ddmmyyyy(clean_text(datos.get("fecha_de_nacimiento")))
+            ),
         })
 
         fuerza = clean_text(datos.get("fuerza"))

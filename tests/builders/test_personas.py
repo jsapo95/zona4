@@ -1,4 +1,5 @@
-"""Regresión: Fix D (hallazgo C5 de la auditoría semántica 2026-08-29).
+"""Regresión: Fix D (hallazgo C5) y Fix E (hallazgo I6) de la auditoría
+semántica 2026-08-29.
 
 `build_nietx_protagonistas` completaba `ADN` con el literal `"SÍ"` cuando la
 fuente no traía fecha de confirmación genética, afirmando una identificación
@@ -9,13 +10,18 @@ asesinadxs. Este archivo fija:
    ausente, y que se persiste la fecha real cuando la fuente la trae.
 2. Que `estado` (antes no persistido) se agrega tal como lo da la fuente.
 3. Los conteos exactos sobre la fuente real `nietos_y_nietas.json`.
+
+`build_detalles_rows` (hallazgo I6) no persistía `Edad` (Parque de la
+Memoria), lo que hacía invisibles las contradicciones entre edad y fecha de
+nacimiento/secuestro que motivaron parte del hallazgo. Este archivo fija
+que ahora se persiste tal como la da la fuente.
 """
 from __future__ import annotations
 
 from collections import Counter
 
-from zona4_graph_loader.builders.personas import build_nietx_protagonistas
-from zona4_graph_loader.io.files import NIETXS_PATH, read_json
+from zona4_graph_loader.builders.personas import build_detalles_rows, build_nietx_protagonistas
+from zona4_graph_loader.io.files import DETALLES_PATH, NIETXS_PATH, read_json
 
 
 def _persona_por_id(personas, id_nietx):
@@ -121,3 +127,27 @@ def _estado_de(data, persona_key):
     id_nietx = int(persona_key.split(":", 1)[1])
     item = next(i for i in data if i.get("id_nietx") == id_nietx)
     return item.get("estado")
+
+
+# --- build_detalles_rows: Edad (Fix E, hallazgo I6) ---
+
+
+def test_edad_se_persiste_tal_como_la_da_la_fuente():
+    data = [{"registro": 1, "detalle": {"descripcion_nombre": "Alguien", "Edad": "24"}}]
+    persona = build_detalles_rows(data)["personas"][0]
+    assert persona["edad"] == "24"
+
+
+def test_edad_ausente_no_inventa_valor():
+    data = [{"registro": 1, "detalle": {"descripcion_nombre": "Alguien"}}]
+    persona = build_detalles_rows(data)["personas"][0]
+    assert persona["edad"] is None
+
+
+def test_sobre_el_archivo_real_edad_presente_en_todos_los_registros():
+    data = read_json(DETALLES_PATH)
+    dataset = build_detalles_rows(data)
+    con_edad = [p for p in dataset["personas"] if p.get("edad")]
+    # La auditoría documenta Edad presente en los 8.948 registros de esta
+    # fuente.
+    assert len(con_edad) == len(dataset["personas"]) == 8948

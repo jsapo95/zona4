@@ -12,7 +12,7 @@ from zona4_graph_loader.builders.minjus_sentencias import (
     limpiar_delitos,
     slug_sentencia,
 )
-from zona4_graph_loader.domain.date_norm import parse_ddmmyyyy
+from zona4_graph_loader.domain.date_norm import parse_ddmmyyyy, validar_fecha_de_hecho
 from zona4_graph_loader.domain.text_norm import clean_text, slugify_name
 
 FUENTE = "minjus_victimas"
@@ -83,7 +83,14 @@ def build_minjus_victimas_rows(
 
         persona_key = f"minjus_victima:{slug}"
         datos = item.get("datos_personales") or {}
-        fecha_secuestro = parse_ddmmyyyy(clean_text(datos.get("fecha_de_secuestro")))
+        # Fix E (auditoría 2026-08-29, hallazgo I6): 5 de los 12 registros con
+        # `Persona.fecha_secuestro` imposible (fuera de 1976-1983, algunos en
+        # 2023-2077) vienen de este campo. Esa misma fecha se propaga a
+        # `PRESENTE_EN` más abajo, así que validarla acá corrige ambos a la
+        # vez. Se descarta (None -> "DESCONOCIDA"), no se corrige el valor.
+        fecha_secuestro = validar_fecha_de_hecho(
+            parse_ddmmyyyy(clean_text(datos.get("fecha_de_secuestro")))
+        )
 
         personas.append({
             "persona_key": persona_key,

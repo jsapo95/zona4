@@ -45,6 +45,7 @@ SET p.nombre = row.nombre,
     p.registro = coalesce(row.registro, p.registro),
     p.fecha_nacimiento = coalesce(row.fecha_nacimiento, p.fecha_nacimiento),
     p.fecha_secuestro = coalesce(row.fecha_secuestro, p.fecha_secuestro),
+    p.edad = coalesce(row.edad, p.edad),
     p.claves_alt = coalesce(row.claves_alt, p.claves_alt),
     p.tipo = coalesce(row.complice_tipo, p.tipo),
     p.estudiante_universitario = coalesce(row.estudiante_universitario, p.estudiante_universitario)

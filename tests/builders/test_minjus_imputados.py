@@ -57,6 +57,33 @@ def test_imputado_es_represor():
     assert persona["fuente"] == "minjus_imputados"
 
 
+def test_fecha_nacimiento_imposible_no_se_persiste():
+    """Fix E (auditoría 2026-08-29, hallazgo I6). Caso real:
+    Massera, Emilio Eduardo -- la fuente trae "08/11/2010" (probablemente
+    confundida con su fecha real de fallecimiento, también 2010); nació en
+    1925. No se corrige el valor -se descarta.
+    """
+    massera = dict(
+        IMPUTADO,
+        nombre="Massera, Emilio Eduardo",
+        datos_personales={**IMPUTADO["datos_personales"], "fecha_de_nacimiento": "08/11/2010"},
+    )
+    persona = build_minjus_imputados_rows([massera], sentencias_index=INDEX)["personas"][0]
+    assert persona["fecha_nacimiento"] is None
+
+
+def test_sobre_el_archivo_real_massera_no_tiene_fecha_de_nacimiento_imposible():
+    data = read_raw_json("derechos_humanos_minjus_gba_imputados.json")
+    dataset = build_minjus_imputados_rows(data, sentencias_index={})
+    massera = next(p for p in dataset["personas"] if p["nombre"] == "Massera, Emilio Eduardo")
+    assert massera["fecha_nacimiento"] is None
+
+    # Ninguna fecha_nacimiento de esta fuente debería superar 1983 (fin de
+    # la dictadura); el máximo real verificado es 1979.
+    con_fecha = [p for p in dataset["personas"] if p.get("fecha_nacimiento")]
+    assert all(int(p["fecha_nacimiento"][:4]) <= 1983 for p in con_fecha)
+
+
 def test_apodo_genera_alias_persona_con_arista_identifica_a():
     dataset = build_minjus_imputados_rows([IMPUTADO], sentencias_index=INDEX)
     alias = [e for e in dataset["entidades_contexto"] if e["tipo_entidad"] == "AliasPersona"]

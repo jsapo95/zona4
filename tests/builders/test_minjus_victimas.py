@@ -56,6 +56,25 @@ def test_ccd_genera_presente_en():
     assert eventos[0]["fecha"] == "1977-01-20"
 
 
+def test_fecha_secuestro_imposible_no_se_persiste_ni_se_propaga_a_presente_en():
+    """Fix E (auditoría 2026-08-29, hallazgo I6). Caso real: Cuatrocchio,
+    Daniel Ernesto -- la fuente trae "26/05/2077". No se corrige el valor,
+    y esa misma fecha (antes de este fix) se propagaba a PRESENTE_EN.
+    """
+    cuatrocchio = dict(
+        VICTIMA,
+        nombre="Cuatrocchio, Daniel Ernesto",
+        datos_personales={**VICTIMA["datos_personales"], "fecha_de_secuestro": "26/05/2077"},
+    )
+    dataset = build_minjus_victimas_rows(
+        [cuatrocchio], ccd_key_by_slug=CCD_KEYS, sentencias_index={}
+    )
+    persona = dataset["personas"][0]
+    assert persona["fecha_secuestro"] is None
+    presente_en = [e for e in dataset["eventos_espaciales"] if e["tipo_relacion"] == "PRESENTE_EN"]
+    assert presente_en[0]["fecha"] == "DESCONOCIDA"
+
+
 def test_ccd_desconocido_no_genera_evento_huerfano():
     dataset = build_minjus_victimas_rows(
         [VICTIMA], ccd_key_by_slug={}, sentencias_index={}
@@ -329,6 +348,15 @@ def test_sobre_el_archivo_real():
         sentencias_index=index,
     )
     assert len(dataset["personas"]) == 3257
+
+    # Fix E (hallazgo I6): los 12 registros con fecha_secuestro imposible que
+    # encontró la auditoría (1997, 2023, 2024, 2077) no deben quedar
+    # persistidos; el resto (min real 1974) no debe verse afectado.
+    con_fecha = [p for p in dataset["personas"] if p.get("fecha_secuestro")]
+    assert all(1966 <= int(p["fecha_secuestro"][:4]) <= 1990 for p in con_fecha)
+    assert min(int(p["fecha_secuestro"][:4]) for p in con_fecha) == 1974
+    cuatrocchio = next(p for p in dataset["personas"] if p["nombre"] == "Cuatrocchio, Daniel Ernesto")
+    assert cuatrocchio["fecha_secuestro"] is None
     con_fecha = [p for p in dataset["personas"] if p["fecha_secuestro"]]
     assert len(con_fecha) > 2900
     assert dataset["eventos_espaciales"] == []  # sin ccd_key_by_slug no hay lugares

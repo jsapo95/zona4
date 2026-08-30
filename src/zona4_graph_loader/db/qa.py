@@ -50,6 +50,31 @@ QA_QUERIES = {
     "alias_personas_total": "MATCH (e:AliasPersona) RETURN count(e) AS value",
     "rel_parte_de_org_total": "MATCH (:Persona)-[r:PARTE_DE]->(:Org) RETURN count(r) AS value",
     "rel_identifica_a_total": "MATCH ()-[r:IDENTIFICA_A]->() RETURN count(r) AS value",
+    # Fix E (V1.3, hallazgo I6): fechas imposibles (nacimientos en el futuro,
+    # secuestros/asesinatos fuera del período histórico real de esta fuente)
+    # ya no se persisten -deberían dar 0 en toda carga futura. Si alguno de
+    # estos contadores no es 0, algún builder nuevo o modificado dejó pasar
+    # una fecha imposible sin pasar por `validar_fecha_de_hecho`/
+    # `validar_fecha_de_nacimiento`.
+    "personas_fecha_nacimiento_imposible_total": (
+        "MATCH (p:Persona) WHERE p.fecha_nacimiento IS NOT NULL "
+        "AND p.fecha_nacimiento <> 'DESCONOCIDA' AND p.fecha_nacimiento > '1983-12-31' "
+        "RETURN count(p) AS value"
+    ),
+    "rel_nacio_en_fecha_imposible_total": (
+        "MATCH ()-[r:NACIO_EN]->() WHERE r.fecha <> 'DESCONOCIDA' AND r.fecha > '1983-12-31' "
+        "RETURN count(r) AS value"
+    ),
+    "rel_secuestrado_en_fecha_fuera_de_rango_total": (
+        "MATCH ()-[r:SECUESTRADO_EN]->() "
+        "WHERE r.fecha <> 'DESCONOCIDA' AND (r.fecha < '1966-01-01' OR r.fecha > '1990-12-31') "
+        "RETURN count(r) AS value"
+    ),
+    "rel_asesinado_en_fecha_fuera_de_rango_total": (
+        "MATCH ()-[r:ASESINADO_EN]->() "
+        "WHERE r.fecha <> 'DESCONOCIDA' AND (r.fecha < '1966-01-01' OR r.fecha > '1990-12-31') "
+        "RETURN count(r) AS value"
+    ),
 }
 
 

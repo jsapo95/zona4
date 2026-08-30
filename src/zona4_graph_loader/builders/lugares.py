@@ -9,7 +9,11 @@ from typing import Any, Dict, List, Tuple
 
 from zona4_graph_loader.builders.base import CanonicalDataset
 from zona4_graph_loader.constants import ALIAS_ROOT_PARENT_KEY, DIRECTIONAL_TOKENS
-from zona4_graph_loader.domain.date_norm import parse_ddmmyyyy
+from zona4_graph_loader.domain.date_norm import (
+    parse_ddmmyyyy,
+    validar_fecha_de_hecho,
+    validar_fecha_de_nacimiento,
+)
 from zona4_graph_loader.domain.place_norm import extract_specific_address, resolve_place
 from zona4_graph_loader.domain.text_norm import clean_text, slugify_name
 
@@ -203,7 +207,15 @@ def build_lugar_layer_rows(
             continue
         detalle = item.get("detalle", {})
 
-        fecha_sec = parse_ddmmyyyy(clean_text(detalle.get("descripcion_fecha_de_secuestro")))
+        # Fix E (auditoría 2026-08-29, hallazgo I6): fechas imposibles sin
+        # validar. `validar_fecha_de_hecho`/`validar_fecha_de_nacimiento`
+        # descartan (None -> "DESCONOCIDA" en el evento) cualquier valor
+        # fuera del rango real verificado sobre esta misma fuente -no lo
+        # corrigen. Los 7 NACIO_EN entre 2021 y 2052 de la auditoría vienen
+        # de `descripcion_fecha_nacimiento` en este archivo.
+        fecha_sec = validar_fecha_de_hecho(
+            parse_ddmmyyyy(clean_text(detalle.get("descripcion_fecha_de_secuestro")))
+        )
         place_sec = resolve_place(
             detalle.get("descripcion_lugar_de_secuestro"),
             use_georef=use_georef,
@@ -220,7 +232,9 @@ def build_lugar_layer_rows(
                 fecha_event=fecha_sec,
             )
 
-        fecha_nac = parse_ddmmyyyy(clean_text(detalle.get("descripcion_fecha_nacimiento")))
+        fecha_nac = validar_fecha_de_nacimiento(
+            parse_ddmmyyyy(clean_text(detalle.get("descripcion_fecha_nacimiento")))
+        )
         place_nac = resolve_place(
             detalle.get("Lugar de nacimiento"),
             use_georef=use_georef,
@@ -237,7 +251,9 @@ def build_lugar_layer_rows(
                 fecha_event=fecha_nac,
             )
 
-        fecha_ase = parse_ddmmyyyy(clean_text(detalle.get("descripcion_fecha_de_asesinato")))
+        fecha_ase = validar_fecha_de_hecho(
+            parse_ddmmyyyy(clean_text(detalle.get("descripcion_fecha_de_asesinato")))
+        )
         place_ase = resolve_place(
             detalle.get("Lugar de asesinato"),
             use_georef=use_georef,

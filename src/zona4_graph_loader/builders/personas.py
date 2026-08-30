@@ -25,6 +25,14 @@ def build_detalles_rows(data: List[Dict[str, Any]]) -> CanonicalDataset:
                 "genero": genero,
                 "fuente": "detalles_personas",
                 "es_nietx": False,
+                # Fix E (auditoría 2026-08-29, hallazgo I6): `Edad` existe en
+                # los 8.948 registros de esta fuente y no se persistía, así
+                # que una contradicción entre edad y fechas (p.ej. Edad: 25 +
+                # fecha_nacimiento en 2052) quedaba invisible en el grafo. Se
+                # persiste tal como la da la fuente (string), sin validar
+                # contra ninguna otra fecha -sólo para que la contradicción,
+                # si existe, sea auditable desde el grafo.
+                "edad": clean_text(detalle.get("Edad")),
             }
         )
     return {"personas": personas}
