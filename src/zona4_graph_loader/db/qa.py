@@ -8,6 +8,12 @@ QA_QUERIES = {
     "personas_total": "MATCH (p:Persona) RETURN count(p) AS value",
     "victimas_total": "MATCH (p:Persona:Victima) RETURN count(p) AS value",
     "nietxs_total": "MATCH (p:Persona:Nietx) RETURN count(p) AS value",
+    # Fix D (V1.3, hallazgo C5): ADN ya no se completa con "SÍ" cuando la
+    # fuente no trae fecha de confirmación -queda "DESCONOCIDA". Este
+    # contador hace auditable en cada corrida cuántos nietxs tienen una
+    # fecha de ADN real vs. cuántos no.
+    "nietxs_adn_confirmado_total": "MATCH (p:Persona:Nietx) WHERE p.ADN <> 'DESCONOCIDA' RETURN count(p) AS value",
+    "nietxs_estado_busqueda_total": "MATCH (p:Persona:Nietx) WHERE p.estado = 'Búsqueda' RETURN count(p) AS value",
     "complices_total": "MATCH (p:Persona:Complice) RETURN count(p) AS value",
     "represores_total": "MATCH (p:Persona:Represor) RETURN count(p) AS value",
     "direcciones_ccd_total": "MATCH (d:DirecciónCCD) RETURN count(d) AS value",

@@ -14,6 +14,10 @@ CONSTRAINTS = [
     
     "CREATE CONSTRAINT nietx_caso_exist IF NOT EXISTS FOR (n:Nietx) REQUIRE n.caso IS NOT NULL",
     "CREATE CONSTRAINT nietx_adn_exist IF NOT EXISTS FOR (n:Nietx) REQUIRE n.ADN IS NOT NULL",
+    # Fix D (V1.3): `estado` es el campo que distingue un nietx restituido de
+    # uno que sigue en búsqueda; la fuente lo trae en el 100% de los 392
+    # registros.
+    "CREATE CONSTRAINT nietx_estado_exist IF NOT EXISTS FOR (n:Nietx) REQUIRE n.estado IS NOT NULL",
     
     "CREATE CONSTRAINT complice_tipo_exist IF NOT EXISTS FOR (c:Complice) REQUIRE c.tipo IS NOT NULL",
 
@@ -45,6 +49,10 @@ RETURN count(*)
 """
 
 # UPSERT Grandkid Person (labeled: Persona:Nietx)
+# Fix D (V1.3): `estado` se persiste junto a `ADN` -es el campo que distingue
+# un nietx restituido de uno que sigue en búsqueda; sin él, "ADN":
+# "DESCONOCIDA" no se puede diferenciar de "aún no identificadx" vs
+# "identificadx pero sin fecha de ADN registrada en la fuente".
 CYPHER_UPSERT_PROTAGONISTAS = """
 UNWIND $rows AS row
 MERGE (p:Persona {persona_key: row.persona_key})
@@ -52,7 +60,8 @@ SET p.nombre = row.nombre,
     p.genero = row.genero,
     p.fuente = row.fuente,
     p.caso = row.caso,
-    p.ADN = row.ADN
+    p.ADN = row.ADN,
+    p.estado = row.estado
 SET p:Nietx
 """
 

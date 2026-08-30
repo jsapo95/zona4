@@ -12,6 +12,23 @@
   restringido a los pares donde `delitos` incluye la familia de tormentos.
   Ambos tipos de arista llevan `delitos [List[String]]` como propiedad, con
   el texto de la fuente preservado, para que la clasificación sea auditable.
+- La resolución de topónimos (`domain/place_norm.py`) ya no fabrica una
+  ciudad de Buenos Aires a partir de cualquier cadena corta sin resolver, ni
+  reubica personas en la provincia equivocada cuando la fuente trae el
+  patrón "LOCALIDAD. PROVINCIA" (hallazgos C3 y C4). Prefiere no resolver
+  (evento huérfano, reportado por los contadores existentes) antes que
+  inventar o desplazar un lugar. No agrega labels, nodos ni propiedades
+  nuevas al modelo; se documenta acá porque cambia qué cuenta como un
+  `:Lugar` real en los conteos existentes de `qa_report`.
+- `:Nietx.ADN` deja de completarse con el literal `"SÍ"` cuando la fuente no
+  trae fecha de confirmación genética (hallazgo C5): queda `"DESCONOCIDA"`,
+  el mismo sentinel que ya usan `fecha_sentencia` y `TORTURO_A.fecha` para
+  "la fuente no lo dice". Se agrega `estado [String] (Obligatorio)` a
+  `:Nietx` -antes no se persistía- porque es el campo que distingue un
+  nietx restituido de uno que sigue en búsqueda; sin él, `ADN: "DESCONOCIDA"`
+  no permite saber si el motivo es "todavía no identificadx" o
+  "identificadx pero sin fecha de ADN registrada en esta fuente". Ver §2 y
+  §4 para el detalle.
 
 Este documento define la arquitectura exacta e inmutable del grafo en Neo4j. Cualquier proceso de extracción, estructuración o ingesta automática de datos ejecutado por un LLM debe adherirse estrictamente a las reglas, etiquetas, relaciones y propiedades declaradas a continuación. Está prohibido inventar o inferir entidades intermedias.
 
@@ -45,8 +62,27 @@ del campo `roles` del CDM. Una fila sin `roles` recibe `["VICTIMA"]`.
 - :Complice (Label de Rol secundario conectado a :Persona)
   * tipo [String] (Obligatorio, restringido estrictamente a: "CIVIL", "CLERICAL", "EMPRESARIAL")
 - :Nietx (Label de Rol secundario conectado a :Persona)
-  * caso [String] (Obligatorio)
-  * ADN [String] (Obligatorio)
+  * caso [String] (Obligatorio) — el identificador de expediente/caso (p.ej.
+    apellidos de ambos progenitores separados por guión, "Metz - Romero"),
+    NO necesariamente el nombre de una persona. Cuando la fuente no da un
+    nombre propio restituido, `nombre` también queda igual a `caso` (235 de
+    392 casos, V1.3, hallazgo C5) porque la fuente en sí no tiene otro
+    nombre que dar -no es una omisión del cargador, es lo único que provee
+    Abuelas de Plaza de Mayo para esos expedientes. No se debe inferir ni
+    inventar un nombre de persona para esos casos.
+  * ADN [String] (Obligatorio) — la fecha de confirmación genética cuando la
+    fuente la trae; `"DESCONOCIDA"` en caso contrario (V1.3, Fix D, hallazgo
+    C5). Antes de este fix se completaba con el literal `"SÍ"`, afirmando
+    una identificación de ADN falsa para 310 de 392 nietxs (los que la
+    fuente marca como en búsqueda, no nacidxs, asesinadxs, o restituidxs sin
+    fecha de ADN registrada). NUNCA inferir `"SÍ"` de la ausencia de dato.
+  * estado [String] (Obligatorio, V1.3, Fix D) — tal como lo da la fuente,
+    sin normalizar a un vocabulario nuevo. Valores observados en la fuente
+    actual (`nietos_y_nietas.json`, 392 registros): `"Búsqueda"` (252),
+    `"Restituido/a"` (117, de los cuales 82 con fecha de ADN real y 35 sin
+    ella), `"No nacidx"` (19), `"Asesinadx"` (4). Es el campo que distingue
+    estos casos entre sí -sin él, `ADN: "DESCONOCIDA"` no alcanza para saber
+    por qué.
 - :EntidadContexto (Label técnica compartida por los cinco tipos de contexto
   de abajo; sostiene el índice único de `entidad_key`, la clave con la que
   todo upsert de contexto hace MERGE. No se usa sola: siempre coexiste con
@@ -141,6 +177,7 @@ CREATE CONSTRAINT persona_fuente_exist IF NOT EXISTS FOR (p:Persona) REQUIRE p.f
 // Restricciones de Existencia para el Rol Nietx
 CREATE CONSTRAINT nietx_caso_exist IF NOT EXISTS FOR (n:Nietx) REQUIRE n.caso IS NOT NULL;
 CREATE CONSTRAINT nietx_adn_exist IF NOT EXISTS FOR (n:Nietx) REQUIRE n.ADN IS NOT NULL;
+CREATE CONSTRAINT nietx_estado_exist IF NOT EXISTS FOR (n:Nietx) REQUIRE n.estado IS NOT NULL; // V1.3, Fix D
 
 // Restricciones de Existencia para el Rol Cómplice
 CREATE CONSTRAINT complice_tipo_exist IF NOT EXISTS FOR (c:Complice) REQUIRE c.tipo IS NOT NULL;
