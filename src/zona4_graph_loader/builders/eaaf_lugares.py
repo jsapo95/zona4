@@ -164,6 +164,12 @@ def build_eaaf_lugares_rows(rows: List[Dict[str, str]]) -> CanonicalDataset:
                 # filtro que recorra dataset["lugares"] sin acotar por
                 # tipo_entidad no reviente con KeyError.
                 "tipoGeopolitico": None,
+                # Fix E (auditoría 2026-08-29, hallazgo I5): reutiliza la
+                # misma clasificación que ya se calculó para el :Lugar
+                # asociado (CEMENTERIO/CCD/ENTERRAMIENTO/SITIO_HALLAZGO) -no
+                # es una suposición nueva, es la que la fuente EAAF ya trae
+                # en la columna "CEM - CCD - EP" para esta fila.
+                "tipo_direccion": tipo_sitio,
                 "tipo_entidad": "DireccionCCD",
             }
             jerarquias.append({

@@ -127,7 +127,18 @@ del campo `roles` del CDM. Una fila sin `roles` recibe `["VICTIMA"]`.
   (V1.2: el upsert existe pero ningún builder emite esta entidad todavía.)
 - :Org (+ :EntidadContexto) -> nombre [String], tipoOrg [String], fuente [String]
 - :Institución (+ :EntidadContexto) -> nombre [String], fuente [String]
-- :DirecciónCCD (Punto geográfico preciso / Centro Clandestino de Detención) -> coordenadas [String], direccionExacta [String]
+- :DirecciónCCD (Punto geográfico preciso) -> coordenadas [String], direccionExacta [String]
+  * tipo_direccion [String] (Obligatorio, V1.3, Fix E, hallazgo I5) —
+    `"CCD"` (centro clandestino real; 123 de 393 nodos) | `"CEMENTERIO"` /
+    `"ENTERRAMIENTO"` / `"SITIO_HALLAZGO"` (fuente EAAF; 82 de 393) |
+    `"HECHO_NARRATIVO"` (domicilio, vía pública o lugar de trabajo extraído
+    del texto libre de secuestro/nacimiento/asesinato de una víctima; 188 de
+    393). La label no distinguía estos tres casos: un domicilio o un
+    cementerio llevaban la misma label `:DirecciónCCD` que un centro
+    clandestino real, sin ninguna marca. No se renombró la label -afecta la
+    constraint única y toda consulta existente sobre `:DirecciónCCD`, un
+    cambio estructural mayor- pero ahora `tipo_direccion` distingue los tres
+    honestamente.
 - :Lugar (Entidad geopolítica abstracta anidada) -> nombre [String], tipoGeopolitico [String]
 - :AliasLugar -> nombreAlternativo [String]
 

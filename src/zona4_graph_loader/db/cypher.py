@@ -203,11 +203,21 @@ SET r.fecha = "ETERNA",
 """
 
 # UPSERT DirecciónCCD (representing precise CCD coordinates/addresses)
+# `tipo_direccion` (Fix E, V1.3, hallazgo I5): la label `:DirecciónCCD` se
+# usa para tres cosas distintas -un centro clandestino real ("CCD"), un
+# domicilio o lugar de un hecho narrado por la fuente ("HECHO_NARRATIVO",
+# 188 de 393 nodos: domicilios de víctimas, vía pública, lugares de
+# trabajo), o un cementerio/enterramiento de EAAF ("CEMENTERIO"/
+# "ENTERRAMIENTO"/"SITIO_HALLAZGO", 82 de 393). No se renombra la label
+# -cambiarla afecta la constraint única y toda consulta existente sobre
+# `:DirecciónCCD`, un cambio estructural mayor fuera de alcance de un fix
+# aditivo- pero ahora cada nodo declara honestamente cuál de los tres es.
 CYPHER_UPSERT_DIRECCION_CCD = """
 UNWIND $rows AS row
 MERGE (d:DirecciónCCD {direccion_ccd_key: row.direccion_ccd_key})
 SET d.coordenadas = row.coordenadas,
-    d.direccionExacta = row.direccionExacta
+    d.direccionExacta = row.direccionExacta,
+    d.tipo_direccion = row.tipo_direccion
 """
 
 # Link DirecciónCCD -> Lugar

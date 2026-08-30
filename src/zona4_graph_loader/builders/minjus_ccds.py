@@ -114,6 +114,10 @@ def build_minjus_ccds_rows(
                 "coordenadas": "DESCONOCIDAS",
                 "direccionExacta": domicilio,
                 "lugar_key": lugar_key,
+                # Fix E (auditoría 2026-08-29, hallazgo I5): un centro
+                # clandestino real (el `lugar_key` asociado siempre tiene
+                # tipoGeopolitico "CCD" en este builder).
+                "tipo_direccion": "CCD",
                 "tipo_entidad": "DireccionCCD",
             }
             jerarquias.append({

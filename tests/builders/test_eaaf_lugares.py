@@ -68,6 +68,22 @@ def test_genera_direccion_ccd_con_coordenadas():
     assert len(links) == 1
 
 
+def test_direccion_ccd_declara_tipo_direccion_segun_la_fuente():
+    """Fix E (auditoría 2026-08-29, hallazgo I5): antes de este fix, un
+    cementerio real llevaba la misma label `:DirecciónCCD` -sin ninguna
+    marca- que un centro clandestino real. `tipo_direccion` reutiliza la
+    misma clasificación que ya trae la fuente en "CEM - CCD - EP" para el
+    :Lugar asociado, no una suposición nueva.
+    """
+    dataset = build_eaaf_lugares_rows([FILA_CEM])
+    direccion = next(l for l in dataset["lugares"] if l["tipo_entidad"] == "DireccionCCD")
+    assert direccion["tipo_direccion"] == "CEMENTERIO"
+
+    dataset_ccd = build_eaaf_lugares_rows([dict(FILA_CEM, **{"CEM - CCD - EP": "CCD"})])
+    direccion_ccd = next(l for l in dataset_ccd["lugares"] if l["tipo_entidad"] == "DireccionCCD")
+    assert direccion_ccd["tipo_direccion"] == "CCD"
+
+
 def test_fila_sin_coordenadas_no_genera_direccion():
     dataset = build_eaaf_lugares_rows([dict(FILA_CEM, Lat="", Long="")])
     assert [l for l in dataset["lugares"] if l["tipo_entidad"] == "DireccionCCD"] == []

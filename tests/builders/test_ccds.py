@@ -123,3 +123,19 @@ def test_sobre_los_datos_reales_precision_fecha_nunca_es_day_para_valores_de_mes
             # Si no es precisión de día, fecha no debería mentir con
             # segundos/día exactos sin fecha_fin que lo acompañe.
             assert evento.get("fecha_fin") is not None
+
+
+# --- I5: DirecciónCCD debe declarar tipo_direccion="CCD" en este builder ---
+
+
+def test_direcciones_generadas_por_este_builder_son_siempre_ccd():
+    # Fix E (auditoría 2026-08-29, hallazgo I5): a diferencia de
+    # builders/lugares.py (que genera DirecciónCCD a partir de texto libre
+    # sobre domicilios/vía pública), este builder sólo produce direcciones
+    # de centros clandestinos reales de `ccds.json`.
+    detalles = read_json(DETALLES_PATH)
+    ccds = read_json(CCDS_PATH)
+    resultado = build_ccd_rows(detalles, ccds, use_georef=False)
+    direcciones = [l for l in resultado["lugares"] if l.get("tipo_entidad") == "DireccionCCD"]
+    assert direcciones
+    assert all(d["tipo_direccion"] == "CCD" for d in direcciones)

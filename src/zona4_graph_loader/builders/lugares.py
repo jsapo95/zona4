@@ -191,6 +191,16 @@ def build_lugar_layer_rows(
                     "coordenadas": "DESCONOCIDAS",
                     "direccionExacta": direccion["direccion_raw"],
                     "lugar_key": place["lugar_key"],
+                    # Fix E (auditoría 2026-08-29, hallazgo I5): esta
+                    # dirección viene de texto libre sobre el lugar de
+                    # secuestro/nacimiento/asesinato de una víctima -un
+                    # domicilio, la vía pública, un lugar de trabajo- nunca
+                    # de un centro clandestino real (ese es el camino de
+                    # ccds.py/minjus_ccds.py). Antes de este fix, ambos casos
+                    # llevaban la misma label `:DirecciónCCD` sin ninguna
+                    # marca que los distinga; ahora `tipo_direccion` lo hace
+                    # explícito.
+                    "tipo_direccion": "HECHO_NARRATIVO",
                     "tipo_entidad": "DireccionCCD",
                 }
                 direccion_lugar_links.append(

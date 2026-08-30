@@ -89,6 +89,16 @@ QA_QUERIES = {
         "['NO DETERMINADO', 'NO ESPECIFICADO', 'NO ESPECIFICA', 'DESCONOCIDO', 'DESCONOCIDA'] "
         "RETURN count(e) AS value"
     ),
+    # Fix E (V1.3, hallazgo I5): distribución de tipo_direccion sobre
+    # :DirecciónCCD -antes indistinguible entre CCD real, domicilio/vía
+    # pública y cementerio bajo la misma label.
+    "direcciones_ccd_tipo_ccd_total": "MATCH (d:DirecciónCCD {tipo_direccion: 'CCD'}) RETURN count(d) AS value",
+    "direcciones_ccd_tipo_hecho_narrativo_total": (
+        "MATCH (d:DirecciónCCD {tipo_direccion: 'HECHO_NARRATIVO'}) RETURN count(d) AS value"
+    ),
+    "direcciones_ccd_sin_tipo_direccion_total": (
+        "MATCH (d:DirecciónCCD) WHERE d.tipo_direccion IS NULL RETURN count(d) AS value"
+    ),
 }
 
 

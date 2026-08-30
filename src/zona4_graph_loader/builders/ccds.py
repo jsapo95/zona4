@@ -192,6 +192,9 @@ def build_ccd_rows(
                 "coordenadas": coordenadas_str,
                 "direccionExacta": ubicacion or denominacion,
                 "lugar_key": lugar_key,
+                # Fix E (auditoría 2026-08-29, hallazgo I5): un centro
+                # clandestino real, no un domicilio ni un cementerio.
+                "tipo_direccion": "CCD",
                 "tipo_entidad": "DireccionCCD",
             }
             direccion_lugar_links.append({

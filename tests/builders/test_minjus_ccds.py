@@ -39,6 +39,9 @@ def test_domicilio_va_crudo_a_direccion_ccd():
         "Estrada 350, B2800HUA Zárate, Provincia de Buenos Aires"
     )
     assert direcciones[0]["coordenadas"] == "DESCONOCIDAS"
+    # Fix E (auditoría 2026-08-29, hallazgo I5): este builder sólo produce
+    # direcciones de centros clandestinos reales.
+    assert direcciones[0]["tipo_direccion"] == "CCD"
 
 
 def test_expone_mapa_slug_a_lugar_key():
