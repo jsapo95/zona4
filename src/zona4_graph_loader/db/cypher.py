@@ -86,12 +86,17 @@ RETURN count(*)
 """
 
 # Dynamic Person relationship (uses apoc.merge.relationship for specific V1.1 labels, idempotent per origen)
-# `fecha_sentencia` (Fix 9) sólo la pueblan las filas TORTURO_A/IMPUTADO_POR de
-# los builders de MinJus; para el resto de los tipos de relación `row.fecha_sentencia`
-# es null y coalesce la deja en "DESCONOCIDA" sin efecto alguno.
-# `delitos` (Fix C1/A, V1.3): idem, sólo la pueblan TORTURO_A/IMPUTADO_POR; para
-# el resto `row.delitos` es null y Neo4j no escribe la propiedad (no hay
-# coalesce a un valor por defecto, a diferencia de fecha_sentencia).
+# `fecha_sentencia` sólo la pueblan las filas TORTURO_A/IMPUTADO_POR de los
+# builders de MinJus, que ya escriben el string "DESCONOCIDA" en Python
+# cuando la sentencia no trae fecha (ver minjus_imputados.py / minjus_victimas.py)
+# -nunca dependen de un coalesce acá. Fix E (auditoría 2026-08-29, hallazgo M1):
+# antes este coalesce completaba `fecha_sentencia` con "DESCONOCIDA" para
+# CUALQUIER tipo de relación, incluidos los 2.710 vínculos de parentesco del
+# Parque de la Memoria (PAREJA_DE, HERMANX_DE, HIJE_DE, etc.), que no tienen
+# nada que ver con una sentencia judicial y para los que `row.fecha_sentencia`
+# es null. Ya no se coalesce: cuando la fila no trae valor, Neo4j no escribe
+# la propiedad (mismo comportamiento que `delitos`, que nunca tuvo este
+# coalesce y nunca tuvo este problema).
 CYPHER_UPSERT_REL_PERSONA = """
 UNWIND $rows AS row
 MATCH (s:Persona {persona_key: row.source_key})
@@ -104,9 +109,9 @@ CALL apoc.merge.relationship(
     s,
     row.tipo,
     {origen: row.fuente},
-    {fecha: coalesce(row.fecha, "DESCONOCIDA"), fecha_sentencia: coalesce(row.fecha_sentencia, "DESCONOCIDA"), delitos: row.delitos},
+    {fecha: coalesce(row.fecha, "DESCONOCIDA"), fecha_sentencia: row.fecha_sentencia, delitos: row.delitos},
     t,
-    {fecha: coalesce(row.fecha, "DESCONOCIDA"), fecha_sentencia: coalesce(row.fecha_sentencia, "DESCONOCIDA"), delitos: row.delitos}
+    {fecha: coalesce(row.fecha, "DESCONOCIDA"), fecha_sentencia: row.fecha_sentencia, delitos: row.delitos}
 ) YIELD rel
 RETURN count(*)
 """

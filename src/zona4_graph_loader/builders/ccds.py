@@ -7,7 +7,7 @@ from zona4_graph_loader.builders.base import CanonicalDataset
 from zona4_graph_loader.constants import GEOREF_AMBIGUITY_DELTA, GEOREF_CATALOG_PATH, GEOREF_MIN_SCORE
 from zona4_graph_loader.domain.date_norm import parse_partial_ymd
 from zona4_graph_loader.domain.place_norm import resolve_place
-from zona4_graph_loader.domain.text_norm import clean_text, slugify_name
+from zona4_graph_loader.domain.text_norm import clean_text, genero_from_sexo, slugify_name
 
 
 def _to_float(value: Any) -> Optional[float]:
@@ -19,9 +19,19 @@ def _to_float(value: Any) -> Optional[float]:
         return None
 
 
-def _ccd_rel_to_tipo(relacion: str) -> str:
+def _ccd_rel_to_tipo(relacion: str, genero: str) -> str:
+    # Fix E (auditoría 2026-08-29, hallazgo I1): la fuente usa la etiqueta
+    # `pario_en` de forma laxa para "el parto de su hije ocurrió aquí", y se
+    # la asigna por igual a la madre y al padre del mismo hecho (Raúl
+    # Eugenio Metz, género masculino, figura como padre en
+    # `nietos_y_nietas.json` y recibía la misma arista PARIO_EN que Graciela
+    # Alicia Romero, la madre). Sólo se afirma PARIO_EN cuando el género
+    # registrado no es masculino; un registro masculino con esta relación
+    # queda como PRESENTE_EN (estuvo ahí, no "parió ahí"). No se toca el
+    # caso FEMENINO/INDETERMINADO: de los 41 casos reales sólo 2 son
+    # hombres, y no hay evidencia de que el resto esté mal.
     rel = (relacion or "").strip().lower()
-    if rel == "pario_en":
+    if rel == "pario_en" and genero != "MASCULINO":
         return "PARIO_EN"
     return "PRESENTE_EN"
 
@@ -118,6 +128,8 @@ def build_ccd_rows(
         if registro is None:
             continue
 
+        genero = genero_from_sexo((item.get("detalle") or {}).get("Sexo"))
+
         ccd_refs = item.get("ccds")
         if not isinstance(ccd_refs, list):
             continue
@@ -197,7 +209,7 @@ def build_ccd_rows(
             persona_lugar_links.append({
                 "persona_key": f"registro:{registro}",
                 "lugar_key": lugar_key,
-                "tipo_relacion": _ccd_rel_to_tipo(relacion),
+                "tipo_relacion": _ccd_rel_to_tipo(relacion, genero),
                 "fecha": fecha_iso or "DESCONOCIDA",
                 "origen": "ccds_json",
             })

@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Dict, List
 
 from zona4_graph_loader.builders.base import CanonicalDataset
-from zona4_graph_loader.domain.text_norm import clean_text
+from zona4_graph_loader.domain.text_norm import clean_text, genero_from_sexo
 
 
 def build_detalles_rows(data: List[Dict[str, Any]]) -> CanonicalDataset:
@@ -15,13 +15,7 @@ def build_detalles_rows(data: List[Dict[str, Any]]) -> CanonicalDataset:
             continue
         
         # Gender normalization (e.g. Masculino -> MASCULINO, Femenino -> FEMENINO)
-        sexo = clean_text(detalle.get("Sexo"))
-        genero = "INDETERMINADO"
-        if sexo:
-            if "masc" in sexo.lower():
-                genero = "MASCULINO"
-            elif "fem" in sexo.lower():
-                genero = "FEMENINO"
+        genero = genero_from_sexo(detalle.get("Sexo"))
 
         personas.append(
             {

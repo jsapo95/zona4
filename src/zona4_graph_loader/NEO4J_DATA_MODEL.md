@@ -150,7 +150,7 @@ del campo `roles` del CDM. Una fila sin `roles` recibe `["VICTIMA"]`.
 - (:Persona)-[:SECUESTRADO_EN]->(:Lugar)
 - (:Persona)-[:ASESINADO_EN]->(:Lugar)
 - (:Persona)-[:PRESENTE_EN]->(:Lugar)
-- (:Persona)-[:PARIO_EN]->(:Lugar)
+- (:Persona)-[:PARIO_EN]->(:Lugar) // Restrictiva: sólo se emite cuando `Persona.genero <> "MASCULINO"` (V1.3, Fix E, hallazgo I1). La fuente (`ccds_json`, relación `pario_en`) la usaba de forma laxa para "el parto de su hije ocurrió aquí" y la aplicaba por igual al padre; un registro masculino con esa relación se emite como PRESENTE_EN.
 - (:Persona)-[:MURIO_EN]->(:Lugar)
 - (:Persona)-[:LIBERADO_EN]->(:Lugar)
 
