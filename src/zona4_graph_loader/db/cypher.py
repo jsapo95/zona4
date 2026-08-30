@@ -40,7 +40,7 @@ SET p.nombre = row.nombre,
     p.claves_alt = coalesce(row.claves_alt, p.claves_alt),
     p.tipo = coalesce(row.complice_tipo, p.tipo)
 WITH p, row
-CALL apoc.create.addLabels(p, row.roles) YIELD node
+CALL apoc.create.addLabels(p, row.role_labels) YIELD node
 RETURN count(*)
 """
 

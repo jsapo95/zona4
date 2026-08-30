@@ -49,7 +49,7 @@ from zona4_graph_loader.db.cypher import (
 from zona4_graph_loader.db.qa import run_qa_report
 from zona4_graph_loader.db.writer import run_batches
 from zona4_graph_loader.domain.identity_resolution import resolve_identities
-from zona4_graph_loader.domain.roles import normalize_roles
+from zona4_graph_loader.domain.roles import graph_labels, normalize_roles
 from zona4_graph_loader.io.sources_ingestor import empty_canonical_dataset, load_direct_sources
 from zona4_graph_loader.io.files import CCDS_PATH, DETALLES_PATH, NIETXS_PATH, read_json
 from zona4_graph_loader.io.raw_files import read_raw_csv, read_raw_json
@@ -214,6 +214,11 @@ def run_load(args: argparse.Namespace) -> None:
     protagonistas = [
         p for p in consolidated.get("personas", []) if "NIETX" in p["roles"]
     ]
+
+    # apoc.create.addLabels necesita las labels de Neo4j (título), no el
+    # vocabulario en mayúsculas del CDM: ver domain/roles.graph_labels.
+    for persona in personas_detalles:
+        persona["role_labels"] = graph_labels(persona["roles"])
 
     rel_familiares = [
         r for r in consolidated.get("relaciones_interpersonales", [])
