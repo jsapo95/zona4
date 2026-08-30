@@ -80,22 +80,35 @@ def _resolve_existing_lugar_key(
     return None
 
 
-def _parse_ccd_fecha(fecha_values: List[str]) -> Optional[str]:
+# Fix E (auditoría 2026-08-29, hallazgo I2): de los 278 valores de fecha en
+# las 248 referencias a CCD de `parque_de_la_memoria.json`, sólo 10 son
+# AAAA/MM/DD -245 son AAAA/MM (precisión de mes) y 23 son AAAA (precisión de
+# año). `parse_partial_ymd` ya devuelve inicio, fin y precisión; esta
+# función antes se quedaba sólo con el inicio más temprano, fabricando una
+# precisión de día que la fuente no tiene ("1977/06" -> "1977-06-01") y
+# descartando el resto del rango cuando la fuente traía más de un valor
+# ("1978/01", "1978/02" -> se perdía por completo el segundo mes). Ahora
+# devuelve también `fecha_fin` (el fin más tardío de TODOS los valores, para
+# no perder ese segundo mes) y `precision_fecha` (DAY/MONTH/YEAR, la del
+# valor que aporta el inicio elegido), en vez de un solo string ISO.
+def _parse_ccd_fecha(fecha_values: List[str]) -> Dict[str, Optional[str]]:
     if not fecha_values:
-        return None
+        return {"fecha": None, "fecha_fin": None, "precision_fecha": None}
 
     cleaned = [f.strip() for f in fecha_values if isinstance(f, str) and f.strip()]
     if not cleaned:
-        return None
+        return {"fecha": None, "fecha_fin": None, "precision_fecha": None}
 
     parsed = [parse_partial_ymd(v) for v in cleaned]
     valid = [p for p in parsed if p[0] is not None]
     if not valid:
-        return " | ".join(cleaned)
+        return {"fecha": " | ".join(cleaned), "fecha_fin": None, "precision_fecha": None}
 
-    # Return chronological start date
-    starts = sorted(v[0] for v in valid if v[0] is not None)
-    return starts[0] if starts else None
+    # El inicio elegido es el más temprano de todos los valores (mismo
+    # criterio que antes); su propia precisión es la que se declara.
+    inicio, _fin_del_inicio, precision = min(valid, key=lambda v: v[0])
+    fin_mas_tardio = max(v[1] for v in valid if v[1] is not None)
+    return {"fecha": inicio, "fecha_fin": fin_mas_tardio, "precision_fecha": precision}
 
 
 def build_ccd_rows(
@@ -203,14 +216,16 @@ def build_ccd_rows(
 
             fecha_raw = ref.get("fecha")
             fecha_values = fecha_raw if isinstance(fecha_raw, list) else []
-            fecha_iso = _parse_ccd_fecha(fecha_values)
+            fecha_parsed = _parse_ccd_fecha(fecha_values)
             relacion = clean_text(ref.get("relacion")) or "desconocida"
 
             persona_lugar_links.append({
                 "persona_key": f"registro:{registro}",
                 "lugar_key": lugar_key,
                 "tipo_relacion": _ccd_rel_to_tipo(relacion, genero),
-                "fecha": fecha_iso or "DESCONOCIDA",
+                "fecha": fecha_parsed["fecha"] or "DESCONOCIDA",
+                "fecha_fin": fecha_parsed["fecha_fin"],
+                "precision_fecha": fecha_parsed["precision_fecha"],
                 "origen": "ccds_json",
             })
 

@@ -117,6 +117,11 @@ RETURN count(*)
 """
 
 # Dynamic spatiotemporal relationship Persona -> Lugar (uses apoc.merge.relationship, idempotent per origen)
+# `fecha_fin` / `precision_fecha` (Fix E, V1.3, hallazgo I2): sólo las
+# puebla `builders/ccds.py` (fuente `ccds_json`), cuando la fecha original
+# no tiene precisión de día. Para el resto de las filas `row.fecha_fin` y
+# `row.precision_fecha` son null y Neo4j no escribe esas propiedades (mismo
+# patrón que `delitos` en `CYPHER_UPSERT_REL_PERSONA`).
 CYPHER_LINK_PERSONA_LUGAR_DYNAMIC = """
 UNWIND $rows AS row
 MATCH (p:Persona {persona_key: row.persona_key})
@@ -126,9 +131,9 @@ CALL apoc.merge.relationship(
     p,
     row.tipo_relacion,
     {origen: row.origen},
-    {fecha: coalesce(row.fecha, "DESCONOCIDA")},
+    {fecha: coalesce(row.fecha, "DESCONOCIDA"), fecha_fin: row.fecha_fin, precision_fecha: row.precision_fecha},
     l,
-    {fecha: coalesce(row.fecha, "DESCONOCIDA")}
+    {fecha: coalesce(row.fecha, "DESCONOCIDA"), fecha_fin: row.fecha_fin, precision_fecha: row.precision_fecha}
 ) YIELD rel
 RETURN count(*)
 """

@@ -1,15 +1,20 @@
-"""Regresión: Fix E (hallazgo I1 de la auditoría semántica 2026-08-29).
+"""Regresión: Fix E (hallazgos I1 e I2 de la auditoría semántica 2026-08-29).
 
-`build_ccd_rows` asignaba `PARIO_EN` a partir de la relación literal
+I1: `build_ccd_rows` asignaba `PARIO_EN` a partir de la relación literal
 `pario_en` de la fuente, sin mirar el género de la persona. La fuente usa
 esa etiqueta de forma laxa para "el parto de su hije ocurrió aquí" y se la
 aplica por igual al padre y a la madre del mismo hecho -Raúl Eugenio Metz
 (género masculino, figura como padre en `nietos_y_nietas.json`) recibía la
 misma arista `PARIO_EN` que Graciela Alicia Romero, la madre.
+
+I2: `_parse_ccd_fecha` fabricaba precisión de día a partir de fechas
+`AAAA/MM` o `AAAA` de la fuente (245 de 278 valores no son `AAAA/MM/DD`), y
+cuando la fuente traía más de un valor de fecha, descartaba todos menos el
+de inicio más temprano.
 """
 from __future__ import annotations
 
-from zona4_graph_loader.builders.ccds import _ccd_rel_to_tipo, build_ccd_rows
+from zona4_graph_loader.builders.ccds import _ccd_rel_to_tipo, _parse_ccd_fecha, build_ccd_rows
 from zona4_graph_loader.io.files import CCDS_PATH, DETALLES_PATH, read_json
 
 
@@ -61,3 +66,60 @@ def test_sobre_los_datos_reales_ningun_pario_en_cae_sobre_un_registro_masculino(
     assert len(pario_en) == 39
     presente_en_ccds = [e for e in presente_en if e["origen"] == "ccds_json"]
     assert len(presente_en_ccds) == 204 + 2
+
+
+# --- I2: precisión de fecha ---
+
+
+def test_fecha_mes_no_fabrica_precision_de_dia():
+    resultado = _parse_ccd_fecha(["1977/06"])
+    assert resultado["fecha"] == "1977-06-01"
+    assert resultado["fecha_fin"] == "1977-06-30"
+    assert resultado["precision_fecha"] == "MONTH"
+
+
+def test_fecha_anio_no_fabrica_precision_de_dia():
+    resultado = _parse_ccd_fecha(["1978"])
+    assert resultado["fecha"] == "1978-01-01"
+    assert resultado["fecha_fin"] == "1978-12-31"
+    assert resultado["precision_fecha"] == "YEAR"
+
+
+def test_fecha_dia_exacto_mantiene_precision_de_dia():
+    resultado = _parse_ccd_fecha(["1977/06/01"])
+    assert resultado["fecha"] == "1977-06-01"
+    assert resultado["fecha_fin"] == "1977-06-01"
+    assert resultado["precision_fecha"] == "DAY"
+
+
+def test_rango_de_dos_meses_no_pierde_el_segundo_mes():
+    # Casado, Olga Noemi en la fuente real: ["1978/01", "1978/02"]. Antes de
+    # este fix, el segundo mes se descartaba por completo
+    # (`fecha:"1978-01-01"` y nada más).
+    resultado = _parse_ccd_fecha(["1978/01", "1978/02"])
+    assert resultado["fecha"] == "1978-01-01"
+    assert resultado["fecha_fin"] == "1978-02-28"
+    assert resultado["precision_fecha"] == "MONTH"
+
+
+def test_sin_valores_parseables_conserva_el_crudo_sin_fecha_fin():
+    resultado = _parse_ccd_fecha(["no consta"])
+    assert resultado["fecha"] == "no consta"
+    assert resultado["fecha_fin"] is None
+    assert resultado["precision_fecha"] is None
+
+
+def test_sobre_los_datos_reales_precision_fecha_nunca_es_day_para_valores_de_mes():
+    detalles = read_json(DETALLES_PATH)
+    ccds = read_json(CCDS_PATH)
+    resultado = build_ccd_rows(detalles, ccds, use_georef=False)
+    eventos = [e for e in resultado["eventos_espaciales"] if e["origen"] == "ccds_json"]
+
+    con_precision = [e for e in eventos if e.get("precision_fecha")]
+    assert con_precision  # el fix debe estar activo sobre datos reales
+    for evento in con_precision:
+        assert evento["precision_fecha"] in {"DAY", "MONTH", "YEAR"}
+        if evento["precision_fecha"] != "DAY":
+            # Si no es precisión de día, fecha no debería mentir con
+            # segundos/día exactos sin fecha_fin que lo acompañe.
+            assert evento.get("fecha_fin") is not None

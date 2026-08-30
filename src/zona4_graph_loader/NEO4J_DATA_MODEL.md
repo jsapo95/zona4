@@ -150,7 +150,24 @@ del campo `roles` del CDM. Una fila sin `roles` recibe `["VICTIMA"]`.
 - (:Persona)-[:SECUESTRADO_EN]->(:Lugar)
 - (:Persona)-[:ASESINADO_EN]->(:Lugar)
 - (:Persona)-[:PRESENTE_EN]->(:Lugar)
+  * fecha_fin [String ISO] (Opcional, V1.3, Fix E, hallazgo I2) — sólo la
+    puebla `ccds_json` (`builders/ccds.py`). La fuente trae la fecha de CCD
+    en formato `AAAA/MM` (245 de 278 valores) o `AAAA` (23 de 278); sólo 10
+    son `AAAA/MM/DD`. Antes de este fix, `fecha` se completaba con el primer
+    día del mes/año (`"1977/06"` -> `"1977-06-01"`), fabricando una
+    precisión que la fuente no tiene, y cuando la fuente traía más de un
+    valor (`["1978/01","1978/02"]`) se descartaba el segundo mes por
+    completo. Ahora `fecha` sigue siendo el inicio más temprano (para no
+    romper el formato ISO que ya consumía el resto del grafo), pero
+    `fecha_fin` conserva el fin más tardío de TODOS los valores de la fuente
+    (para ese ejemplo: `fecha:"1978-01-01"`, `fecha_fin:"1978-02-28"`), y
+    `precision_fecha` declara la granularidad real.
+  * precision_fecha [String] (Opcional, V1.3, Fix E, hallazgo I2) —
+    `"DAY"` | `"MONTH"` | `"YEAR"`, la granularidad real del valor que dio
+    `fecha`. Sólo poblada por `ccds_json`.
 - (:Persona)-[:PARIO_EN]->(:Lugar) // Restrictiva: sólo se emite cuando `Persona.genero <> "MASCULINO"` (V1.3, Fix E, hallazgo I1). La fuente (`ccds_json`, relación `pario_en`) la usaba de forma laxa para "el parto de su hije ocurrió aquí" y la aplicaba por igual al padre; un registro masculino con esa relación se emite como PRESENTE_EN.
+  * fecha_fin [String ISO] / precision_fecha [String] (Opcional, V1.3, Fix E,
+    hallazgo I2) — misma semántica que en `PRESENTE_EN` arriba.
 - (:Persona)-[:MURIO_EN]->(:Lugar)
 - (:Persona)-[:LIBERADO_EN]->(:Lugar)
 
