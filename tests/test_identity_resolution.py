@@ -142,7 +142,14 @@ def test_merge_reescribe_relaciones_interpersonales_y_contexto():
     assert dataset["relaciones_contexto"][0]["persona_key"] == "registro:1"
 
 
-def test_merge_unifica_roles_y_completa_campos_faltantes():
+def test_merge_veta_cuando_los_roles_son_victima_y_represor():
+    """Mismo nombre y fecha_nacimiento coincidente, pero un lado es VICTIMA y
+    el otro REPRESOR: fusionar uniría a una víctima con un represor en un solo
+    nodo, el peor error posible en este dominio. Debe vetarse el merge y
+    generar un CANDIDATO_MERGE con un metodo propio para que un humano lo
+    revise, en vez de perder silenciosamente el registro (y con él, cualquier
+    TORTURO_A que dependiera de mantenerlos como nodos distintos).
+    """
     dataset = {
         "personas": [
             _persona("registro:1", "Luis Diaz", "detalles_personas",
@@ -152,9 +159,39 @@ def test_merge_unifica_roles_y_completa_campos_faltantes():
                      fecha_secuestro=None),
         ],
     }
-    resolve_identities(dataset)
+    report = resolve_identities(dataset)
+
+    assert len(dataset["personas"]) == 2
+    assert report.merges == []
+    assert len(report.candidatos) == 1
+    candidato = report.candidatos[0]
+    assert candidato["metodo"] == "nombre_exacto_roles_incompatibles"
+    assert candidato["confianza"] == "alta"
+    assert {candidato["placeholder_key"], candidato["candidate_key"]} == {
+        "registro:1", "juicios_condenado:3"
+    }
+
+
+def test_merge_de_represor_y_complice_sigue_funcionando():
+    """REPRESOR + COMPLICE es una unión legítima entre dos roles del mismo
+    lado ("victimario"): el veto de roles incompatibles no debe alcanzarla.
+    """
+    dataset = {
+        "personas": [
+            _persona("juicios_condenado:1", "Jorge Peralta", "juicios_condenados",
+                     fecha_nacimiento="1945-06-15", roles=["REPRESOR"]),
+            _persona("minjus_imputado:2", "Jorge Peralta", "minjus_imputados",
+                     fecha_nacimiento="1945-06-15", roles=["COMPLICE"],
+                     complice_tipo="CIVIL"),
+        ],
+    }
+    report = resolve_identities(dataset)
+
+    assert len(dataset["personas"]) == 1
     superviviente = dataset["personas"][0]
-    assert superviviente["roles"] == ["REPRESOR", "VICTIMA"]
+    assert superviviente["roles"] == ["COMPLICE", "REPRESOR"]
+    assert len(report.merges) == 1
+    assert report.candidatos == []
 
 
 def test_prioridad_de_fuente_declarada():
@@ -192,6 +229,24 @@ def test_cadena_transitiva_sin_clique_no_mergea():
     report = resolve_identities(dataset)
     assert len(dataset["personas"]) == 3
     assert report.merges == []
+
+    # A-B y B-C sí confirman por fecha (Fix 6): el clique incompleto no debe
+    # etiquetarlos igual que un par sin ninguna evidencia de fecha, o las 10
+    # filas con fecha confirmante quedan indistinguibles entre las 1186 sin
+    # evidencia alguna.
+    por_par = {
+        frozenset((c["placeholder_key"], c["candidate_key"])): c
+        for c in report.candidatos
+    }
+    ab = por_par[frozenset(("registro:1", "archivo_memoria:2"))]
+    bc = por_par[frozenset(("archivo_memoria:2", "minjus_victima:3"))]
+    ac = por_par[frozenset(("registro:1", "minjus_victima:3"))]
+    assert ab["metodo"] == "nombre_exacto_clique_incompleto"
+    assert ab["confianza"] == "alta"
+    assert bc["metodo"] == "nombre_exacto_clique_incompleto"
+    assert bc["confianza"] == "alta"
+    # A-C no comparte ningún campo de fecha: sigue siendo el caso genérico.
+    assert ac["metodo"] == "nombre_exacto_sin_fecha"
 
 
 def test_fecha_secuestro_contradictoria_veta_merge_y_marca_candidato():

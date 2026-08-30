@@ -72,6 +72,28 @@ def _fechas_contradicen(a: Dict[str, Any], b: Dict[str, Any]) -> bool:
     return False
 
 
+# Roles que, cruzados entre dos registros, jamás describen a la misma persona
+# física dentro de este dominio: un mismo nodo no puede ser simultáneamente
+# víctima/nietx y represor/cómplice. REPRESOR+COMPLICE en el mismo registro (o
+# entre dos registros del mismo lado) es un caso legítimo y no queda vetado.
+_ROLES_VICTIMA = {"VICTIMA", "NIETX"}
+_ROLES_PERPETRADOR = {"REPRESOR", "COMPLICE"}
+
+
+def _roles_incompatibles(a: Dict[str, Any], b: Dict[str, Any]) -> bool:
+    """True si un lado es víctima/nietx y el otro represor/cómplice.
+
+    Fusionar semejante par uniría a una víctima con un victimario en un solo
+    nodo: el peor error posible en este dominio. Se veta el merge sin importar
+    cuán fuerte sea la coincidencia de fechas.
+    """
+    roles_a = set(a.get("roles") or [])
+    roles_b = set(b.get("roles") or [])
+    a_victima, a_perp = bool(roles_a & _ROLES_VICTIMA), bool(roles_a & _ROLES_PERPETRADOR)
+    b_victima, b_perp = bool(roles_b & _ROLES_VICTIMA), bool(roles_b & _ROLES_PERPETRADOR)
+    return (a_victima and b_perp) or (a_perp and b_victima)
+
+
 def _absorber(canonico: Dict[str, Any], otro: Dict[str, Any]) -> None:
     """Vuelca en `canonico` la información de `otro` sin pisar lo que ya tiene."""
     claves_alt = set(canonico.get("claves_alt") or [])
@@ -172,14 +194,21 @@ def resolve_identities(dataset: CanonicalDataset) -> IdentityReport:
         n = len(ordenado)
 
         # Grafo de confirmación: hay arista entre i y j solo si vienen de
-        # fuentes distintas Y una fecha los confirma sin contradicción.
+        # fuentes distintas, una fecha los confirma sin contradicción, Y sus
+        # roles no son mutuamente excluyentes (víctima/nietx vs.
+        # represor/cómplice). El veto de roles se evalúa aparte para poder
+        # distinguir, más abajo, un par sin evidencia de un par con fechas que
+        # sí confirman pero cuyos roles impiden fusionar.
         confirmado = [[False] * n for _ in range(n)]
         for i in range(n):
             for j in range(i + 1, n):
                 if ordenado[i].get("fuente") == ordenado[j].get("fuente"):
                     continue
-                if _fechas_confirman(ordenado[i], ordenado[j]) is not None:
-                    confirmado[i][j] = confirmado[j][i] = True
+                if _fechas_confirman(ordenado[i], ordenado[j]) is None:
+                    continue
+                if _roles_incompatibles(ordenado[i], ordenado[j]):
+                    continue
+                confirmado[i][j] = confirmado[j][i] = True
 
         # Componentes conexas de ese grafo.
         visitado = [False] * n
@@ -244,16 +273,42 @@ def resolve_identities(dataset: CanonicalDataset) -> IdentityReport:
                 })
 
         # Los que quedaron sin fusionar dentro del bloque, pero vienen de fuentes
-        # distintas, son candidatos para revisión humana. Se clasifican una sola
-        # vez: si sus fechas contradicen directamente, la etiqueta lo advierte;
-        # si simplemente no hay fecha que confirme ni contradiga, es el caso
-        # "mismo nombre sin fecha" de siempre.
+        # distintas, son candidatos para revisión humana. Se clasifican en
+        # cuatro grupos, de mayor a menor evidencia real de que son la misma
+        # persona:
+        #   1. Fechas confirman pero los roles son mutuamente excluyentes
+        #      (víctima/nietx vs. represor/cómplice): el veto de Fix 3. Es la
+        #      evidencia más fuerte de todas, pero fusionar sería el peor error
+        #      posible en este dominio, así que nunca se fusiona.
+        #   2. Fechas confirman pero el merge quedó bloqueado porque la
+        #      componente conexa no era un clique completo (Fix 6): evidencia
+        #      igual de fuerte que un merge real, solo que un tercer registro
+        #      rompió la cadena. Antes caía en el mismo bucket que el
+        #      "sin fecha" genérico (1186 filas, de las cuales solo 10 tenían
+        #      esta fecha confirmante) y quedaba indistinguible en la cola de
+        #      revisión.
+        #   3. Fechas contradicen directamente: evidencia de que son personas
+        #      distintas.
+        #   4. Ninguna fecha compartida confirma ni contradice: el caso
+        #      "mismo nombre sin fecha" de siempre, sin evidencia en ningún
+        #      sentido.
         sobrevivientes = [p for p in ordenado if p["persona_key"] not in absorbidas]
         for i, a in enumerate(sobrevivientes):
             for b in sobrevivientes[i + 1:]:
                 if a.get("fuente") == b.get("fuente"):
                     continue
-                if _fechas_contradicen(a, b):
+                if _fechas_confirman(a, b) is not None:
+                    if _roles_incompatibles(a, b):
+                        report.candidatos.append(
+                            _candidato(a["persona_key"], b["persona_key"],
+                                       "nombre_exacto_roles_incompatibles", 0.95, slug, "alta")
+                        )
+                    else:
+                        report.candidatos.append(
+                            _candidato(a["persona_key"], b["persona_key"],
+                                       "nombre_exacto_clique_incompleto", 0.95, slug, "alta")
+                        )
+                elif _fechas_contradicen(a, b):
                     report.candidatos.append(
                         _candidato(a["persona_key"], b["persona_key"],
                                    "nombre_exacto_fecha_contradictoria", 0.5, slug, "baja")
