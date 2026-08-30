@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Dict, List
 
 from zona4_graph_loader.builders.base import CanonicalDataset
-from zona4_graph_loader.constants import SENTINEL_INSTITUCION_VALUES
+from zona4_graph_loader.constants import SENTINEL_INSTITUCION_VALUES, SENTINEL_ORG_VALUES
 from zona4_graph_loader.builders.minjus_ccds import slug_ccd
 from zona4_graph_loader.builders.minjus_imputados import slug_persona_minjus
 from zona4_graph_loader.builders.minjus_sentencias import FUENTE as FUENTE_SENTENCIAS
@@ -102,8 +102,17 @@ def build_minjus_victimas_rows(
             "fecha_secuestro": fecha_secuestro,
         })
 
+        # Fix E (auditoría 2026-08-29, hallazgo I3d, hallado en verificación
+        # posterior a la carga completa): "No determinado"/"Desconocida"/
+        # "No especificado" también aparecen como valor de `militancia` (4
+        # registros reales: Álvarez Carrera, Bietti, Botazzi, Gildengers) y
+        # generaban un :Org sentinel igual que `Fuerza` -mismo defecto,
+        # campo distinto. Mismo guardia, sin propiedad de respaldo nueva en
+        # la persona (a diferencia de `fuerza`): "militancia" no tiene hoy
+        # una propiedad `Persona.militancia` a la que sumarse sin abrir otra
+        # decisión de modelado fuera de alcance.
         militancia = clean_text(datos.get("militancia"))
-        if militancia:
+        if militancia and militancia.upper() not in SENTINEL_ORG_VALUES:
             slug_militancia = slugify_name(militancia.upper())
             registrar_entidad(
                 f"org:{slug_militancia}", "Org", "nombre",

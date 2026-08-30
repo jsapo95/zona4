@@ -120,6 +120,26 @@ def test_trabajo_y_estudio_sentinel_no_generan_institucion():
     assert instituciones == []
 
 
+def test_militancia_sentinel_no_genera_org():
+    """Fix E (auditoría 2026-08-29, hallazgo I3d, hallado en verificación
+    posterior a la carga completa): "No determinado"/"Desconocida"/
+    "No especificado" también aparecen como valor de `militancia` (4
+    registros reales del archivo), no sólo de `Fuerza`
+    (juicios_condenados.py/minjus_imputados.py). Antes de este fix
+    generaban un :Org sentinel igual que esos dos builders.
+    """
+    victima = dict(
+        VICTIMA,
+        datos_personales={**VICTIMA["datos_personales"], "militancia": "No determinado"},
+    )
+    dataset = build_minjus_victimas_rows(
+        [victima], ccd_key_by_slug=CCD_KEYS, sentencias_index={}
+    )
+    orgs = [e for e in dataset["entidades_contexto"] if e["tipo_entidad"] == "Org"]
+    assert orgs == []
+    assert "PARTE_DE" not in {r["tipo_relacion"] for r in dataset["relaciones_contexto"]}
+
+
 def test_placeholder_de_minjus_no_genera_entidad_ni_relacion():
     """MinJus usa el guión largo "–" como placeholder de "sin dato" en varios
     campos de `datos_personales`. `clean_text` no lo filtra (no está en su
@@ -385,7 +405,13 @@ def test_sobre_el_archivo_real():
 
     # Fix E (hallazgo I3d): ninguna :Institución generada por esta fuente
     # debe tener un nombre sentinel puro.
-    from zona4_graph_loader.constants import SENTINEL_INSTITUCION_VALUES
+    from zona4_graph_loader.constants import SENTINEL_INSTITUCION_VALUES, SENTINEL_ORG_VALUES
 
     instituciones = [e for e in dataset["entidades_contexto"] if e["tipo_entidad"] == "Institucion"]
     assert all(inst["nombre"] not in SENTINEL_INSTITUCION_VALUES for inst in instituciones)
+
+    # Mismo guardia para :Org via `militancia` (hallado en verificación
+    # posterior a la carga completa: 4 registros reales -Álvarez Carrera,
+    # Bietti, Botazzi, Gildengers- generaban un :Org sentinel).
+    orgs = [e for e in dataset["entidades_contexto"] if e["tipo_entidad"] == "Org"]
+    assert all(org["nombre"] not in SENTINEL_ORG_VALUES for org in orgs)
