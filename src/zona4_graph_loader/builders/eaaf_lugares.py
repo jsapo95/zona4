@@ -40,6 +40,26 @@ def _to_float(value: Any) -> Optional[float]:
         return None
 
 
+def _validar_coordenadas(lat: Optional[float], lon: Optional[float], sitio: str) -> tuple[Optional[float], Optional[float]]:
+    """Descarta coordenadas fuera del rango WGS84 válido.
+
+    Algunas filas traen notación científica de Excel con coma decimal (p.ej.
+    "-3,45376E+15"): `_to_float` la convierte en un float perfectamente válido
+    pero absurdo como coordenada. No se intenta reconstruir el valor
+    original (correr el punto decimal es inventar datos); se descarta y se
+    avisa para que un humano repare la fila fuente.
+    """
+    if lat is None or lon is None:
+        return lat, lon
+    if not (-90 <= lat <= 90) or not (-180 <= lon <= 180):
+        print(
+            f"Warning: coordenadas fuera de rango para '{sitio}' "
+            f"(Lat={lat!r}, Long={lon!r}); se descartan lat/lon y no se genera DirecciónCCD."
+        )
+        return None, None
+    return lat, lon
+
+
 def build_eaaf_lugares_rows(rows: List[Dict[str, str]]) -> CanonicalDataset:
     """Convierte el consolidado de sitios de hallazgo del EAAF al CDM.
 
@@ -117,6 +137,8 @@ def build_eaaf_lugares_rows(rows: List[Dict[str, str]]) -> CanonicalDataset:
         sitio_key = make_lugar_key(tipo_sitio, nombre_upper, contenedor_key)
         lat = _to_float(row.get("Lat"))
         lon = _to_float(row.get("Long"))
+        etiqueta_sitio = f"{nombre_sitio}, {localidad}" if localidad else nombre_sitio
+        lat, lon = _validar_coordenadas(lat, lon, etiqueta_sitio)
 
         lugares[sitio_key] = {
             "lugar_key": sitio_key,

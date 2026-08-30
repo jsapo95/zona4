@@ -79,15 +79,38 @@ def test_sobre_el_archivo_real():
     sitios = [l for l in dataset["lugares"]
               if l["tipo_entidad"] == "Lugar" and l["fuente"] == "eaaf_lugares"]
     assert len(sitios) == 91
-    assert all(l.get("lat") is not None for l in sitios)
 
-    # Los 91 sitios tienen coordenadas, asi que deben producir 91 direcciones
-    # distintas. Se compara el set de claves (no solo len(direcciones)) para
-    # que una colision que pise una direccion con otra no quede enmascarada.
+    # Una fila (Cementerio San Antonio de Padua, San Miguel) trae notacion
+    # cientifica de Excel con coma decimal ("-3,45376E+15") que _to_float
+    # convierte en un float valido pero absurdo como coordenada. Se descarta
+    # esa unica fila; las 90 restantes conservan sus coordenadas.
+    sin_coordenadas = [l for l in sitios if l.get("lat") is None]
+    assert len(sin_coordenadas) == 1
+    assert sin_coordenadas[0]["nombre"] == "CEMENTERIO SAN ANTONIO DE PADUA"
+    assert all(l.get("lat") is not None for l in sitios if l is not sin_coordenadas[0])
+
+    # 90 sitios tienen coordenadas validas, asi que deben producir 90
+    # direcciones distintas (la fila descartada no genera DirecciónCCD). Se
+    # compara el set de claves (no solo len(direcciones)) para que una
+    # colision que pise una direccion con otra no quede enmascarada.
     direcciones = [l for l in dataset["lugares"] if l["tipo_entidad"] == "DireccionCCD"]
     direccion_keys = {d["direccion_ccd_key"] for d in direcciones}
-    assert len(direcciones) == 91
-    assert len(direccion_keys) == 91
+    assert len(direcciones) == 90
+    assert len(direccion_keys) == 90
+
+
+def test_coordenada_fuera_de_rango_no_genera_lat_lon_ni_direccion():
+    # Notacion cientifica de Excel con coma decimal: parsea a un float valido
+    # pero con una magnitud absurda para una coordenada real.
+    fila = dict(FILA_CEM, Lat="-3,45376E+15", Long="-5,8739E+16")
+    dataset = build_eaaf_lugares_rows([fila])
+    sitios = [l for l in dataset["lugares"]
+              if l["tipo_entidad"] == "Lugar" and l["fuente"] == "eaaf_lugares"]
+    assert len(sitios) == 1
+    assert sitios[0]["lat"] is None
+    assert sitios[0]["lon"] is None
+    assert [l for l in dataset["lugares"] if l["tipo_entidad"] == "DireccionCCD"] == []
+    assert [j for j in dataset["jerarquias"] if j["tipo_relacion"] == "UBICADA_EN"] == []
 
 
 def test_direccion_key_no_colisiona_entre_sitios_homonimos():
