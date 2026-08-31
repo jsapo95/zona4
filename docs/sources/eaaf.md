@@ -16,7 +16,15 @@ adentro, la otra afuera.
 ## `eaaf_lugares.csv` — EN GRAFO
 
 *   **Builder**: `src/zona4_graph_loader/builders/eaaf_lugares.py::build_eaaf_lugares_rows`.
-*   **Registros**: 91 filas, 100% con coordenadas (`Lat`/`Long`).
+*   **Registros**: 91 filas (medido corriendo el builder contra el archivo real,
+    2026-08-30). De esas 91, **90** producen un nodo `:DirecciónCCD` con
+    coordenadas; **1** — "Cementerio San Antonio de Padua, San Miguel" — trae
+    `Lat`/`Long` corruptos (`-3453760000000000.0` / `-5.8739e+16`, muy fuera de
+    rango geográfico válido) y el loader los rechaza en vez de crear una
+    dirección con una ubicación imposible: el nodo `:Lugar` del sitio se crea
+    igual, sin coordenadas ni `:DirecciónCCD`. El resto del archivo tenía ya
+    rangos válidos antes de esta rama; este único caso quedó documentado en el
+    fix wave previo a la auditoría semántica y sigue verificado.
 *   **Formato**: CSV con delimitador `;`. Columnas: `PROVINCIA`, `LOCALIDAD`,
     `CEM - CCD - EP`, `LUGAR DE HALLAZGO`, `HOJA DE REFERENCIA`, `Lat`, `Long`,
     y cuatro columnas de conteo (`Suma de CASOS`, `Suma de EXHUMADOS`,
@@ -30,10 +38,23 @@ adentro, la otra afuera.
 | --- | --- |
 | `PROVINCIA` | jerarquía `:Lugar` PAIS/PROVINCIA (o sólo PAIS si la provincia es en realidad un país extranjero — ver abajo). |
 | `LOCALIDAD` | `:Lugar` tipo `CIUDAD`, colgado del contenedor anterior. |
-| `CEM - CCD - EP` | `tipoGeopolitico` del sitio: `CEMENTERIO`, `CCD` o `ENTERRAMIENTO` (fallback `SITIO_HALLAZGO` si el código no matchea). |
+| `CEM - CCD - EP` | `tipoGeopolitico` del sitio: `CEMENTERIO` (77), `CCD` (8) o `ENTERRAMIENTO` (6) (fallback `SITIO_HALLAZGO` si el código no matchea; 0 casos en el archivo actual). Desde V1.3 (hallazgo I5) el mismo valor también se propaga a `:DirecciónCCD.tipo_direccion` — ver abajo. |
 | `LUGAR DE HALLAZGO` | `nombre` del `:Lugar` hoja. |
-| `Lat` / `Long` | `:DireccionCCD.coordenadas`, enlazada al lugar hoja vía `UBICADA_EN`. |
+| `Lat` / `Long` | `:DireccionCCD.coordenadas`, enlazada al lugar hoja vía `UBICADA_EN`. Validadas contra un rango geográfico plausible (`[-90,90]`/`[-180,180]`) antes de escribirse: fuera de rango, se descartan y no se genera `:DireccionCCD` (ver "Registros" arriba). |
 | `HOJA DE REFERENCIA` | `:Lugar.ubicacion` (texto libre, no estructurado). |
+
+### `:DirecciónCCD.tipo_direccion` (V1.3, hallazgo I5)
+
+Antes de este fix, un cementerio, un enterramiento y un centro clandestino
+real recibían exactamente la misma label `:DirecciónCCD`, sin ninguna marca
+que los distinguiera de un CCD real cargado por `ccds.py` o `minjus_ccds.py` —
+un defecto preexistente a esta rama que la auditoría encontró a escala.
+`eaaf_lugares.py` ahora reutiliza la clasificación que la propia fuente EAAF
+ya trae en `CEM - CCD - EP` como valor de `tipo_direccion`, sin inferir nada
+nuevo: de los 90 `:DirecciónCCD` que aporta esta fuente, **76** son
+`"CEMENTERIO"`, **8** son `"CCD"` (comparten esta categoría con los CCD reales
+de `ccds.py`/`minjus_ccds.py` en el conteo global del grafo) y **6** son
+`"ENTERRAMIENTO"`.
 
 Tres filas traen `PROVINCIA = URUGUAY` (además hay códigos para BOLIVIA, BRASIL,
 CHILE y PARAGUAY, sin filas reales en el dataset actual). Para esas filas la

@@ -64,7 +64,26 @@ Define nodos `:Persona` y sus roles asociados.
     se le asignará el rol `:Nietx`).
 *   `fecha_nacimiento` / `fecha_secuestro` (str ISO, opcionales, V1.2). La
     segunda se persiste en el nodo cuando la fuente no permite construir la
-    arista `SECUESTRADO_EN` (ver `docs/sources/minjus_gba.md`).
+    arista `SECUESTRADO_EN` (ver `docs/sources/minjus_gba.md`). Ambas
+    validadas (V1.3, hallazgo I6): un valor fuera de un rango históricamente
+    plausible (`domain/date_norm.py::validar_fecha_de_hecho`/
+    `validar_fecha_de_nacimiento`) se descarta a `"DESCONOCIDA"` antes de
+    persistirse, en vez de afirmar un nacimiento o secuestro imposible. La
+    fuente puede tener una errata real (p. ej. Massera, Emilio Eduardo,
+    represor: fuente `"08/11/2010"`, nació en 1925) — el builder no la
+    corrige, sólo deja de propagarla.
+*   `edad` (str, opcional, V1.3): sólo la puebla `detalles_personas` (Parque
+    de la Memoria). Se persiste tal como la da la fuente, sin validar contra
+    ninguna otra fecha: existe para que una contradicción entre edad y fecha
+    de nacimiento/secuestro sea auditable desde el propio grafo.
+*   `estudiante_universitario` (bool, opcional, V1.3): sólo la puebla
+    `archivo_memoria` (Archivo de la Memoria de San Martín). Nunca se escribe
+    `false`: la ausencia del campo en la fuente no es evidencia de que la
+    persona no haya sido estudiante universitaria.
+*   `fuerza` (str, opcional, V1.3): sólo la pueblan `juicios_condenados` y
+    `minjus_imputados`. Conserva el valor crudo del campo `Fuerza`/`fuerza`
+    de la fuente, incluidos los centinelas ("SIN ESPECIFICAR", "CIVIL",
+    etc.) que ya NO generan una entidad `:Org` (ver 2.6, más abajo).
 *   `claves_alt` (List[str], opcional, V1.2): claves de otras fuentes
     absorbidas por la reconciliación de identidades (paso 3.5, más abajo).
 
@@ -80,17 +99,52 @@ Define nodos geográficos, CCDs, aliases o direcciones.
 Define aristas genealógicas, de co-militancia, represivas o de avistamiento.
 *   `source_key` (str, obligatorio).
 *   `target_key` (str, obligatorio).
-*   `tipo` (str, obligatorio, e.g., `"HIJE_DE"`, `"PAREJA_DE"`, `"TORTURO_A"`, `"VIO_A"`).
+*   `tipo` (str, obligatorio, e.g., `"HIJE_DE"`, `"PAREJA_DE"`, `"TORTURO_A"`, `"IMPUTADO_POR"`, `"VIO_A"`).
 *   `fuente` (str, obligatorio).
 *   `fecha` (str, opcional).
+*   `fecha_sentencia` (str, opcional, V1.2): sólo la pueblan `minjus_imputados`/
+    `minjus_victimas` en `TORTURO_A`/`IMPUTADO_POR`. Ya NO se filtra por
+    `coalesce` a las demás relaciones interpersonales (V1.3, hallazgo M1): un
+    vínculo de parentesco del Parque de la Memoria no trae sentencia judicial
+    y ahora simplemente no escribe la propiedad, en vez de afirmar
+    `"DESCONOCIDA"` (2.710 aristas de parentesco lo hacían antes de este fix).
+*   `delitos` (List[str], opcional, V1.3, hallazgo C1): sólo la pueblan
+    `minjus_imputados`/`minjus_victimas` en `TORTURO_A`/`IMPUTADO_POR` — el
+    listado de cargos que la sentencia imputa a esa persona respecto de esa
+    otra en particular. **Decide cuál de las dos relaciones se emite**:
+    `TORTURO_A` si incluye la familia de tormentos ("Tormentos"/"Tormentos
+    seguidos de muerte"), `IMPUTADO_POR` en caso contrario. Antes de este fix
+    se emitía `TORTURO_A` para el 100 % de los pares imputado-víctima de
+    MinJus sin mirar este campo, acusando de tormentos a personas cuya
+    sentencia las condena por otra cosa (homicidio, sustracción de menor,
+    privación ilegítima de la libertad...).
 
 ### 2.4 `eventos_espaciales`
 Define aristas de eventos directos espacio-temporales entre Persona y Lugar.
 *   `persona_key` (str, obligatorio).
 *   `lugar_key` (str, obligatorio).
-*   `tipo_relacion` (str, obligatorio: `"SECUESTRADO_EN"`, `"PRESENTE_EN"`, `"NACIO_EN"`, `"ASESINADO_EN"`).
-*   `fecha` (str, opcional).
+*   `tipo_relacion` (str, obligatorio: `"SECUESTRADO_EN"`, `"PRESENTE_EN"`, `"NACIO_EN"`, `"ASESINADO_EN"`, `"PARIO_EN"`).
+*   `fecha` (str, opcional) — validada para `NACIO_EN`/`SECUESTRADO_EN`/
+    `ASESINADO_EN`/`PRESENTE_EN` (V1.3, hallazgo I6): un valor fuera de un
+    rango históricamente plausible se descarta a `"DESCONOCIDA"` en vez de
+    persistirse. `PARIO_EN` sólo se emite cuando `Persona.genero <>
+    "MASCULINO"` (V1.3, hallazgo I1); un registro masculino con esa relación
+    en la fuente se emite como `PRESENTE_EN`.
+*   `fecha_fin` / `precision_fecha` (str, opcionales, V1.3, hallazgo I2): sólo
+    las puebla `ccds_json` en `PRESENTE_EN`/`PARIO_EN`. La fuente trae fechas
+    de granularidad mes o año (`"1977/06"`, `"1978"`); antes se completaba
+    `fecha` con el primer día del período, fabricando una precisión de día
+    que la fuente no tiene, y un segundo valor de un rango se descartaba sin
+    dejar rastro. Ahora `fecha` sigue siendo el inicio más temprano (formato
+    ISO sin cambios), pero `fecha_fin` conserva el fin más tardío de todos los
+    valores de la fuente y `precision_fecha` (`"DAY"`/`"MONTH"`/`"YEAR"`)
+    declara la granularidad real.
 *   `origen` (str, obligatorio).
+*   `:Persona.estudiante_universitario` es la única excepción a este patrón
+    hoy: la fuente que lo aporta (`archivo_memoria`) da un booleano, no un
+    lugar ni una fecha, así que se persiste como atributo de `:Persona` en
+    vez de como evento espacial (V1.3, hallazgo I4) — no aparece en esta
+    categoría del CDM.
 
 ### 2.5 `jerarquias`
 Define aristas estructurales de la capa geopolítica.
@@ -105,6 +159,21 @@ Define nodos de contexto biográfico.
 *   Según tipo: `nombre` (Org, Institucion), `descripcion` (Profesion), `titulo` (Cargo), `alias` (AliasPersona).
 *   `tipoOrg` (str, opcional, sólo para Org).
 *   `fuente` (str, obligatorio).
+
+**Valores centinela nunca se materializan como entidad (V1.3, hallazgo I3d).**
+Un builder que quiera crear un `Org`/`Institucion` a partir de un campo como
+`Fuerza`, `militancia`, `lugar_de_trabajo` o `dónde_estudió` primero compara el
+valor (mayúsculas, coincidencia EXACTA — nunca por prefijo) contra
+`constants.py::SENTINEL_ORG_VALUES` (`"SIN ESPECIFICAR"`, `"CIVIL"`,
+`"POLICIA (SIN ESPECIFICAR)"`, `"NO ESPECIFICADO"`, `"NO DETERMINADO"`,
+`"DESCONOCIDA"`, `"DESCONOCIDO"`) o `SENTINEL_INSTITUCION_VALUES`
+(`"NO DETERMINADO"`, `"NO ESPECIFICADO"`, `"NO ESPECIFICA"`, `"DESCONOCIDO"`,
+`"DESCONOCIDA"`). Antes de este fix, cientos de personas de fuentes distintas
+terminaban compartiendo membresía en una organización llamada "SIN
+ESPECIFICAR" o "CIVIL" — que no son organizaciones, son la ausencia del dato.
+El dato crudo no se pierde sin más cuando existe un lugar mejor para él:
+`Persona.fuerza` conserva el valor de `Fuerza`/`fuerza` tal cual, sentinel
+incluido (ver 2.1).
 
 ### 2.7 `relaciones_contexto`
 Define aristas Persona -> entidad de contexto.
@@ -134,6 +203,23 @@ quedan como aristas `CANDIDATO_MERGE` para revisión humana en vez de perderse.
 Cada merge registra su procedencia (`persona_key` absorbida, campo de fecha que
 lo confirmó) en `data/processed/identity_merges.json`, para que la decisión sea
 auditable y, si se demuestra errónea, reversible sin reprocesar las fuentes.
+
+**Nunca se propone `CANDIDATO_MERGE` entre roles mutuamente excluyentes sin
+evidencia (V1.3, hallazgo I7).** Cuando un lado del par es víctima/nietx y el
+otro represor/cómplice, el candidato sólo se propone si hay una fecha que
+efectivamente confirma la coincidencia (`metodo:
+"nombre_exacto_roles_incompatibles"`, para revisión humana explícita); si la
+única evidencia es un nombre igual o parecido — sin fecha alguna — el
+candidato ni siquiera se propone. Antes de este fix, tanto el bucket "mismo
+nombre sin fecha" como el matcher fuzzy por similitud de cadena ignoraban los
+roles por completo: 23 de los ~1.380 `CANDIDATO_MERGE` de una carga real
+sugerían fusionar a una víctima con un represor, con la puntuación más alta
+del sistema — proponer que una víctima y un represor son la misma persona sin
+ninguna evidencia más que un nombre parecido es la peor hipótesis de este
+dominio con la menor evidencia posible. La propiedad de puntaje de similitud
+de nombre se renombró de `score` a `score_nombre`: no es una confianza de
+identidad (dos nombres distintos con una errata típica pueden dar 1.0), y el
+nombre viejo invitaba a leerla como tal.
 
 ---
 

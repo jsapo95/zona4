@@ -7,8 +7,8 @@
 *   **Builder**: `src/zona4_graph_loader/builders/archivo_memoria.py::build_archivo_memoria_rows`.
 
 Esta fuente es la única del proyecto centrada específicamente en el partido de
-San Martín (Zona IV), lo que la vuelve especialmente sensible a cómo se resuelve
-su propia geografía local (ver pendiente 1, abajo).
+San Martín (Zona IV). Desde V1.3 ya no aporta ninguna capa geográfica propia
+al grafo (ver "V1.3: se eliminó la capa geográfica de esta fuente", abajo).
 
 ## Esquema y mapeo al CDM
 
@@ -16,9 +16,9 @@ su propia geografía local (ver pendiente 1, abajo).
 | --- | --- |
 | `nombre` | `:Persona.nombre` (obligatorio; si falta, la fila se descarta). |
 | `fecha_nacimiento` | `:Persona.fecha_nacimiento`. |
-| `fecha_desaparicion_normalizada` | `:Persona.fecha_secuestro` y `fecha` de la arista `SECUESTRADO_EN`. |
-| `lugar` | Resuelto con `domain/place_norm.py::resolve_place` (topónimo corto, p. ej. "Billinghurst") → nodo `:Lugar` + arista `SECUESTRADO_EN`. |
-| `estudiante_universitario` | Arista `ESTUDIO_EN` hacia un nodo `:Institucion` genérico (`institucion:universidad_sin_especificar`), porque la fuente no nombra la universidad. |
+| `fecha_desaparicion_normalizada` | `:Persona.fecha_secuestro` (303 de 303 registros la traen). **Ya NO genera la arista `SECUESTRADO_EN`** — ver "V1.3: se eliminó la capa geográfica de esta fuente", abajo. |
+| `lugar` | **Ya no se mapea a ningún nodo ni arista** (V1.3, hallazgo C2). Antes se resolvía con `domain/place_norm.py::resolve_place` hacia un nodo `:Lugar` + arista `SECUESTRADO_EN`; ver el porqué abajo. |
+| `estudiante_universitario` | `Persona.estudiante_universitario` (booleano; V1.3, hallazgo I4). Antes generaba una arista `ESTUDIO_EN` hacia un nodo `:Institucion` fijo (`institucion:universidad_sin_especificar`) — ver abajo. |
 | `estudiante`, `descripcion`, `edad_al_desaparecer` | No mapeados: no tienen destino en el CDM actual. |
 
 Todas las personas se cargan con `roles: ["VICTIMA"]` y `genero: "INDETERMINADO"`
@@ -26,69 +26,73 @@ Todas las personas se cargan con `roles: ["VICTIMA"]` y `genero: "INDETERMINADO"
 
 ---
 
+## V1.3: se eliminó la capa geográfica de esta fuente (hallazgo C2)
+
+**Esta fuente pasó de 303 aristas `SECUESTRADO_EN` a 0.** Es el cambio más
+importante de esta ficha, y afecta precisamente al foco declarado de esta
+fuente en el proyecto: el partido de San Martín (Zona IV).
+
+**Qué es realmente el campo `lugar`.** Toma sólo 11 valores distintos en los
+303 registros — San Martín, Villa Ballester, José León Suárez, Villa Lynch,
+Villa Maipú, San Andrés, Villa Concepción, Billinghurst, Tropezón, Villa
+Zagala, Villa Libertad — los 11 barrios en los que el Archivo de la Memoria de
+San Martín organiza sus fichas para sus propios fines (homenajes, placas
+locales). No es un dato extraído del hecho del secuestro: es la categoría
+curatorial bajo la que el archivo municipal clasificó a la víctima.
+
+**Por qué asertarlo como lugar del secuestro era incorrecto.** En **159 de
+303 registros (52 %)** la propia `descripcion` de la fuente nombra
+explícitamente *otro* lugar para el secuestro — a veces en otra jurisdicción
+por completo (Barrancas de Belgrano en CABA, Vicente López, Boulogne/San
+Isidro, Bella Vista/San Miguel). Ejemplo real: `Bellantuono Herrero, Jorge`
+tiene `lugar:"Billinghurst"`, pero su `descripcion` dice *"secuestrado el 13
+de julio de 1976 en la vía pública, en Barrancas de Belgrano"* — Capital
+Federal, no Billinghurst ni siquiera el partido de San Martín. En **64 de 303
+(21 %)** el valor de `lugar` ni siquiera aparece en ningún lugar del texto de
+`descripcion` (ni como domicilio, ni como lugar de trabajo, ni como
+residencia familiar): en más de un quinto de los casos ni "barrio de
+residencia" es una descripción consistente. El grafo estaba ubicando el
+secuestro de cientos de personas en un lugar que la fuente que provee ese
+mismo dato contradice.
+
+**Qué se decidió y por qué no una re-tipificación.** Se eliminó la arista por
+completo en vez de re-tiparla (p. ej. a `PRESENTE_EN` o a un vínculo de
+residencia): `PRESENTE_EN` no tiene una fecha propia que anclar aquí (no hay
+evidencia de *cuándo* la persona estuvo en ese barrio, si es que estuvo), y
+la fuente no da lo necesario para reconstruir el lugar real del hecho sin
+parsing narrativo adicional sobre `descripcion` (fuera de alcance de este
+fix). `Persona.fecha_secuestro` se conserva sin cambios en los 303 registros:
+lo único que se pierde es la ubicación asociada a esa fecha, no la fecha en
+sí.
+
+**Qué pierde el proyecto.** El foco geográfico específico de esta fuente
+(reconstruir la geografía del secuestro dentro del partido de San Martín)
+queda sin datos: hoy esta fuente no aporta ningún nodo `:Lugar` ni arista
+geográfica al grafo. Si en el futuro se retoma el parsing de `descripcion`
+para extraer el lugar real del hecho, la fecha ya está preservada en
+`Persona.fecha_secuestro` para reconstruir la arista sin re-scrapear la
+fuente.
+
+## Estudiante universitario ya no fabrica una institución (hallazgo I4)
+
+`estudiante_universitario` es un booleano en la fuente (`true` en 56 de 303
+registros; **ausente**, nunca `false`, en el resto). Antes de este fix se
+materializaba como una arista `ESTUDIO_EN` hacia un único nodo fijo
+`:Institución "UNIVERSIDAD SIN ESPECIFICAR"`, afirmando una institución que
+la fuente nunca nombra y relacionando falsamente entre sí a las 56 personas a
+través de ese nodo compartido. Ejemplo real: `Bellantuono Herrero, Jorge`
+quedaba conectado a "UNIVERSIDAD SIN ESPECIFICAR" cuando su propia
+`descripcion`, en la misma fuente, dice *"Estudiaba Ciencias Económicas en la
+Universidad de Buenos Aires (U.B.A)"*. Ahora el booleano se persiste
+directamente como `Persona.estudiante_universitario`; la ausencia del campo
+no se interpreta como `false` (no es evidencia de que la persona no haya sido
+estudiante universitaria).
+
+---
+
 ## Pendientes
 
-### 1. La geografía de San Martín queda fragmentada en dos subárboles
-
-Distribución actual, medida sobre los 303 registros (corregida tras el fix de
-`9d3b657`, ver abajo):
-
-| Destino | Registros |
-| --- | --- |
-| `lugar:DEPARTAMENTO:general_san_martin` (vía Georef directo) | 124 |
-| `lugar:PROVINCIA:buenos_aires` directo (sin departamento) | 179 |
-| Otra provincia | 0 |
-
-Los 124 son Villa Ballester, Villa Lynch, Villa Maipú, Billinghurst y Villa
-Libertad, resueltos por el gazetteer de Georef y correctamente anidados bajo
-el departamento. Los otros 179 se crean como `:Lugar` tipo `CIUDAD` colgando
-**directamente** de `lugar:PROVINCIA:buenos_aires`, sin pasar por
-`DEPARTAMENTO:general_san_martin`.
-
-**Corrección de un defecto más grave, ya resuelta.** Hasta el commit
-`9d3b657` ("fix: mapear topónimos de San Martín mal georresueltos a Buenos
-Aires"), 60 de esos 179 no llegaban ni siquiera a Buenos Aires: el fallback
-`_resolve_segmented_place` de `domain/place_norm.py` los mandaba a una
-provincia distinta, real pero equivocada — "José León Suárez" (34 registros)
-resolvía a Jujuy (Dr. Manuel Belgrano), y "San Andrés" (13) y "Villa
-Concepción" (13) resolvían a Tucumán (Cruz Alta y Chicligasta
-respectivamente). Las tres son localidades reales del partido de General San
-Martín; el fallback las tomó por localidades homónimas de otras provincias.
-`EQUIV_CITIES` ya tenía una entrada `"JOSE LEON SUAREZ SAN MARTIN"` desde
-antes de esta fuente, pero nunca se disparaba para estos 34 registros: el
-valor crudo de `archivo_memoria_san_martin.json` es literalmente
-`"José León Suárez"`, sin el sufijo `"SAN MARTIN"` que esa clave exige para
-matchear. Esa entrada previa no era un precedente que ya cubriera el caso;
-simplemente no aplicaba a esta fuente. El fix agregó tres entradas aditivas
-nuevas y distintas a `EQUIV_CITIES` en `src/zona4_graph_loader/constants.py`
-— `"JOSE LEON SUAREZ"`, `"SAN ANDRES"`, `"VILLA CONCEPCION"`, ancladas a
-`PROVINCIA:BUENOS AIRES` — que se consultan antes que el gazetteer de Georef
-y cortocircuitan el fallback segmentado antes de que llegue a proponer Jujuy
-o Tucumán. Queda cubierto por `tests/domain/test_place_norm_san_martin.py`.
-Se documenta acá para que quien audite esta fuente no "redescubra" el
-defecto ni revierta el fix creyendo que las entradas nuevas son redundantes.
-
-**Pendiente que persiste.** El fix elimina el error de provincia, pero no la
-fragmentación: los 60 registros corregidos se suman a los 119 que ya estaban
-bajo `PROVINCIA:buenos_aires` sin departamento (119 + 60 = 179), así que la
-geografía del partido de San Martín — el objeto mismo de esta fuente — sigue
-representada en dos subárboles del grafo. Buscar "todo lo que pasó en el
-partido de San Martín" recorriendo `PARTE_DE` desde `general_san_martin` sigue
-sin encontrar a estas 179 personas.
-
-La razón es estructural, no un descuido de datos: la rama
-`if alias_norm in EQUIV_CITIES` de `resolve_place` (`domain/place_norm.py`)
-envuelve el tercer elemento de la tupla siempre como
-`make_lugar_key("PROVINCIA", parent_name, "lugar:PAIS:argentina")` — no hay
-forma de que una entrada de `EQUIV_CITIES` produzca un `parent_key` de tres
-niveles (`CIUDAD` → `DEPARTAMENTO` → `PROVINCIA`). Por diseño, esa tabla sólo
-puede anclar un lugar directamente bajo una provincia. Consolidar estos 179
-registros bajo `general_san_martin` requiere entonces un cambio de algoritmo
-(permitir que `EQUIV_CITIES`, o un mecanismo equivalente, exprese un padre a
-nivel `DEPARTAMENTO`), no otra entrada aditiva en la tabla — que es
-exactamente lo que dejó fuera de alcance el fix de `9d3b657`.
-
-### 2. Las `persona_key` dependen de la posición en el archivo, no del contenido
+### 1. Las `persona_key` dependen de la posición en el archivo, no del contenido
 
 El builder genera `persona_key` como `archivo_memoria:{índice}`, tomando el
 índice de la fila en la lista JSON, porque el archivo no trae ningún ID propio

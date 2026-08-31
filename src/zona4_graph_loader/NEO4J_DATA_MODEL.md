@@ -118,12 +118,18 @@ del campo `roles` del CDM. Una fila sin `roles` recibe `["VICTIMA"]`.
 - :Nietx (Label de Rol secundario conectado a :Persona)
   * caso [String] (Obligatorio) — el identificador de expediente/caso (p.ej.
     apellidos de ambos progenitores separados por guión, "Metz - Romero"),
-    NO necesariamente el nombre de una persona. Cuando la fuente no da un
-    nombre propio restituido, `nombre` también queda igual a `caso` (235 de
-    392 casos, V1.3, hallazgo C5) porque la fuente en sí no tiene otro
-    nombre que dar -no es una omisión del cargador, es lo único que provee
-    Abuelas de Plaza de Mayo para esos expedientes. No se debe inferir ni
-    inventar un nombre de persona para esos casos.
+    NO necesariamente el nombre de una persona. El builder deriva `nombre` y
+    `caso` del mismo campo fuente (`nombre_completo`), así que `nombre ==
+    caso` para los 392 nodos `:Nietx` sin excepción (verificado en vivo,
+    2026-08-30) — la corrección importante no es esa igualdad sino que, de
+    esos 392, **235** tienen el patrón "Apellido1 - Apellido2" propio de un
+    identificador de expediente en vez del nombre real de una persona (213 de
+    los 252 "Búsqueda", los 19 "No nacidx", y 3 de los 117 "Restituido/a";
+    verificado en vivo por patrón `CONTAINS ' - '` sobre `Nietx.nombre`,
+    V1.3, hallazgo C5), porque la fuente en sí no tiene otro nombre que dar
+    -no es una omisión del cargador, es lo único que provee Abuelas de Plaza
+    de Mayo para esos expedientes. No se debe inferir ni inventar un nombre
+    de persona para esos casos.
   * ADN [String] (Obligatorio) — la fecha de confirmación genética cuando la
     fuente la trae; `"DESCONOCIDA"` en caso contrario (V1.3, Fix D, hallazgo
     C5). Antes de este fix se completaba con el literal `"SÍ"`, afirmando
@@ -152,11 +158,16 @@ del campo `roles` del CDM. Una fila sin `roles` recibe `["VICTIMA"]`.
 - :Institución (+ :EntidadContexto) -> nombre [String], fuente [String]
 - :DirecciónCCD (Punto geográfico preciso) -> coordenadas [String], direccionExacta [String]
   * tipo_direccion [String] (Obligatorio, V1.3, Fix E, hallazgo I5) —
-    `"CCD"` (centro clandestino real; 123 de 393 nodos) | `"CEMENTERIO"` /
-    `"ENTERRAMIENTO"` / `"SITIO_HALLAZGO"` (fuente EAAF; 82 de 393) |
+    `"CCD"` (centro clandestino real; 123 de 391 nodos, medido en vivo contra
+    `bolt://localhost:17687` el 2026-08-30) | `"CEMENTERIO"` /
+    `"ENTERRAMIENTO"` / `"SITIO_HALLAZGO"` (fuente EAAF; 82 de 391: 76
+    CEMENTERIO + 6 ENTERRAMIENTO + 0 SITIO_HALLAZGO en la carga actual) |
     `"HECHO_NARRATIVO"` (domicilio, vía pública o lugar de trabajo extraído
-    del texto libre de secuestro/nacimiento/asesinato de una víctima; 188 de
-    393). La label no distinguía estos tres casos: un domicilio o un
+    del texto libre de secuestro/nacimiento/asesinato de una víctima; 186 de
+    391 — dos menos que la estimación pre-Fix-C de `semantic-fixes-report.md`,
+    consistente con que el resolver de lugares (Fix C) ahora rechaza dos
+    cadenas que antes alcanzaban a producir una dirección narrativa). La
+    label no distinguía estos tres casos: un domicilio o un
     cementerio llevaban la misma label `:DirecciónCCD` que un centro
     clandestino real, sin ninguna marca. No se renombró la label -afecta la
     constraint única y toda consulta existente sobre `:DirecciónCCD`, un
@@ -272,6 +283,15 @@ del campo `roles` del CDM. Una fila sin `roles` recibe `["VICTIMA"]`.
 Ejecutar obligatoriamente al inicializar la base de datos para garantizar la consistencia de tipos:
 
 ```cypher
+// Restricciones técnicas de unicidad (verificado contra db/cypher.py::CONSTRAINTS,
+// ausentes de esta sección en versiones previas del documento — discrepancia
+// encontrada y corregida en el pase de documentación del 2026-08-30, no
+// relacionada con la auditoría semántica de V1.3).
+CREATE CONSTRAINT persona_key_unique IF NOT EXISTS FOR (p:Persona) REQUIRE p.persona_key IS UNIQUE;
+CREATE CONSTRAINT lugar_key_unique IF NOT EXISTS FOR (l:Lugar) REQUIRE l.lugar_key IS UNIQUE;
+CREATE CONSTRAINT alias_lugar_key_unique IF NOT EXISTS FOR (a:AliasLugar) REQUIRE a.alias_key IS UNIQUE;
+CREATE CONSTRAINT direccion_ccd_key_unique IF NOT EXISTS FOR (d:DirecciónCCD) REQUIRE d.direccion_ccd_key IS UNIQUE;
+
 // Restricciones de Existencia Base
 CREATE CONSTRAINT persona_nombre_exist IF NOT EXISTS FOR (p:Persona) REQUIRE p.nombre IS NOT NULL;
 CREATE CONSTRAINT persona_genero_exist IF NOT EXISTS FOR (p:Persona) REQUIRE p.genero IS NOT NULL;
