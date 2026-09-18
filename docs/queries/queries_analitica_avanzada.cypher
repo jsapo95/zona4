@@ -1,166 +1,292 @@
-// =============================================
-// QUERIES ANALITICAS AVANZADAS (MODELO ACTUAL)
-// Incluye Lugar jerarquico, Direccion y CCD integrados
-// =============================================
+// =====================================================================
+// ANALÍTICA AVANZADA — modelo V1.3 (grafo sin nodo :Evento)
+// =====================================================================
+// Reescritas el 2026-09-11 contra el grafo vivo (bolt://localhost:17687).
+//
+// Diferencia con `queries_preguntas_de_interes.cypher`: aquel archivo responde
+// preguntas historiográficas concretas; éste provee las piezas de análisis
+// reutilizables — roll-ups territoriales, series temporales, listas de aristas
+// para exportar a Gephi/QGIS y algoritmos de grafos con GDS.
+//
+// Recordatorios del modelo (ver README):
+//   * Los hechos son relaciones fechadas, no nodos.
+//   * `fecha` es STRING y admite los centinelas 'DESCONOCIDA', 'ETERNA' y
+//     'PROBABILÍSTICA' -> filtrar con size(r.fecha) = 10.
+//   * `Persona.edad` es STRING -> toInteger().
+//   * `PRESENTE_EN.fecha` es la fecha del caso, no la de ingreso a cada CCD.
 
-// 1) Hotspots globales por Lugar de ocurrencia
-MATCH (e:Evento)-[:OCURRIO_EN]->(l:Lugar)
-RETURN l.lugar_key AS lugar_key,
-       l.nombre_canonico AS lugar,
-       l.tipo AS tipo,
-       count(e) AS eventos_total
-ORDER BY eventos_total DESC
+
+// ---------------------------------------------------------------------
+// 1. ROLL-UP TERRITORIAL
+// ---------------------------------------------------------------------
+
+// 1.1) Hotspots: todos los hechos que ocurren en cada lugar, desagregados.
+MATCH (p:Persona)-[h:SECUESTRADO_EN|ASESINADO_EN|PRESENTE_EN|NACIO_EN|PARIO_EN]->(l:Lugar)
+RETURN l.nombre           AS lugar,
+       l.tipoGeopolitico  AS tipo,
+       l.zona             AS zona_militar,
+       count(*)           AS hechos,
+       count(DISTINCT p)  AS personas,
+       count(CASE WHEN type(h) = 'SECUESTRADO_EN' THEN 1 END) AS secuestros,
+       count(CASE WHEN type(h) = 'PRESENTE_EN'    THEN 1 END) AS cautiverios,
+       count(CASE WHEN type(h) = 'ASESINADO_EN'   THEN 1 END) AS asesinatos
+ORDER BY hechos DESC
+LIMIT 60;
+
+// 1.2) Roll-up por provincia subiendo la jerarquía PARTE_DE.
+//      CAVEAT: el nodo "CIUDAD AUTONOMA DE BUENOS AIRES" (sin tilde) está
+//      huérfano y arrastra 2.386 hechos que este roll-up no ve
+//      (validación 5.2/5.3). Hasta unificarlo, CABA queda subcontada.
+MATCH (p:Persona)-[h:SECUESTRADO_EN|ASESINADO_EN|PRESENTE_EN]->(l:Lugar)
+MATCH (l)-[:PARTE_DE*0..3]->(prov:Lugar {tipoGeopolitico:'PROVINCIA'})
+RETURN prov.nombre AS provincia,
+       count(DISTINCT p) AS personas,
+       count(*)          AS hechos,
+       count(DISTINCT l) AS lugares_distintos
+ORDER BY hechos DESC;
+
+// 1.3) Matriz provincia x año de secuestro (insumo de heatmap).
+MATCH (p:Persona)-[s:SECUESTRADO_EN]->(l:Lugar)
+WHERE size(s.fecha) = 10
+MATCH (l)-[:PARTE_DE*0..3]->(prov:Lugar {tipoGeopolitico:'PROVINCIA'})
+WITH prov.nombre AS provincia, left(s.fecha, 4) AS anio, count(*) AS secuestros
+WHERE anio >= '1974' AND anio <= '1983'
+RETURN provincia, anio, secuestros
+ORDER BY provincia, anio;
+
+// 1.4) Peso relativo de cada zona militar sobre el total de cautiverios.
+MATCH (v:Persona)-[:PRESENTE_EN]->(c:Lugar {tipoGeopolitico:'CCD'})
+WITH coalesce(c.zona, '(CCD sin zona declarada)') AS zona,
+     count(DISTINCT v) AS victimas,
+     count(DISTINCT c) AS ccds
+WITH collect({zona: zona, victimas: victimas, ccds: ccds}) AS filas,
+     sum(victimas) AS total
+UNWIND filas AS f
+RETURN f.zona AS zona_militar,
+       f.ccds AS ccds,
+       f.victimas AS victimas,
+       round(100.0 * f.victimas / total, 1) AS pct_del_total
+ORDER BY victimas DESC;
+
+
+// ---------------------------------------------------------------------
+// 2. SERIES TEMPORALES
+// ---------------------------------------------------------------------
+
+// 2.1) Serie mensual de hechos fechados, por tipo.
+MATCH ()-[h:SECUESTRADO_EN|ASESINADO_EN|PRESENTE_EN|PARIO_EN]->()
+WHERE size(h.fecha) = 10 AND h.fecha >= '1974-01-01' AND h.fecha <= '1983-12-31'
+RETURN left(h.fecha, 7) AS anio_mes,
+       count(*) AS hechos,
+       count(CASE WHEN type(h) = 'SECUESTRADO_EN' THEN 1 END) AS secuestros,
+       count(CASE WHEN type(h) = 'ASESINADO_EN'   THEN 1 END) AS asesinatos
+ORDER BY anio_mes;
+
+// 2.2) Estacionalidad: mismo mes agregando todos los años.
+MATCH ()-[s:SECUESTRADO_EN]->()
+WHERE size(s.fecha) = 10 AND s.fecha >= '1976-03-24' AND s.fecha <= '1983-12-10'
+RETURN substring(s.fecha, 5, 2) AS mes, count(*) AS secuestros
+ORDER BY mes;
+
+// 2.3) Ventana de actividad de cada CCD según las fechas de los casos.
+//      Es una aproximación: `PRESENTE_EN.fecha` es la fecha del secuestro de
+//      la víctima, no su fecha de ingreso al centro.
+MATCH (v:Persona)-[p:PRESENTE_EN]->(c:Lugar {tipoGeopolitico:'CCD'})
+WHERE size(p.fecha) = 10
+WITH c, count(DISTINCT v) AS victimas, min(p.fecha) AS primera, max(p.fecha) AS ultima
+RETURN c.nombre AS ccd,
+       c.zona   AS zona_militar,
+       victimas,
+       primera,
+       ultima,
+       duration.inDays(date(primera), date(ultima)).days AS dias_de_actividad
+ORDER BY victimas DESC
+LIMIT 40;
+
+// 2.4) Rezago entre el hecho y la condena: años transcurridos hasta la
+//      sentencia, por víctima con fecha de secuestro conocida.
+MATCH (r:Represor)-[x:TORTURO_A|IMPUTADO_POR]->(v:Persona)
+WHERE size(x.fecha_sentencia) = 10 AND v.fecha_secuestro IS NOT NULL
+WITH toInteger(left(x.fecha_sentencia, 4)) - toInteger(left(v.fecha_secuestro, 4)) AS anios_hasta_sentencia
+RETURN min(anios_hasta_sentencia) AS minimo,
+       round(avg(anios_hasta_sentencia), 1) AS promedio,
+       max(anios_hasta_sentencia) AS maximo,
+       count(*) AS pares_imputado_victima;
+
+
+// ---------------------------------------------------------------------
+// 3. REDES (listas de aristas listas para exportar)
+// ---------------------------------------------------------------------
+
+// 3.1) Red CCD - CCD ponderada por víctimas compartidas (circuitos de traslado).
+MATCH (v:Persona)-[:PRESENTE_EN]->(a:Lugar {tipoGeopolitico:'CCD'}),
+      (v)-[:PRESENTE_EN]->(b:Lugar {tipoGeopolitico:'CCD'})
+WHERE a.lugar_key < b.lugar_key
+WITH a, b, count(DISTINCT v) AS peso
+WHERE peso >= 5
+RETURN a.nombre AS source, b.nombre AS target, peso AS weight,
+       a.zona AS zona_source, b.zona AS zona_target
+ORDER BY weight DESC;
+
+// 3.2) Red represor - represor ponderada por víctimas en común.
+MATCH (r1:Represor)-[:TORTURO_A|IMPUTADO_POR]->(v:Persona)<-[:TORTURO_A|IMPUTADO_POR]-(r2:Represor)
+WHERE r1.persona_key < r2.persona_key
+WITH r1, r2, count(DISTINCT v) AS peso
+WHERE peso >= 25
+RETURN r1.nombre AS source, r2.nombre AS target, peso AS weight
+ORDER BY weight DESC
+LIMIT 500;
+
+// 3.3) Grado y alcance de cada represor (centralidad simple, sin GDS).
+MATCH (r:Represor)-[x:TORTURO_A|IMPUTADO_POR]->(v:Persona)
+OPTIONAL MATCH (v)-[:PRESENTE_EN]->(c:Lugar {tipoGeopolitico:'CCD'})
+RETURN r.nombre AS represor,
+       count(DISTINCT v)       AS victimas,
+       count(DISTINCT x.origen) AS sentencias,
+       count(DISTINCT c)       AS ccds_alcanzados,
+       count(DISTINCT c.zona)  AS zonas_militares
+ORDER BY victimas DESC
 LIMIT 50;
 
-// 2) Hotspots por tipo de evento y Lugar
-MATCH (e:Evento)-[:OCURRIO_EN]->(l:Lugar)
-RETURN e.tipo AS tipo_evento,
-       l.nombre_canonico AS lugar,
-       l.tipo AS tipo_lugar,
-       count(e) AS eventos_total
-ORDER BY eventos_total DESC
-LIMIT 100;
+// 3.4) Red persona - organización (bipartita) para proyecciones de militancia.
+MATCH (p:Persona)-[:PARTE_DE]->(o:Org)
+RETURN p.nombre AS persona,
+       CASE WHEN p:Represor THEN 'represor' ELSE 'victima' END AS rol,
+       o.nombre AS organizacion,
+       coalesce(o.tipoOrg, 'MILITANCIA') AS tipo_org
+LIMIT 1000;
 
-// 3) Evolucion anual de eventos (incluye tipos CCD)
-MATCH (e:Evento)
-WHERE e.anio IS NOT NULL
-RETURN e.anio AS anio,
-       count(*) AS eventos_total,
-       count(CASE WHEN e.tipo = 'SECUESTRO' THEN 1 END) AS secuestros,
-       count(CASE WHEN e.tipo = 'ASESINATO' THEN 1 END) AS asesinatos,
-       count(CASE WHEN e.tipo = 'SECUESTRO_CCD' THEN 1 END) AS secuestros_ccd,
-       count(CASE WHEN e.tipo = 'PARTO_CAUTIVERIO_CCD' THEN 1 END) AS partos_cautiverio_ccd
-ORDER BY anio;
 
-// 4) Evolucion anual por jurisdiccion (usando lugar CCD o anclado)
-MATCH (e:Evento)-[:OCURRIO_EN]->(l:Lugar)
-WHERE e.anio IS NOT NULL
-WITH e,
-     coalesce(l.jurisdiccion, l.provincia, l.nombre_canonico) AS jurisdiccion
-WHERE jurisdiccion IS NOT NULL
-RETURN e.anio AS anio,
-       jurisdiccion,
-       count(*) AS eventos_total
-ORDER BY anio, eventos_total DESC;
+// ---------------------------------------------------------------------
+// 4. GRAPH DATA SCIENCE (requiere plugin GDS; ver README)
+// ---------------------------------------------------------------------
 
-// 5) Personas con mayor cantidad de eventos
-MATCH (p:Persona)-[:PARTICIPO_EN]->(e:Evento)
-RETURN p.persona_key AS persona_key,
-       coalesce(p.nombre_completo, p.persona_key) AS persona,
-       count(e) AS eventos_total,
-       count(DISTINCT e.tipo) AS tipos_evento_distintos
-ORDER BY eventos_total DESC
-LIMIT 100;
+// 4.1) Proyectar la red de imputaciones (Persona - TORTURO_A - Persona) en
+//      memoria. Dropear antes por si quedó de una corrida anterior.
+CALL gds.graph.exists('zona4_penal') YIELD exists
+WITH exists WHERE exists
+CALL gds.graph.drop('zona4_penal') YIELD graphName
+RETURN graphName AS proyeccion_eliminada;
 
-// 6) Personas con trayectorias multisitio
-MATCH (p:Persona)-[:PARTICIPO_EN]->(:Evento)-[:OCURRIO_EN]->(l:Lugar)
-RETURN p.persona_key AS persona_key,
-       coalesce(p.nombre_completo, p.persona_key) AS persona,
-       count(DISTINCT l.lugar_key) AS lugares_distintos,
-       collect(DISTINCT l.nombre_canonico)[0..10] AS muestra_lugares
-ORDER BY lugares_distintos DESC
-LIMIT 100;
+CALL gds.graph.project(
+  'zona4_penal',
+  'Persona',
+  { IMPUTACION: { type: 'TORTURO_A', orientation: 'UNDIRECTED' } }
+) YIELD graphName, nodeCount, relationshipCount
+RETURN graphName, nodeCount, relationshipCount;
 
-// 7) Red de co-ocurrencia por victimas simultaneas
-MATCH (p1:Persona)-[:VICTIMA_SIMULTANEA]->(p2:Persona)
-RETURN p1.persona_key AS source,
-       p2.persona_key AS target,
-       coalesce(p1.nombre_completo, p1.persona_key) AS source_nombre,
-       coalesce(p2.nombre_completo, p2.persona_key) AS target_nombre
-LIMIT 500;
+// 4.2) Comunidades de Louvain sobre esa red: agrupan represores y víctimas que
+//      comparten causa, es decir, circuitos represivos regionales.
+CALL gds.louvain.stream('zona4_penal')
+YIELD nodeId, communityId
+WITH communityId, collect(gds.util.asNode(nodeId)) AS miembros
+WITH communityId,
+     size(miembros) AS integrantes,
+     size([m IN miembros WHERE m:Represor]) AS represores,
+     size([m IN miembros WHERE m:Victima])  AS victimas,
+     [m IN miembros WHERE m:Represor | m.nombre][0..6] AS muestra_represores
+WHERE integrantes >= 20
+RETURN communityId, integrantes, represores, victimas, muestra_represores
+ORDER BY integrantes DESC;
 
-// 8) Calidad de conciliacion de placeholders
-MATCH (p:Persona {es_placeholder:true})
-OPTIONAL MATCH (p)-[r:CANDIDATO_MERGE]->(:Persona)
-RETURN count(DISTINCT p) AS placeholders_total,
-       count(DISTINCT CASE WHEN r IS NOT NULL THEN p END) AS placeholders_con_candidato,
-       count(r) AS relaciones_candidato_total,
-       avg(r.score) AS score_promedio;
+// 4.3) PageRank sobre la misma red: qué imputados son estructuralmente
+//      centrales, no sólo los que acumulan más víctimas.
+CALL gds.pageRank.stream('zona4_penal')
+YIELD nodeId, score
+WITH gds.util.asNode(nodeId) AS p, score
+WHERE p:Represor
+RETURN p.nombre AS represor, round(score, 3) AS pagerank
+ORDER BY pagerank DESC
+LIMIT 30;
 
-// 9) Placeholders mas ambiguos
-MATCH (p:Persona {es_placeholder:true})-[r:CANDIDATO_MERGE]->(c:Persona)
-RETURN p.persona_key AS placeholder,
-       count(r) AS candidatos,
-       max(r.score) AS mejor_score,
-       collect(c.persona_key)[0..10] AS muestra_candidatos
-ORDER BY candidatos DESC, mejor_score DESC
-LIMIT 100;
+// 4.4) Liberar la proyección al terminar.
+CALL gds.graph.drop('zona4_penal', false) YIELD graphName
+RETURN graphName AS proyeccion_eliminada;
 
-// 10) Cobertura de eventos con direccion especifica
-MATCH (e:Evento)
-OPTIONAL MATCH (e)-[:OCURRIO_EN_DIRECCION]->(d:Direccion)
-RETURN count(e) AS eventos_total,
-       count(CASE WHEN d IS NOT NULL THEN 1 END) AS eventos_con_direccion,
-       round(100.0 * count(CASE WHEN d IS NOT NULL THEN 1 END) / count(e), 2) AS pct_eventos_con_direccion;
+// 4.5) Núcleos familiares: componentes conexas de los vínculos de parentesco.
+CALL gds.graph.project(
+  'zona4_familias',
+  'Persona',
+  {
+    PAREJA:  { type: 'PAREJA_DE',  orientation: 'UNDIRECTED' },
+    HERMANX: { type: 'HERMANX_DE', orientation: 'UNDIRECTED' },
+    MADRE:   { type: 'MADRE_DE',   orientation: 'UNDIRECTED' },
+    PADRE:   { type: 'PADRE_DE',   orientation: 'UNDIRECTED' },
+    HIJE:    { type: 'HIJE_DE',    orientation: 'UNDIRECTED' }
+  }
+) YIELD graphName, nodeCount, relationshipCount
+RETURN graphName, nodeCount, relationshipCount;
 
-// 11) Direcciones mas frecuentes y su lugar ancla
-MATCH (e:Evento)-[:OCURRIO_EN_DIRECCION]->(d:Direccion)-[:UBICADA_EN]->(l:Lugar)
-RETURN d.direccion_norm AS direccion,
-       l.nombre_canonico AS lugar,
-       l.tipo AS tipo_lugar,
-       count(e) AS eventos_total,
-       max(d.confianza_parseo) AS confianza_max
-ORDER BY eventos_total DESC
-LIMIT 100;
+CALL gds.wcc.stream('zona4_familias')
+YIELD nodeId, componentId
+WITH componentId, collect(gds.util.asNode(nodeId)) AS miembros
+WITH componentId, [m IN miembros | m.nombre] AS nombres, size(miembros) AS integrantes
+WHERE integrantes >= 4
+RETURN componentId, integrantes, nombres
+ORDER BY integrantes DESC
+LIMIT 25;
 
-// 12) Cobertura de anclaje jerarquico en CCD
-MATCH (ccd:Lugar {tipo:'CCD'})
-OPTIONAL MATCH (ccd)-[:PARTE_DE]->(p:Lugar)
-WITH ccd, collect(DISTINCT p) AS parents
-RETURN count(ccd) AS total_ccd,
-       count(CASE WHEN size(parents)=0 THEN 1 END) AS ccd_sin_parent,
-       count(CASE WHEN size(parents)>0 THEN 1 END) AS ccd_con_parent;
+CALL gds.graph.drop('zona4_familias', false) YIELD graphName
+RETURN graphName AS proyeccion_eliminada;
 
-// 13) Sitios CCD mas activos por eventos
-MATCH (e:Evento)
-WHERE e.id_ccd IS NOT NULL
-MATCH (e)-[:OCURRIO_EN]->(l:Lugar)
-RETURN e.id_ccd AS id_ccd,
-       coalesce(e.ccd_denominacion, l.nombre_canonico) AS ccd,
-       l.nombre_canonico AS lugar_ocurrencia,
-       l.tipo AS tipo_lugar,
-       count(*) AS eventos_total,
-       count(CASE WHEN e.ccd_certeza = 'confirmado' THEN 1 END) AS confirmados,
-       count(CASE WHEN e.ccd_certeza = 'posible' THEN 1 END) AS posibles
-ORDER BY eventos_total DESC
-LIMIT 100;
 
-// 14) Densidad de eventos con coordenadas (mapas)
-MATCH (e:Evento)-[:OCURRIO_EN]->(l:Lugar)
+// ---------------------------------------------------------------------
+// 5. PERFILES Y COBERTURA APLICADA
+// ---------------------------------------------------------------------
+
+// 5.1) Pirámide etaria por género (sólo detalles_personas tiene estos campos).
+MATCH (v:Persona:Victima)
+WHERE v.edad IS NOT NULL
+WITH v, (toInteger(v.edad) / 5) * 5 AS franja
+RETURN franja AS edad_desde,
+       franja + 4 AS edad_hasta,
+       count(*) AS victimas,
+       count(CASE WHEN v.genero = 'FEMENINO'  THEN 1 END) AS mujeres,
+       count(CASE WHEN v.genero = 'MASCULINO' THEN 1 END) AS varones
+ORDER BY edad_desde;
+
+// 5.2) Militancia x año de secuestro (matriz para heatmap).
+MATCH (v:Persona:Victima)-[:PARTE_DE]->(o:Org)
+WHERE o.tipoOrg IS NULL AND v.fecha_secuestro IS NOT NULL
+RETURN o.nombre AS organizacion, left(v.fecha_secuestro, 4) AS anio, count(*) AS victimas
+ORDER BY organizacion, anio;
+
+// 5.3) Trabajo y estudio: instituciones con más víctimas, en un solo listado.
+MATCH (v:Persona:Victima)-[r:TRABAJO_EN|ESTUDIO_EN]->(i:Institución)
+WITH i, type(r) AS vinculo, count(DISTINCT v) AS victimas
+WHERE victimas >= 3
+RETURN i.nombre AS institucion, vinculo, victimas
+ORDER BY victimas DESC
+LIMIT 50;
+
+// 5.4) Capa de mapa: lugares con coordenadas y su peso.
+MATCH (l:Lugar)
 WHERE l.geo_point IS NOT NULL
-RETURN l.geo_point.latitude AS lat,
+OPTIONAL MATCH (p:Persona)-[h:SECUESTRADO_EN|ASESINADO_EN|PRESENTE_EN]->(l)
+RETURN l.nombre AS lugar,
+       l.tipoGeopolitico AS tipo,
+       l.geo_point.latitude  AS lat,
        l.geo_point.longitude AS lon,
-       l.nombre_canonico AS lugar,
-       l.tipo AS tipo,
-       count(e) AS eventos_total
-ORDER BY eventos_total DESC
-LIMIT 500;
+       count(h) AS hechos,
+       count(DISTINCT p) AS personas
+ORDER BY hechos DESC;
 
-// 15) Personas por anio de evento principal
-MATCH (p:Persona)-[:PARTICIPO_EN]->(e:Evento)
-WHERE p.estado_desaparicion IS NOT NULL
-  AND e.anio IS NOT NULL
-  AND e.tipo IN ['SECUESTRO', 'ASESINATO', 'SECUESTRO_CCD']
-RETURN p.estado_desaparicion AS estado,
-       e.anio AS anio,
-       count(DISTINCT p.persona_key) AS personas
-ORDER BY anio, estado;
+// 5.5) Capa de mapa de CCDs con su dirección exacta (export a GeoJSON).
+MATCH (c:Lugar {tipoGeopolitico:'CCD'})<-[:UBICADA_EN]-(d:DirecciónCCD)
+OPTIONAL MATCH (v:Persona)-[:PRESENTE_EN]->(c)
+RETURN c.nombre AS ccd,
+       c.zona AS zona_militar,
+       c.emplazamiento_propiedad AS fuerza_a_cargo,
+       d.direccionExacta AS direccion,
+       d.coordenadas AS coordenadas,
+       count(DISTINCT v) AS victimas
+ORDER BY victimas DESC;
 
-// 16) Lugares con mayor diversidad de personas
-MATCH (p:Persona)-[:PARTICIPO_EN]->(:Evento)-[:OCURRIO_EN]->(l:Lugar)
-RETURN l.lugar_key AS lugar_key,
-       l.nombre_canonico AS lugar,
-       l.tipo AS tipo,
-       count(DISTINCT p.persona_key) AS personas_distintas
-ORDER BY personas_distintas DESC
-LIMIT 100;
-
-// 17) Secuencia temporal de lugares por persona
-MATCH (p:Persona)-[:PARTICIPO_EN]->(e:Evento)-[:OCURRIO_EN]->(l:Lugar)
-WHERE e.fecha_inicio IS NOT NULL
-WITH p, e, l
-ORDER BY p.persona_key, e.fecha_inicio
-RETURN p.persona_key AS persona_key,
-       coalesce(p.nombre_completo, p.persona_key) AS persona,
-       collect({fecha_inicio: e.fecha_inicio, tipo: e.tipo, lugar: l.nombre_canonico, tipo_lugar: l.tipo})[0..50] AS secuencia
-LIMIT 200;
+// 5.6) Qué porción de cada análisis se apoya en datos fechados (para poner al
+//      pie de cualquier gráfico de series).
+MATCH ()-[h:SECUESTRADO_EN|ASESINADO_EN|PRESENTE_EN|PARIO_EN]->()
+RETURN type(h) AS hecho,
+       count(*) AS aristas,
+       count(CASE WHEN size(h.fecha) = 10 THEN 1 END) AS con_fecha_iso,
+       round(100.0 * count(CASE WHEN size(h.fecha) = 10 THEN 1 END) / count(*), 1) AS pct_fechado
+ORDER BY aristas DESC;

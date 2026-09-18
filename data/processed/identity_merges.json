@@ -1,0 +1,1532 @@
+[
+  {
+    "canonical_key": "archivo_memoria:275",
+    "absorbed_key": "minjus_victima:1709-alvarez-rojas-federico-eduardo",
+    "motivo": "fecha_secuestro"
+  },
+  {
+    "canonical_key": "archivo_memoria:46",
+    "absorbed_key": "minjus_victima:3033-arancibia-jorge-emilio",
+    "motivo": "fecha_secuestro"
+  },
+  {
+    "canonical_key": "archivo_memoria:73",
+    "absorbed_key": "minjus_victima:957-barros-maria-del-carmen",
+    "motivo": "fecha_secuestro"
+  },
+  {
+    "canonical_key": "archivo_memoria:181",
+    "absorbed_key": "minjus_victima:2143-cabezas-gustavo-alejandro",
+    "motivo": "fecha_secuestro"
+  },
+  {
+    "canonical_key": "archivo_memoria:80",
+    "absorbed_key": "minjus_victima:2599-castineiras-jose-maria",
+    "motivo": "fecha_secuestro"
+  },
+  {
+    "canonical_key": "archivo_memoria:82",
+    "absorbed_key": "minjus_victima:601-corrales-ernesto-lorenzo",
+    "motivo": "fecha_secuestro"
+  },
+  {
+    "canonical_key": "archivo_memoria:83",
+    "absorbed_key": "minjus_victima:607-corrales-osvaldo-raul",
+    "motivo": "fecha_secuestro"
+  },
+  {
+    "canonical_key": "archivo_memoria:260",
+    "absorbed_key": "minjus_victima:3886-estevez-gabriel-maria",
+    "motivo": "fecha_secuestro"
+  },
+  {
+    "canonical_key": "archivo_memoria:285",
+    "absorbed_key": "minjus_victima:4191-giorgi-alfredo-antonio",
+    "motivo": "fecha_secuestro"
+  },
+  {
+    "canonical_key": "archivo_memoria:9",
+    "absorbed_key": "minjus_victima:3538-mantello-osvaldo-victor",
+    "motivo": "fecha_secuestro"
+  },
+  {
+    "canonical_key": "archivo_memoria:268",
+    "absorbed_key": "minjus_victima:1403-nusbaum-rosa-ana-irmina",
+    "motivo": "fecha_secuestro"
+  },
+  {
+    "canonical_key": "archivo_memoria:270",
+    "absorbed_key": "minjus_victima:1944-perez-carlos-alberto",
+    "motivo": "fecha_secuestro"
+  },
+  {
+    "canonical_key": "archivo_memoria:273",
+    "absorbed_key": "minjus_victima:2609-sirri-ernesto",
+    "motivo": "fecha_secuestro"
+  },
+  {
+    "canonical_key": "archivo_memoria:162",
+    "absorbed_key": "minjus_victima:4531-zavala-rodriguez-julia-elena",
+    "motivo": "fecha_secuestro"
+  },
+  {
+    "canonical_key": "archivo_memoria:79",
+    "absorbed_key": "minjus_victima:3716-cajide-garcia-alfredo-jose",
+    "motivo": "fecha_secuestro"
+  },
+  {
+    "canonical_key": "archivo_memoria:123",
+    "absorbed_key": "minjus_victima:1463-miranda-silva-oscar",
+    "motivo": "fecha_secuestro"
+  },
+  {
+    "canonical_key": "archivo_memoria:205",
+    "absorbed_key": "minjus_victima:4475-lopez-gomez-maria-ines",
+    "motivo": "fecha_secuestro"
+  },
+  {
+    "canonical_key": "archivo_memoria:293",
+    "absorbed_key": "minjus_victima:1462-schwartz-gun-miguel",
+    "motivo": "fecha_secuestro"
+  },
+  {
+    "canonical_key": "minjus_imputado:1-abelleira-hector-jorge",
+    "absorbed_key": "juicios_condenado:1335",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:2-aceituno-raul-roberto",
+    "absorbed_key": "juicios_condenado:2816",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:4-agostino-francisco-rolando",
+    "absorbed_key": "juicios_condenado:2870",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:5-aguirre-roberto-horacio",
+    "absorbed_key": "juicios_condenado:2931",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:6-aguirre-victor-raul",
+    "absorbed_key": "juicios_condenado:2046",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:7-agustoni-ernesto-alejandro",
+    "absorbed_key": "juicios_condenado:1331",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:8-aiello-juan-carlos",
+    "absorbed_key": "juicios_condenado:2729",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:11-almiron-miguel-angel",
+    "absorbed_key": "juicios_condenado:1876",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:13-alvarado-jorge-teodoro",
+    "absorbed_key": "juicios_condenado:2667",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:436-alvarez-roberto",
+    "absorbed_key": "juicios_condenado:3062",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:15-andrada-omar",
+    "absorbed_key": "juicios_condenado:1580",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:16-aneto-alberto-angel",
+    "absorbed_key": "juicios_condenado:227",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:18-apa-jorge-norberto",
+    "absorbed_key": "juicios_condenado:2849",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:20-arce-luis-del-valle",
+    "absorbed_key": "juicios_condenado:2873",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:21-arena-alfredo-oscar",
+    "absorbed_key": "juicios_condenado:2983",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:22-arguello-julio-cesar",
+    "absorbed_key": "juicios_condenado:747",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:23-arraez-gerardo-jorge",
+    "absorbed_key": "juicios_condenado:2436",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:24-arrillaga-alfredo-manuel",
+    "absorbed_key": "juicios_condenado:753",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:28-ascheri-eduardo-eleuterio",
+    "absorbed_key": "juicios_condenado:2864",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:29-avena-juan-carlos",
+    "absorbed_key": "juicios_condenado:288",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:30-ayala-felipe",
+    "absorbed_key": "juicios_condenado:1880",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:31-ayendez-oscar",
+    "absorbed_key": "juicios_condenado:3094",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:32-azcurra-hector-raul",
+    "absorbed_key": "juicios_condenado:2224",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:33-balmaceda-roberto-armando",
+    "absorbed_key": "juicios_condenado:1612",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:34-balquinta-argentino-alberto",
+    "absorbed_key": "juicios_condenado:2705",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:35-bano-jorge-eligio",
+    "absorbed_key": "juicios_condenado:2863",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:37-barda-alberto-pedro",
+    "absorbed_key": "juicios_condenado:31",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:39-basualdo-segundo-andres",
+    "absorbed_key": "juicios_condenado:32",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:40-batalla-rufino",
+    "absorbed_key": "juicios_condenado:1920",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:41-battafarano-juan-alfredo",
+    "absorbed_key": "juicios_condenado:2225",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:42-baume-leopoldo-luis",
+    "absorbed_key": "juicios_condenado:2374",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:44-bazan-carlos-alberto",
+    "absorbed_key": "juicios_condenado:2875",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:45-beccio-jose-carmen",
+    "absorbed_key": "juicios_condenado:1332",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:46-berges-jorge-antonio",
+    "absorbed_key": "juicios_condenado:290",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:47-bernadou-eduardo-hector",
+    "absorbed_key": "juicios_condenado:2710",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:48-bernardo-jorge",
+    "absorbed_key": "juicios_condenado:1839",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:49-bianchero-jorge-julio",
+    "absorbed_key": "juicios_condenado:1389",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:50-bianco-norberto-atilio",
+    "absorbed_key": "juicios_condenado:774",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:51-bicarelli-hector-francisco",
+    "absorbed_key": "juicios_condenado:194",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:53-bilesio-mario-jose",
+    "absorbed_key": "juicios_condenado:2842",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:54-blanco-azcarate-roberto-mario",
+    "absorbed_key": "juicios_condenado:2227",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:55-blanco-eduardo-jorge",
+    "absorbed_key": "juicios_condenado:1330",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:56-blanco-jorge-alberto",
+    "absorbed_key": "juicios_condenado:2226",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:57-boan-ruben-alfredo",
+    "absorbed_key": "juicios_condenado:2228",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:58-boccalari-gustavo-abel",
+    "absorbed_key": "juicios_condenado:3147",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:59-bonanni-luis-hector",
+    "absorbed_key": "juicios_condenado:3096",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:60-bossie-antonio-federico",
+    "absorbed_key": "juicios_condenado:1353",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:61-bracken-abel-oscar",
+    "absorbed_key": "juicios_condenado:2005",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:62-britos-miguel-angel",
+    "absorbed_key": "juicios_condenado:2404",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:63-britos-pacifico-luis",
+    "absorbed_key": "juicios_condenado:2984",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:65-bustos-luis-angel",
+    "absorbed_key": "juicios_condenado:2445",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:67-caballero-bernardo",
+    "absorbed_key": "juicios_condenado:2872",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:68-cabezon-bernardo-artemio",
+    "absorbed_key": "juicios_condenado:1888",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:69-cabrera-rojo-david",
+    "absorbed_key": "juicios_condenado:2936",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:70-cabrera-ramon-vito",
+    "absorbed_key": "juicios_condenado:2985",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:74-cafarello-nicolas",
+    "absorbed_key": "juicios_condenado:644",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:75-caimi-carlos-daniel",
+    "absorbed_key": "juicios_condenado:2456",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:76-camarelli-antonio-alberto",
+    "absorbed_key": "juicios_condenado:1282",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:78-canicul-gabriel",
+    "absorbed_key": "juicios_condenado:1890",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:79-capella-juan-jose",
+    "absorbed_key": "juicios_condenado:2992",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:80-carballo-raul",
+    "absorbed_key": "juicios_condenado:2233",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:81-cardozo-guillermo-victor",
+    "absorbed_key": "juicios_condenado:174",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:85-castagno-monge-hugo-miguel",
+    "absorbed_key": "juicios_condenado:2183",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:86-castillo-carlos-ernesto",
+    "absorbed_key": "juicios_condenado:2237",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:87-castro-oscar-alfredo",
+    "absorbed_key": "juicios_condenado:1605",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:88-cendon-nestor-roberto",
+    "absorbed_key": "juicios_condenado:816",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:89-cerutti-alcides-jose",
+    "absorbed_key": "juicios_condenado:2730",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:91-chacra-juan-carlos-mario",
+    "absorbed_key": "juicios_condenado:2238",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:92-chemes-diego-salvador",
+    "absorbed_key": "juicios_condenado:263",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:94-chiesa-miguel-angel",
+    "absorbed_key": "juicios_condenado:2239",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:96-condal-garcia-norberto-eduardo",
+    "absorbed_key": "juicios_condenado:1690",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:97-conde-miguel-angel",
+    "absorbed_key": "juicios_condenado:2783",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:98-conti-luis-oscar",
+    "absorbed_key": "juicios_condenado:2843",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:99-contreras-carlos-alberto",
+    "absorbed_key": "juicios_condenado:1380",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:100-cordoba-raul-angel",
+    "absorbed_key": "juicios_condenado:2385",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:102-corrales-bernabe-jesus",
+    "absorbed_key": "juicios_condenado:562",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:106-courtaux-marcelo-cinto",
+    "absorbed_key": "juicios_condenado:2868",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:109-cruz-eduardo-angel",
+    "absorbed_key": "juicios_condenado:841",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:110-cubas-humberto-eduardo",
+    "absorbed_key": "juicios_condenado:2934",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:111-cunha-ferre-manuel-antonio-luis",
+    "absorbed_key": "juicios_condenado:2243",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:112-curzio-juan-carlos",
+    "absorbed_key": "juicios_condenado:2818",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:113-dambrosi-roberto-bernardo",
+    "absorbed_key": "juicios_condenado:529",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:114-davis-ernesto",
+    "absorbed_key": "juicios_condenado:2244",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:115-de-leon-enrique",
+    "absorbed_key": "juicios_condenado:1748",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:117-del-pino-enrique-jose",
+    "absorbed_key": "juicios_condenado:855",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:120-dominguez-mario-ruben",
+    "absorbed_key": "juicios_condenado:2674",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:121-dominguez-olegario",
+    "absorbed_key": "juicios_condenado:2932",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:122-dominguez-raul-artemio",
+    "absorbed_key": "juicios_condenado:1394",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:123-donocik-luis-juan",
+    "absorbed_key": "juicios_condenado:266",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:124-duarte-roberto-candido",
+    "absorbed_key": "juicios_condenado:876",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:125-dupuy-abel-david",
+    "absorbed_key": "juicios_condenado:280",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:126-duret-alejandro-guillermo",
+    "absorbed_key": "juicios_condenado:124",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:127-durquet-mario-ernesto",
+    "absorbed_key": "juicios_condenado:2375",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:128-elichalt-maria-mercedes",
+    "absorbed_key": "juicios_condenado:2192",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:129-erlan-ramon-antonio",
+    "absorbed_key": "juicios_condenado:256",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:130-errecaborde-jorge-alberto",
+    "absorbed_key": "juicios_condenado:2462",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:131-espinoza-raul-ricardo",
+    "absorbed_key": "juicios_condenado:1885",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:132-estelrich-julio-angel",
+    "absorbed_key": "juicios_condenado:1929",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:134-falcke-julio-cesar-fulgencio",
+    "absorbed_key": "juicios_condenado:1269",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:135-fantoni-hugo-hector-carlos",
+    "absorbed_key": "juicios_condenado:1691",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:137-feito-alfredo-omar",
+    "absorbed_key": "juicios_condenado:890",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:138-fernandez-carro-jose-casimiro",
+    "absorbed_key": "juicios_condenado:2464",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:139-fernandez-margarita-noemi",
+    "absorbed_key": "juicios_condenado:1412",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:140-fernandez-ramon",
+    "absorbed_key": "juicios_condenado:278",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:142-fernandez-ruben-enrique-miguel",
+    "absorbed_key": "juicios_condenado:2970",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:154-fogelman-victor-oscar",
+    "absorbed_key": "juicios_condenado:1598",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:156-forcelli-hector-angel",
+    "absorbed_key": "juicios_condenado:2819",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:158-fracassi-eduardo-rene",
+    "absorbed_key": "juicios_condenado:1599",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:159-fragni-cesar-amadeo",
+    "absorbed_key": "juicios_condenado:152",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:160-frias-eduardo-carlos",
+    "absorbed_key": "juicios_condenado:2249",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:161-fusco-roberto-julio",
+    "absorbed_key": "juicios_condenado:2874",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:164-gandolfo-ricardo-claudio",
+    "absorbed_key": "juicios_condenado:1755",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:165-garachico-julio-cesar",
+    "absorbed_key": "juicios_condenado:2250",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:166-garcia-carlos",
+    "absorbed_key": "juicios_condenado:258",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:168-garcia-ricardo-juan",
+    "absorbed_key": "juicios_condenado:2251",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:170-gigli-roberto-arturo",
+    "absorbed_key": "juicios_condenado:2252",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:443-giraud-juan-manuel",
+    "absorbed_key": "juicios_condenado:3080",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:172-godoy-roberto-obdulio",
+    "absorbed_key": "juicios_condenado:2254",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:174-gomez-arenas-mario-alberto",
+    "absorbed_key": "juicios_condenado:53",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:175-gomez-centurion-gonzalo",
+    "absorbed_key": "juicios_condenado:2728",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:178-gomez-francisco",
+    "absorbed_key": "juicios_condenado:923",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:179-goncalvez-hector-arturo",
+    "absorbed_key": "juicios_condenado:1383",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:184-gonzalez-juan-alberto",
+    "absorbed_key": "juicios_condenado:2470",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:185-gonzalez-raul",
+    "absorbed_key": "juicios_condenado:267",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:186-granada-jorge-horacio",
+    "absorbed_key": "juicios_condenado:941",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:187-grande-claudio-raul",
+    "absorbed_key": "juicios_condenado:2052",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:189-grillo-roberto-omar",
+    "absorbed_key": "juicios_condenado:565",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:191-grosse-walter-jorge",
+    "absorbed_key": "juicios_condenado:1782",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:192-guallama-hugo-alberto",
+    "absorbed_key": "juicios_condenado:284",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:193-guanabens-eugenio",
+    "absorbed_key": "juicios_condenado:307",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:194-guarnaccia-osvaldo-miguel",
+    "absorbed_key": "juicios_condenado:2702",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:197-guglielminetti-raul-antonio",
+    "absorbed_key": "juicios_condenado:270",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:198-guinazu-rafael-alberto",
+    "absorbed_key": "juicios_condenado:947",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:200-guyot-juan-carlos",
+    "absorbed_key": "juicios_condenado:1365",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:201-harsich-raul-horacio",
+    "absorbed_key": "juicios_condenado:153",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:202-hermann-elida-renee",
+    "absorbed_key": "juicios_condenado:1759",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:203-hermelo-hernan-alvaro",
+    "absorbed_key": "juicios_condenado:2745",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:205-herzberg-juan-carlos",
+    "absorbed_key": "juicios_condenado:1336",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:206-hidalgo-garzon-carlos-del-senor",
+    "absorbed_key": "juicios_condenado:1660",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:207-juarez-luis-alberto",
+    "absorbed_key": "juicios_condenado:2723",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:208-jurio-carlos-domingo",
+    "absorbed_key": "juicios_condenado:599",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:210-kalinec-eduardo-emilio",
+    "absorbed_key": "juicios_condenado:214",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:212-kirilosky-silvia-marta",
+    "absorbed_key": "juicios_condenado:2193",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:213-laciar-eduardo-arturo",
+    "absorbed_key": "juicios_condenado:2878",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:214-lacoste-carlos-enrique",
+    "absorbed_key": "juicios_condenado:2747",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:215-lance-eduardo-jose-maria",
+    "absorbed_key": "juicios_condenado:2978",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:218-larrea-mario-jorge",
+    "absorbed_key": "juicios_condenado:1805",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:220-lavayen-arsenio",
+    "absorbed_key": "juicios_condenado:1892",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:221-lawless-alejandro",
+    "absorbed_key": "juicios_condenado:2030",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:223-leites-horacio-ruben",
+    "absorbed_key": "juicios_condenado:1856",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:224-lencinas-daniel-jorge",
+    "absorbed_key": "juicios_condenado:564",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:439-linari-horacio",
+    "absorbed_key": "juicios_condenado:3157",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:227-lorenzatti-carlos-alberto",
+    "absorbed_key": "juicios_condenado:2261",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:228-lorenzini-alejandro-carlos",
+    "absorbed_key": "juicios_condenado:2749",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:229-loza-milciades-luis",
+    "absorbed_key": "juicios_condenado:2927",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:230-lucero-daniel-leonardo",
+    "absorbed_key": "juicios_condenado:2879",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:231-lucero-miguel-angel",
+    "absorbed_key": "juicios_condenado:2482",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:232-lugo-eduardo-david",
+    "absorbed_key": "juicios_condenado:2933",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:233-lujan-horacio-elizardo",
+    "absorbed_key": "juicios_condenado:90",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:235-macedra-carlos-tomas",
+    "absorbed_key": "juicios_condenado:2070",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:237-madrid-domingo-luis",
+    "absorbed_key": "juicios_condenado:2191",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:239-mainetti-jose-maria",
+    "absorbed_key": "juicios_condenado:3093",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:242-manacorda-nora-raquel",
+    "absorbed_key": "juicios_condenado:608",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:243-mansilla-carlos-arturo",
+    "absorbed_key": "juicios_condenado:3120",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:246-manzanares-francisco-silvio",
+    "absorbed_key": "juicios_condenado:1877",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:247-marc-hector-horacio",
+    "absorbed_key": "juicios_condenado:2062",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:249-marinelarena-cristina-gloria",
+    "absorbed_key": "juicios_condenado:2187",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:250-marino-raul-alberto",
+    "absorbed_key": "juicios_condenado:1270",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:253-marti-garro-cesar-enrique",
+    "absorbed_key": "juicios_condenado:3103",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:254-martinez-loydi-francisco-manuel",
+    "absorbed_key": "juicios_condenado:1601",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:255-martinez-jose-maria",
+    "absorbed_key": "juicios_condenado:1893",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:258-masson-jorge-anibal",
+    "absorbed_key": "juicios_condenado:1016",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:259-mastrandrea-edgardo-antonio",
+    "absorbed_key": "juicios_condenado:1684",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:260-mendez-emilio-felipe",
+    "absorbed_key": "juicios_condenado:1366",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:261-mendez-juan-miguel",
+    "absorbed_key": "juicios_condenado:2061",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:262-mendez-julio-manuel",
+    "absorbed_key": "juicios_condenado:1390",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:263-mendez-mario-carlos-antonio",
+    "absorbed_key": "juicios_condenado:1024",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:264-mendiaz-virtom-modesto",
+    "absorbed_key": "juicios_condenado:1026",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:265-meneghini-juan-fernando",
+    "absorbed_key": "juicios_condenado:1028",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:266-menichini-alejandro-alberto",
+    "absorbed_key": "juicios_condenado:2787",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:267-meza-eduardo-antonio",
+    "absorbed_key": "juicios_condenado:2487",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:268-miara-samuel",
+    "absorbed_key": "juicios_condenado:291",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:269-milanese-carlos-victor",
+    "absorbed_key": "juicios_condenado:2969",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:270-minicucci-federico-antonio",
+    "absorbed_key": "juicios_condenado:1998",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:271-miraglia-andres-reynaldo",
+    "absorbed_key": "juicios_condenado:1215",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:272-miranda-isaac-crespin",
+    "absorbed_key": "juicios_condenado:463",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:274-molina-silvia-beatriz",
+    "absorbed_key": "juicios_condenado:2182",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:275-morel-catalino",
+    "absorbed_key": "juicios_condenado:276",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:438-morello-emilio-pedro",
+    "absorbed_key": "juicios_condenado:3154",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:276-morillo-maria-francisca",
+    "absorbed_key": "juicios_condenado:2000",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:277-mosqueda-juan-eduardo",
+    "absorbed_key": "juicios_condenado:1266",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:434-muina-luis",
+    "absorbed_key": "juicios_condenado:1045",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:278-muller-pedro",
+    "absorbed_key": "juicios_condenado:3036",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:279-munoz-carlos-alberto",
+    "absorbed_key": "juicios_condenado:2718",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:281-nani-emilio-guillermo",
+    "absorbed_key": "juicios_condenado:2939",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:282-nicolas-alfonso-eduardo",
+    "absorbed_key": "juicios_condenado:2270",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:283-nilos-miguel-angel",
+    "absorbed_key": "juicios_condenado:2671",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:285-nougues-nestor-alberto",
+    "absorbed_key": "juicios_condenado:2446",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:288-ojeda-jose-luis",
+    "absorbed_key": "juicios_condenado:1358",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:290-orosco-ernesto",
+    "absorbed_key": "juicios_condenado:1339",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:291-ortega-servando",
+    "absorbed_key": "juicios_condenado:1825",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:294-osses-miguel-angel",
+    "absorbed_key": "juicios_condenado:1738",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:295-otero-fernando-alberto",
+    "absorbed_key": "juicios_condenado:2272",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:296-otero-raul-oscar",
+    "absorbed_key": "juicios_condenado:2045",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:297-oubina-nestor-ruben",
+    "absorbed_key": "juicios_condenado:1745",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:299-pabon-hugo-ernesto",
+    "absorbed_key": "juicios_condenado:2976",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:300-padilla-alberto-santiago",
+    "absorbed_key": "juicios_condenado:2719",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:301-paez-osvaldo-bernardino",
+    "absorbed_key": "juicios_condenado:579",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:302-pagano-raul-cesar",
+    "absorbed_key": "juicios_condenado:3097",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:304-pallero-osvaldo-omar",
+    "absorbed_key": "juicios_condenado:2820",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:305-pappalardo-roque-italo",
+    "absorbed_key": "juicios_condenado:1370",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:306-parola-miguel-angel-domingo",
+    "absorbed_key": "juicios_condenado:3104",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:310-patti-luis-abelardo",
+    "absorbed_key": "juicios_condenado:502",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:311-pazos-gerardo-alberto",
+    "absorbed_key": "juicios_condenado:1751",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:312-peratta-jorge-luis",
+    "absorbed_key": "juicios_condenado:277",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:313-pereyra-apestegui-eugenio",
+    "absorbed_key": "juicios_condenado:175",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:444-perez-julio-alejandro",
+    "absorbed_key": "juicios_condenado:3085",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:314-pertusio-roberto-luis",
+    "absorbed_key": "juicios_condenado:70",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:315-piccione-guillermo-anibal",
+    "absorbed_key": "juicios_condenado:2913",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:316-pila-pedro-alberto",
+    "absorbed_key": "juicios_condenado:2444",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:319-pizzoni-aida-blandina-dusolina",
+    "absorbed_key": "juicios_condenado:2310",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:320-pons-luis-alberto-pablo",
+    "absorbed_key": "juicios_condenado:1603",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:322-ramirez-mitchell-federico-ramon",
+    "absorbed_key": "juicios_condenado:2986",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:323-ramirez-lucio-carlos",
+    "absorbed_key": "juicios_condenado:2661",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:324-rebaynera-raul-anibal",
+    "absorbed_key": "juicios_condenado:275",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:325-reinhold-oscar-lorenzo",
+    "absorbed_key": "juicios_condenado:583",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:326-rezett-fortunato-valentin",
+    "absorbed_key": "juicios_condenado:1873",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:327-ricchiuti-luis-jose",
+    "absorbed_key": "juicios_condenado:1758",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:328-rioja-francisco-lucio",
+    "absorbed_key": "juicios_condenado:71",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:330-ripa-jose-luis",
+    "absorbed_key": "juicios_condenado:1749",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:332-riveros-santiago-omar",
+    "absorbed_key": "juicios_condenado:312",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:333-robbio-carlos-maria",
+    "absorbed_key": "juicios_condenado:3095",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:334-robelo-daniel-eduardo",
+    "absorbed_key": "juicios_condenado:2276",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:335-rocca-carlos-enrique",
+    "absorbed_key": "juicios_condenado:1372",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:336-rocca-luis",
+    "absorbed_key": "juicios_condenado:2503",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:337-rodriguez-hugo-roberto",
+    "absorbed_key": "juicios_condenado:2929",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:338-rodriguez-martin",
+    "absorbed_key": "juicios_condenado:1894",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:339-rodriguez-oscar-alberto",
+    "absorbed_key": "juicios_condenado:2914",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:340-rojas-carlos-alberto",
+    "absorbed_key": "juicios_condenado:2987",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:342-rojas-jorge-horacio",
+    "absorbed_key": "juicios_condenado:2672",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:343-rolon-oscar-augusto-isidro",
+    "absorbed_key": "juicios_condenado:287",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:344-roman-arnaldo-jorge",
+    "absorbed_key": "juicios_condenado:2988",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:345-romero-pavon-carlos-maria",
+    "absorbed_key": "juicios_condenado:1659",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:346-romero-rafael-oscar",
+    "absorbed_key": "juicios_condenado:2278",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:347-romero-valentin",
+    "absorbed_key": "juicios_condenado:73",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:348-rosa-roberto-antonio",
+    "absorbed_key": "juicios_condenado:224",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:349-rubattino-heberto-jose",
+    "absorbed_key": "juicios_condenado:2845",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:445-ruiz-juan-jose",
+    "absorbed_key": "juicios_condenado:3086",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:351-rulli-mario-domingo",
+    "absorbed_key": "juicios_condenado:2738",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:352-sadi-pepa-luis",
+    "absorbed_key": "juicios_condenado:1371",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:430-sakamoto-eduardo",
+    "absorbed_key": "juicios_condenado:3082",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:355-san-martin-sergio-adolfo",
+    "absorbed_key": "juicios_condenado:1129",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:437-sanchez-zinny-martin-eduardo",
+    "absorbed_key": "juicios_condenado:3156",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:358-sarmiento-francisco-oscar",
+    "absorbed_key": "juicios_condenado:2704",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:360-schaller-carlos-jose-ramon",
+    "absorbed_key": "juicios_condenado:2345",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:361-schaller-emilio-jose",
+    "absorbed_key": "juicios_condenado:2754",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:362-seisdedos-hector-oscar",
+    "absorbed_key": "juicios_condenado:1739",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:363-selaya-hector-luis",
+    "absorbed_key": "juicios_condenado:1214",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:364-sibilla-hector-francisco-jesus",
+    "absorbed_key": "juicios_condenado:3037",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:365-siepe-osvaldo-gaspar",
+    "absorbed_key": "juicios_condenado:3098",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:366-sierra-osvaldo-lucio",
+    "absorbed_key": "juicios_condenado:1658",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:367-silva-ariel-macedonio",
+    "absorbed_key": "juicios_condenado:1268",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:368-simon-julio-hector",
+    "absorbed_key": "juicios_condenado:265",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:369-sinigaglia-luis-antonio",
+    "absorbed_key": "juicios_condenado:2508",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:371-smart-jaime-lamont",
+    "absorbed_key": "juicios_condenado:1349",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:372-somoza-carlos-eduardo-jose",
+    "absorbed_key": "juicios_condenado:1939",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:373-sosa-felipe-ramon",
+    "absorbed_key": "juicios_condenado:1743",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:376-suarez-carlos-alberto",
+    "absorbed_key": "juicios_condenado:2726",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:377-svedas-fernando",
+    "absorbed_key": "juicios_condenado:1542",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:378-taddei-ricardo",
+    "absorbed_key": "juicios_condenado:1164",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:379-taffarel-carlos-alberto",
+    "absorbed_key": "juicios_condenado:1692",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:381-tarella-eros-amilcar",
+    "absorbed_key": "juicios_condenado:80",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:383-tepedino-carlos-alberto-roque",
+    "absorbed_key": "juicios_condenado:173",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:384-toccalino-jorge-luis",
+    "absorbed_key": "juicios_condenado:1333",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:386-torra-miguel-angel",
+    "absorbed_key": "juicios_condenado:2755",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:387-torres-alberto-federico",
+    "absorbed_key": "juicios_condenado:2668",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:389-trillo-luis-tomas",
+    "absorbed_key": "juicios_condenado:2647",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:391-ullua-eduardo-salvador",
+    "absorbed_key": "juicios_condenado:2143",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:392-valdecantos-roman",
+    "absorbed_key": "juicios_condenado:2722",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:396-vega-isabelino",
+    "absorbed_key": "juicios_condenado:282",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:398-verduri-sergio-arturo",
+    "absorbed_key": "juicios_condenado:273",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:400-vidal-jorge-hector",
+    "absorbed_key": "juicios_condenado:1186",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:402-vignolles-nestor-ramon-eduardo",
+    "absorbed_key": "juicios_condenado:3099",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:403-villavicencio-lidia-fanni",
+    "absorbed_key": "juicios_condenado:3158",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:404-von-wernich-cristian-federico",
+    "absorbed_key": "juicios_condenado:201",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:405-weinstabl-alfredo-raul",
+    "absorbed_key": "juicios_condenado:3101",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:406-zeoliti-roberto-carlos",
+    "absorbed_key": "juicios_condenado:264",
+    "motivo": "fecha_nacimiento"
+  },
+  {
+    "canonical_key": "minjus_imputado:407-zuniga-martin-eduardo",
+    "absorbed_key": "juicios_condenado:2222",
+    "motivo": "fecha_nacimiento"
+  }
+]
