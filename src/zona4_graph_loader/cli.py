@@ -23,6 +23,11 @@ def parse_args() -> argparse.Namespace:
         help="No crea relaciones CANDIDATO_MERGE de reconciliacion asistida.",
     )
     parser.add_argument(
+        "--skip-identity-resolution",
+        action="store_true",
+        help="No reconcilia identidades entre fuentes antes de cargar.",
+    )
+    parser.add_argument(
         "--skip-qa-report",
         action="store_true",
         help="No imprime el reporte QA de cierre al finalizar la carga.",
@@ -78,6 +83,16 @@ def parse_args() -> argparse.Namespace:
         "--validate-sources-only",
         action="store_true",
         help="Valida los archivos JSON de origen directo en el directorio de fuentes y sale sin inyectar datos en Neo4j.",
+    )
+    parser.add_argument(
+        "--skip-nuevas-fuentes",
+        action="store_true",
+        help="No integra los builders de data/raw/ (EAAF, San Martín, MinJus, condenados).",
+    )
+    parser.add_argument(
+        "--dump-cdm",
+        default=None,
+        help="Vuelca el CDM consolidado a un JSON en la ruta indicada, para auditoría.",
     )
 
     args = parser.parse_args()

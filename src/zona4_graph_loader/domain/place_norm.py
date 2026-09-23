@@ -57,6 +57,14 @@ FOREIGN_CITY_COUNTRY_EQUIV: Dict[str, tuple[str, str]] = {
     "SAN PABLO BRASIL": ("SAN PABLO", "BRASIL"),
     "LA PAZ BOLIVIA": ("LA PAZ", "BOLIVIA"),
     "ORURO BOLIVIA": ("ORURO", "BOLIVIA"),
+    # Fix C (auditoría 2026-08-29, hallazgo C4): la fuente a veces nombra esta
+    # ciudad boliviana sin mencionar el país ("Oruro" a secas, en
+    # `Lugar de nacimiento`). Sin esta entrada, "ORURO" no tiene pista
+    # provincial ni dígitos y `_can_assume_buenos_aires` la aceptaba como
+    # ciudad de la provincia de Buenos Aires. No existe ninguna localidad
+    # argentina llamada Oruro, así que el mapeo es seguro sin desambiguación
+    # adicional.
+    "ORURO": ("ORURO", "BOLIVIA"),
     "ANTOFAGASTA CHILE": ("ANTOFAGASTA", "CHILE"),
     "PARIS FRANCIA": ("PARIS", "FRANCIA"),
     "MADRID ESPANA": ("MADRID", "ESPANA"),
@@ -237,11 +245,7 @@ def _load_georef_resolver(catalog_path: str) -> Optional[PlaceGazetteer]:
     return PlaceGazetteer.from_file(path)
 
 
-def _resolve_with_georef(alias_norm: str, resolver: PlaceGazetteer, min_score: float, ambiguity_delta: float) -> Optional[Dict[str, Any]]:
-    match = resolver.resolve(alias_norm, min_score=min_score, ambiguity_delta=ambiguity_delta)
-    if not match:
-        return None
-
+def _build_place_from_match(alias_norm: str, match: Any) -> Dict[str, Any]:
     country_key = "lugar:PAIS:argentina"
 
     if match.level == "PROVINCIA":
@@ -279,6 +283,73 @@ def _resolve_with_georef(alias_norm: str, resolver: PlaceGazetteer, min_score: f
         "parent_key": parent_key,
         "hierarchy_keys": hierarchy_keys,
     }
+
+
+def _resolve_with_georef(alias_norm: str, resolver: PlaceGazetteer, min_score: float, ambiguity_delta: float) -> Optional[Dict[str, Any]]:
+    match = resolver.resolve(alias_norm, min_score=min_score, ambiguity_delta=ambiguity_delta)
+    if not match:
+        return None
+    return _build_place_from_match(alias_norm, match)
+
+
+# Fix C (auditoría 2026-08-29, hallazgo C3): cuando la fuente escribe
+# "LOCALIDAD. PROVINCIA" (p.ej. "Rosario. Santa Fe", "Villa Elisa. Bs. As."),
+# `PlaceGazetteer.resolve` recibe la cadena completa y hace matching por
+# n-gramas contra TODOS los catálogos (localidad/municipio/departamento/
+# provincia). El nombre de la provincia mencionada explícitamente (p.ej.
+# "SANTA FE") también es, en muchos casos, el nombre de una ciudad real (la
+# capital de Santa Fe), y el bonus de tamaño de n-grama hace que ese match de
+# 2 palabras (la provincia-como-ciudad) le gane al match de 1 palabra de la
+# localidad real nombrada primero ("ROSARIO"). El resultado: 382 registros de
+# "ROSARIO. SANTA FE" terminan en la ciudad capital de Santa Fe, a ~170km de
+# Rosario.
+#
+# Este helper evita ese problema resolviendo primero SOLO la parte de la
+# cadena que quedó *antes* de la pista de provincia explícita (sin las
+# palabras de la provincia mezcladas en el n-grama), y exige que el resultado
+# caiga dentro de esa misma provincia. Si no hay match dentro de esa
+# provincia, se rechaza (se prefiere no resolver a inventar una reubicación).
+def _explicit_province_locality_base(alias_norm: str) -> Optional[str]:
+    """Devuelve la parte anterior a la pista de provincia si -y sólo si- vale
+    la pena tratar `alias_norm` como el patrón "LOCALIDAD. PROVINCIA": hay una
+    pista de provincia explícita, se pudo quitar del final, y lo que queda
+    parece un nombre de localidad simple (corto, sin dígitos) y no una
+    dirección o narración larga. `None` en cualquier otro caso -incluidas las
+    cadenas donde este patrón simplemente no aplica-, para que tanto el
+    intento de resolución como la decisión de no caer al match de cadena
+    completa usen exactamente el mismo criterio.
+    """
+    if not _has_explicit_province_hint(alias_norm):
+        return None
+    base_alias = _strip_trailing_province_hint(alias_norm)
+    if base_alias == alias_norm or not base_alias:
+        return None
+    if _contiene_digito_no_toponimico(base_alias):
+        return None
+    if len(base_alias.split()) > 6:
+        return None
+    if _es_fragmento_no_toponimico(base_alias):
+        # Lo que queda no es un nombre de localidad simple sino prosa
+        # ("CORDOBA (Trayecto Córdoba - Buenos Aires)" -> resto "CORDOBA
+        # TRAYECTO CORDOBA"): la pista de provincia al final no está
+        # nombrando dónde ocurrió el hecho, es parte de la narración. No
+        # tratarlo como el patrón LOCALIDAD.PROVINCIA.
+        return None
+    return base_alias
+
+
+def _resolve_explicit_province_locality(
+    alias_norm: str, resolver: PlaceGazetteer, min_score: float, ambiguity_delta: float
+) -> Optional[Dict[str, Any]]:
+    base_alias = _explicit_province_locality_base(alias_norm)
+    if base_alias is None:
+        return None
+
+    preferred_province = _preferred_province_from_alias(alias_norm)
+    match = resolver.resolve(base_alias, min_score=min_score, ambiguity_delta=ambiguity_delta)
+    if match is None or match.provincia_name != preferred_province:
+        return None
+    return _build_place_from_match(alias_norm, match)
 
 
 def _resolve_caba(alias_norm: str) -> Optional[Dict[str, Any]]:
@@ -409,25 +480,95 @@ def _is_pure_address_like(alias_norm: str) -> bool:
     return re.match(r"^(AV(?:ENIDA)?|CALLE|PJE|PASAJE|RUTA|DIAGONAL|BLVD|BOULEVARD)\b", alias_norm) is not None
 
 
+# Varias localidades argentinas reales llevan un número en el nombre propio
+# ("25 DE MAYO", "9 DE JULIO", "3 DE FEBRERO", partidos/ciudades de Buenos
+# Aires y otras provincias). Un dígito por sí solo no basta para descartar un
+# candidato como dirección: se distingue por la forma "N DE MES", ausente en
+# direcciones de calle reales.
+_PATRON_LOCALIDAD_FECHA = re.compile(r"^\d{1,2}\s+DE\s+[A-Z]+$")
+
+
+def _contiene_digito_no_toponimico(texto: str) -> bool:
+    if re.search(r"\d", texto) is None:
+        return False
+    return _PATRON_LOCALIDAD_FECHA.match(texto) is None
+
+
+# Fix C (auditoría 2026-08-29, hallazgo C4): tokens que casi nunca aparecen en
+# el nombre real de una localidad argentina y sí aparecen cuando la fuente
+# dejó pegado un fragmento de prosa narrativa, una duda ("posiblemente"), o
+# una referencia genérica (bar, parada de colectivo, domicilio, zona). Antes
+# de este fix, cualquier cadena corta sin pista provincial y sin dígitos se
+# aceptaba sin más como ciudad real de la provincia de Buenos Aires, dando
+# nodos como "POSIBLEMENTE" (de "SE DESCONOCE (posiblemente Bs As)") o
+# "EN LAS CERCANIAS DE SU" (de "... en las cercanías de su lugar de trabajo,
+# en Maipú y Corrientes (Capital Federal)" -que además nombra Capital
+# Federal, no Buenos Aires).
+_TOKENS_FRAGMENTO_NARRATIVO = {
+    "POSIBLEMENTE",
+    "APROXIMADAMENTE",
+    "CERCANIAS",
+    "ALREDEDORES",
+    "TRAYECTO",
+    "DESCAMPADO",
+    "CAMARA",
+    "REGIMIENTO",
+    "PARADA",
+    "COLECTIVO",
+    "BAR",
+    "VEREDA",
+    "ESQUINA",
+    "DOMICILIO",
+    "DESCONOCE",
+    "DETERMINAR",
+    "SIN",
+    "SE",
+    "LUGAR",
+    "TRABAJO",
+    "CASA",
+    "VIVIENDA",
+    "ZONA",
+    "ZONAS",
+    "PROV",
+    # "Entre San Juan y Córdoba" (calle/calle, no localidad) -> sin este
+    # token, el nombre de la esquina se aceptaba como ciudad ("ENTRE SAN
+    # JUAN Y") en la provincia mencionada al final. La única entrada real
+    # del gazetteer con "ENTRE" como palabra es la propia provincia "Entre
+    # Ríos", que resuelve por un camino anterior (match directo de cadena
+    # completa) y nunca llega a este bloqueo.
+    "ENTRE",
+}
+
+def _es_fragmento_no_toponimico(alias_norm: str) -> bool:
+    """True si `alias_norm` es, con alta probabilidad, un fragmento de prosa
+    narrativa, una referencia genérica o una duda del registro, y no el
+    nombre de un lugar -aunque sea corto, sin dígitos y sin pista
+    provincial (los únicos filtros que existían antes del Fix C).
+
+    Deliberadamente NO rechaza por posición de artículos/preposiciones
+    ("empieza o termina en EN/DE/LA/EL..."): muchísimos topónimos argentinos
+    reales empiezan con un artículo (La Plata, La Matanza, Las Flores, Los
+    Toldos, El Palomar, El Trapiche, La Lucila, El Tropezón -dos de ellos en
+    este mismo dataset). Una primera versión de este guardia rechazaba por
+    borde y se llevaba puestos esos nombres reales; el vocabulario explícito
+    de abajo alcanza para los fragmentos narrativos de la auditoría (incluido
+    "PROV DE" vía el token PROV, y "EN LAS CERCANIAS DE SU" vía CERCANIAS)
+    sin ese costo.
+    """
+    tokens = alias_norm.split()
+    if not tokens:
+        return True
+    return any(t in _TOKENS_FRAGMENTO_NARRATIVO for t in tokens)
+
+
 def _can_assume_buenos_aires(alias_norm: str) -> bool:
     if _has_explicit_province_hint(alias_norm):
         return False
-    if re.search(r"\d", alias_norm):
+    if _contiene_digito_no_toponimico(alias_norm):
         return False
     if len(alias_norm.split()) > 5:
         return False
-    blocked_tokens = {
-        "CAMARA",
-        "REGIMIENTO",
-        "DESCAMPADO",
-        "TRAYECTO",
-        "SE",
-        "DESCONOCE",
-        "SIN",
-        "DETERMINAR",
-        "DOMICILIO",
-    }
-    if any(t in blocked_tokens for t in alias_norm.split()):
+    if _es_fragmento_no_toponimico(alias_norm):
         return False
     return True
 
@@ -463,7 +604,7 @@ def _resolve_segmented_place(alias_norm: str, resolver: PlaceGazetteer) -> Optio
     tokens = [t for t in base_alias.split() if t]
     if len(tokens) < 2 or len(tokens) > 5:
         return None
-    if re.search(r"\d", alias_norm):
+    if _contiene_digito_no_toponimico(alias_norm):
         return None
     if any(country in base_alias for country in FOREIGN_COUNTRY_EQUIV.keys()):
         return None
@@ -481,9 +622,20 @@ def _resolve_segmented_place(alias_norm: str, resolver: PlaceGazetteer) -> Optio
             continue
 
         admin = resolver.resolve_admin_context(context_name, preferred_province_name=preferred_province)
-        # If no province is stated, keep the BA default strict and avoid drifting
-        # to similarly named contexts in other provinces.
-        if not has_explicit_province and admin is not None and admin.provincia_name != "BUENOS AIRES":
+        # Fix C (auditoría 2026-08-29, hallazgo C3): `resolve_admin_context`
+        # sólo *prefiere* `preferred_province` -si no hay match ahí, cae a
+        # cualquier provincia que tenga un contexto con ese nombre. Antes de
+        # este fix, esa caída sólo se bloqueaba cuando la fuente NO decía
+        # ninguna provincia (para no alejarse del default de Buenos Aires);
+        # cuando la fuente SÍ nombraba una provincia explícita (p.ej. "BS.
+        # AS." o "TUCUMAN"), no había ningún control, y un contexto homónimo
+        # en otra provincia se aceptaba igual: "VILLA ELISA. BS. AS." caía en
+        # el departamento "ELISA" de Santa Fe; "GENERAL SARMIENTO. BS. AS."
+        # caía en el departamento "SARMIENTO" de Córdoba. La regla correcta
+        # es la inversa: si la fuente nombra una provincia, hay que exigirla
+        # -no relajarla-, igual que se exige Buenos Aires cuando no hay pista.
+        required_province = preferred_province if has_explicit_province else "BUENOS AIRES"
+        if admin is not None and admin.provincia_name != required_province:
             admin = None
         if admin is None:
             continue
@@ -628,15 +780,68 @@ def resolve_place(
 
     if use_georef:
         if resolver is not None:
-            georef_resolved = _resolve_with_georef(
+            # Fix C (auditoría 2026-08-29, hallazgo C3): probar primero la
+            # localidad-con-provincia-explícita, ANTES del match de cadena
+            # completa de abajo. `PlaceGazetteer.resolve` matchea por
+            # n-gramas contra la cadena entera, y cuando la fuente trae
+            # "LOCALIDAD. PROVINCIA" el nombre de la provincia (que muchas
+            # veces es también nombre de ciudad, p.ej. "Santa Fe") le gana al
+            # nombre de la localidad real por tener más palabras. Intentar
+            # primero sólo la parte anterior a la pista de provincia, exigida
+            # dentro de esa misma provincia, evita esa reubicación.
+            explicit_locality = _resolve_explicit_province_locality(
                 alias_norm,
                 resolver,
                 min_score=georef_min_score,
                 ambiguity_delta=georef_ambiguity_delta,
             )
-            if georef_resolved is not None:
-                georef_resolved["alias_raw"] = text
-                return georef_resolved
+            if explicit_locality is not None:
+                explicit_locality["alias_raw"] = text
+                return explicit_locality
+
+            # Si la cadena calza con el patrón "LOCALIDAD. PROVINCIA" (mismo
+            # criterio que arriba: pista de provincia explícita, y lo que
+            # queda tras quitarla es corto y sin dígitos) y el intento de
+            # arriba no encontró nada DENTRO de esa provincia, no probar el
+            # match de cadena completa: es exactamente el que reubica a la
+            # persona en otra provincia (ROSARIO. SANTA FE -> ciudad capital
+            # de Santa Fe; JOSE LEON SUAREZ. BS. AS. -> ciudad LEON en
+            # Jujuy). Se prefiere no resolver a inventar la reubicación;
+            # `_resolve_segmented_place` -ya corregido para exigir la misma
+            # provincia- todavía puede resolverlo por su propio camino.
+            #
+            # Importante: este criterio es estrecho a propósito. La mayoría
+            # de los valores reales de esta fuente no son "LOCALIDAD.
+            # PROVINCIA" sino narraciones largas con domicilio, número de
+            # calle y aclaraciones entre paréntesis que TERMINAN en una pista
+            # de provincia ("...Mar del Plata. MAR DEL PLATA. BS. AS."). Para
+            # esas, el match de cadena completa de abajo sigue siendo el
+            # único camino que hoy encuentra la ciudad real mencionada en la
+            # narración -bloquearlo también para ellas perdía 100+ lugares
+            # correctos en la validación contra los datos reales.
+            explicit_hint_consumed = _explicit_province_locality_base(alias_norm) is not None
+            # Nota: se probó también bloquear el match de cadena completa
+            # cuando la cadena era larga y traía 2+ palabras de la lista de
+            # fragmentos narrativos (para casos como una descripción de
+            # parada de colectivo que engancha "SANTA FE" por casualidad).
+            # Contra los ~2.400 valores reales de `parque_de_la_memoria`, esa
+            # regla extra rechazaba tantas resoluciones correctas genuinas
+            # (p.ej. "Trayecto a pie ... Zona rural (Sauce Huascho, Tucumán)"
+            # -> INGENIO FRONTERITA, un match real y específico) como
+            # arreglaba, así que se descartó: sólo queda el criterio
+            # `explicit_hint_consumed`, mucho más angosto y validado sin
+            # pérdidas contra los datos reales (ver semantic-fixes-report.md).
+            if not explicit_hint_consumed:
+                georef_resolved = _resolve_with_georef(
+                    alias_norm,
+                    resolver,
+                    min_score=georef_min_score,
+                    ambiguity_delta=georef_ambiguity_delta,
+                )
+                if georef_resolved is not None:
+                    georef_resolved["alias_raw"] = text
+                    return georef_resolved
+
             segmented = _resolve_segmented_place(alias_norm, resolver)
             if segmented is not None:
                 segmented["alias_raw"] = text
@@ -650,17 +855,31 @@ def resolve_place(
     for suffix, prov_name in PROVINCE_ABBR.items():
         if alias_norm.endswith(f" {suffix}"):
             city_name = alias_norm[: -len(suffix)].strip()
-            if city_name:
-                parent_key = make_lugar_key("PROVINCIA", prov_name, "lugar:PAIS:argentina")
-                lugar_key = make_lugar_key("CIUDAD", city_name, parent_key)
-                return {
-                    "alias_raw": text,
-                    "alias_norm": alias_norm,
-                    "tipo": "CIUDAD",
-                    "nombre_canonico": city_name,
-                    "lugar_key": lugar_key,
-                    "parent_key": parent_key,
-                }
+            if not city_name:
+                continue
+            # Fix C (auditoría 2026-08-29, hallazgo C4): a diferencia de
+            # `_can_assume_buenos_aires`, este bloque no comprobaba ni
+            # dígitos ni fragmentos narrativos -bastaba con que el texto
+            # terminara en una abreviatura de provincia reconocida. Eso
+            # producía nodos como "SAN NICOLAS CANGALLO 1671 2 C MARTINEZ"
+            # (de "San Nicolas (Cangallo 1671, 2º C). MARTINEZ. BS. AS.",
+            # una dirección completa) o "POSIBLEMENTE" (de "SE DESCONOCE
+            # (posiblemente Bs As)"). Se rechaza en vez de inventar la
+            # ciudad: el evento queda sin resolver, reportado por el
+            # contador de eventos huérfanos existente, en lugar de colgar
+            # de un lugar que la fuente no nombra.
+            if _contiene_digito_no_toponimico(city_name) or _es_fragmento_no_toponimico(city_name):
+                return None
+            parent_key = make_lugar_key("PROVINCIA", prov_name, "lugar:PAIS:argentina")
+            lugar_key = make_lugar_key("CIUDAD", city_name, parent_key)
+            return {
+                "alias_raw": text,
+                "alias_norm": alias_norm,
+                "tipo": "CIUDAD",
+                "nombre_canonico": city_name,
+                "lugar_key": lugar_key,
+                "parent_key": parent_key,
+            }
 
     if _can_assume_buenos_aires(alias_norm):
         parent_key = make_lugar_key("PROVINCIA", "BUENOS AIRES", "lugar:PAIS:argentina")
@@ -673,6 +892,16 @@ def resolve_place(
             "lugar_key": lugar_key,
             "parent_key": parent_key,
         }
+
+    # Fix C: `_can_assume_buenos_aires` ya descarta los fragmentos
+    # narrativos, pero puede haber devuelto False por otra razón preexistente
+    # (dígitos, más de 5 palabras, pista provincial explícita) -esos casos
+    # siguen cayendo en INDETERMINADO como antes, sin cambios. Sólo cuando la
+    # razón es específicamente "es un fragmento narrativo" se rechaza sin
+    # crear ningún nodo, ni siquiera INDETERMINADO: no es sólo que no
+    # sepamos la ubicación, es que el texto no es un lugar.
+    if _es_fragmento_no_toponimico(alias_norm):
+        return None
 
     lugar_key = make_lugar_key("INDETERMINADO", alias_norm, None)
     return {

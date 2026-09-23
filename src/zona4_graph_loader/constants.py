@@ -50,6 +50,43 @@ UNKNOWN_PLACE_VALUES = {
     "DESCONOCIDO",
 }
 
+# Fix E (auditoría 2026-08-29, hallazgo I3d): valores de `Fuerza`
+# (juicios_condenados, minjus_imputados) que no nombran una organización
+# real, sino la ausencia de un dato o -en el caso de "CIVIL"- la ausencia
+# misma de fuerza represiva. Materializarlos como :Org con aristas PARTE_DE
+# afirma que centenares de represores distintos comparten membresía en una
+# única organización llamada "SIN ESPECIFICAR" (109 casos reales,
+# combinando ambas fuentes) o "CIVIL" (87 casos reales) -ninguna de las dos
+# es una organización. Derivado de la distribución real de `Fuerza` en
+# ambas fuentes (sólo coincidencia exacta tras upper(); no se recorta
+# ningún prefijo, para no descartar de más un valor real que simplemente
+# mencione "sin especificar" como parte de un nombre más largo -no se
+# encontró ningún caso así en los datos).
+SENTINEL_ORG_VALUES = {
+    "SIN ESPECIFICAR",
+    "POLICIA (SIN ESPECIFICAR)",
+    "CIVIL",
+    "NO ESPECIFICADO",
+    "NO DETERMINADO",
+    "DESCONOCIDA",
+    "DESCONOCIDO",
+}
+
+# Fix E (auditoría 2026-08-29, hallazgo I3d): mismo problema, para
+# `lugar_de_trabajo`/`dónde_estudió` (minjus_victimas) que alimentan
+# :Institución vía TRABAJO_EN/ESTUDIO_EN. Coincidencia exacta únicamente:
+# los valores narrativos más largos que empiezan con una de estas palabras
+# pero agregan información real ("DESCONOCIDO, PERO LA VICTIMA ESTUDIABA
+# PARA SER MAESTRO...") no son sentinels puros y quedan fuera de este
+# hallazgo (ver hallazgo I3c, no arreglado en este fix).
+SENTINEL_INSTITUCION_VALUES = {
+    "NO DETERMINADO",
+    "NO ESPECIFICADO",
+    "NO ESPECIFICA",
+    "DESCONOCIDO",
+    "DESCONOCIDA",
+}
+
 EQUIV_CITIES = {
     "CAPITAL": ("CIUDAD", "CIUDAD AUTONOMA DE BUENOS AIRES", None),
     "CAPITAL FEDERAL": ("CIUDAD", "CIUDAD AUTONOMA DE BUENOS AIRES", None),
@@ -62,6 +99,23 @@ EQUIV_CITIES = {
     "SAN MIGUEL DE TUCUMAN": ("CIUDAD", "SAN MIGUEL DE TUCUMAN", "TUCUMAN"),
     "JOSE LEON SUAREZ SAN MARTIN": ("CIUDAD", "VILLA JOSE LEON SUAREZ", "BUENOS AIRES"),
     "LIBERTADOR GENERAL SAN MARTIN": ("CIUDAD", "SAN MARTIN", "BUENOS AIRES"),
+    # Task 14: localidades reales del partido de General San Martín (Buenos
+    # Aires) que, sin esta entrada, quedan mal georresueltas por
+    # `_resolve_segmented_place` hacia una provincia distinta (ver
+    # tests/domain/test_place_norm_san_martin.py). El valor crudo de
+    # `archivo_memoria_san_martin.json` no trae el sufijo "SAN MARTIN", por
+    # lo que "JOSE LEON SUAREZ SAN MARTIN" (arriba) nunca se dispara para
+    # esta fuente; se agrega la clave sin sufijo para cubrirla.
+    "JOSE LEON SUAREZ": ("CIUDAD", "VILLA JOSE LEON SUAREZ", "BUENOS AIRES"),
+    # La menos específica de las tres: "San Andrés" también nombra el
+    # archipiélago colombiano y una localidad de Lavalle, Mendoza. Como
+    # EQUIV_CITIES se consulta antes que _resolve_foreign_place (ver
+    # resolve_place), un "San Andrés" colombiano de una fuente futura
+    # (ej. exilio/asilo) caería silenciosamente en Buenos Aires en vez de
+    # reconocerse como extranjero. "San Andrés de Giles" normaliza a otra
+    # clave distinta y no se ve afectado.
+    "SAN ANDRES": ("CIUDAD", "VILLA SAN ANDRES", "BUENOS AIRES"),
+    "VILLA CONCEPCION": ("CIUDAD", "VILLA CONCEPCION", "BUENOS AIRES"),
 }
 
 PROVINCE_ABBR = {

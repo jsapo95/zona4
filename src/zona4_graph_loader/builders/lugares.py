@@ -5,16 +5,27 @@ import hashlib
 import re
 from collections import Counter, defaultdict
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 from zona4_graph_loader.builders.base import CanonicalDataset
 from zona4_graph_loader.constants import ALIAS_ROOT_PARENT_KEY, DIRECTIONAL_TOKENS
-from zona4_graph_loader.domain.date_norm import parse_ddmmyyyy
+from zona4_graph_loader.domain.date_norm import (
+    parse_ddmmyyyy,
+    validar_fecha_de_hecho,
+    validar_fecha_de_nacimiento,
+)
 from zona4_graph_loader.domain.place_norm import extract_specific_address, resolve_place
 from zona4_graph_loader.domain.text_norm import clean_text, slugify_name
 
+# Fuente compartida para los nodos de geografía (:Lugar) que cualquier builder
+# de nuevas fuentes crea como andamiaje (PAIS/PROVINCIA/DEPARTAMENTO/CIUDAD) al
+# armar una jerarquía: son geografía compartida entre fuentes, no propiedad
+# exclusiva de la fuente que primero los tocó, así que nunca deben llevar el
+# nombre de esa fuente puntual como `fuente`.
+FUENTE_JERARQUIA = "normalizacion_lugar"
 
-def _node_from_lugar_key(lugar_key: str) -> Dict[str, str]:
+
+def node_from_lugar_key(lugar_key: str) -> Dict[str, str]:
     core = lugar_key.split("|", 1)[0]
     parts = core.split(":", 2)
     if len(parts) != 3:
@@ -33,6 +44,40 @@ def _node_from_lugar_key(lugar_key: str) -> Dict[str, str]:
     }
 
 
+def expand_lugar_ancestors(
+    lugar_key: str,
+    fuente: str,
+) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    """Materializa la cadena de contenedores implícita en un lugar_key.
+
+    `make_lugar_key` codifica la jerarquía como `lugar:TIPO:slug|<parent_key>`,
+    donde el parent_key es a su vez una clave completa. `resolve_place` devuelve
+    sólo el nodo hoja y su parent_key, así que sin esta expansión los nodos padre
+    nunca se crean y las aristas PARTE_DE se pierden.
+    """
+    lugares: List[Dict[str, Any]] = []
+    jerarquias: List[Dict[str, Any]] = []
+
+    actual = lugar_key
+    while actual:
+        nodo = dict(node_from_lugar_key(actual))
+        nodo["pais_code"] = "AR"
+        nodo["fuente"] = fuente
+        nodo["tipo_entidad"] = "Lugar"
+        lugares.append(nodo)
+
+        padre = actual.split("|", 1)[1] if "|" in actual else None
+        if padre:
+            jerarquias.append({
+                "tipo_relacion": "PARTE_DE",
+                "child_key": actual,
+                "parent_key": padre,
+            })
+        actual = padre
+
+    return lugares, jerarquias
+
+
 def build_lugar_layer_rows(
     data: List[Dict[str, Any]],
     *,
@@ -48,7 +93,7 @@ def build_lugar_layer_rows(
             "nombre": "ARGENTINA",
             "tipoGeopolitico": "PAIS",
             "pais_code": "AR",
-            "fuente": "normalizacion_lugar",
+            "fuente": FUENTE_JERARQUIA,
             "tipo_entidad": "Lugar",
         }
     }
@@ -61,7 +106,7 @@ def build_lugar_layer_rows(
     def ensure_lugar_node(lugar_key: str) -> None:
         if lugar_key in lugares:
             return
-        node = _node_from_lugar_key(lugar_key)
+        node = node_from_lugar_key(lugar_key)
         pais_code = "AR"
         if node["tipoGeopolitico"] == "PAIS" and node["nombre"] != "ARGENTINA":
             pais_code = "XX"
@@ -70,7 +115,7 @@ def build_lugar_layer_rows(
             "nombre": node["nombre"],
             "tipoGeopolitico": node["tipoGeopolitico"],
             "pais_code": pais_code,
-            "fuente": "normalizacion_lugar",
+            "fuente": FUENTE_JERARQUIA,
             "tipo_entidad": "Lugar",
         }
 
@@ -86,7 +131,7 @@ def build_lugar_layer_rows(
             "nombre": place["nombre_canonico"],
             "tipoGeopolitico": place["tipo"],
             "pais_code": place.get("pais_code") or "AR",
-            "fuente": "normalizacion_lugar",
+            "fuente": FUENTE_JERARQUIA,
             "tipo_entidad": "Lugar",
         }
         hierarchy_keys = place.get("hierarchy_keys")
@@ -146,6 +191,16 @@ def build_lugar_layer_rows(
                     "coordenadas": "DESCONOCIDAS",
                     "direccionExacta": direccion["direccion_raw"],
                     "lugar_key": place["lugar_key"],
+                    # Fix E (auditoría 2026-08-29, hallazgo I5): esta
+                    # dirección viene de texto libre sobre el lugar de
+                    # secuestro/nacimiento/asesinato de una víctima -un
+                    # domicilio, la vía pública, un lugar de trabajo- nunca
+                    # de un centro clandestino real (ese es el camino de
+                    # ccds.py/minjus_ccds.py). Antes de este fix, ambos casos
+                    # llevaban la misma label `:DirecciónCCD` sin ninguna
+                    # marca que los distinga; ahora `tipo_direccion` lo hace
+                    # explícito.
+                    "tipo_direccion": "HECHO_NARRATIVO",
                     "tipo_entidad": "DireccionCCD",
                 }
                 direccion_lugar_links.append(
@@ -162,7 +217,15 @@ def build_lugar_layer_rows(
             continue
         detalle = item.get("detalle", {})
 
-        fecha_sec = parse_ddmmyyyy(clean_text(detalle.get("descripcion_fecha_de_secuestro")))
+        # Fix E (auditoría 2026-08-29, hallazgo I6): fechas imposibles sin
+        # validar. `validar_fecha_de_hecho`/`validar_fecha_de_nacimiento`
+        # descartan (None -> "DESCONOCIDA" en el evento) cualquier valor
+        # fuera del rango real verificado sobre esta misma fuente -no lo
+        # corrigen. Los 7 NACIO_EN entre 2021 y 2052 de la auditoría vienen
+        # de `descripcion_fecha_nacimiento` en este archivo.
+        fecha_sec = validar_fecha_de_hecho(
+            parse_ddmmyyyy(clean_text(detalle.get("descripcion_fecha_de_secuestro")))
+        )
         place_sec = resolve_place(
             detalle.get("descripcion_lugar_de_secuestro"),
             use_georef=use_georef,
@@ -179,7 +242,9 @@ def build_lugar_layer_rows(
                 fecha_event=fecha_sec,
             )
 
-        fecha_nac = parse_ddmmyyyy(clean_text(detalle.get("descripcion_fecha_nacimiento")))
+        fecha_nac = validar_fecha_de_nacimiento(
+            parse_ddmmyyyy(clean_text(detalle.get("descripcion_fecha_nacimiento")))
+        )
         place_nac = resolve_place(
             detalle.get("Lugar de nacimiento"),
             use_georef=use_georef,
@@ -196,7 +261,9 @@ def build_lugar_layer_rows(
                 fecha_event=fecha_nac,
             )
 
-        fecha_ase = parse_ddmmyyyy(clean_text(detalle.get("descripcion_fecha_de_asesinato")))
+        fecha_ase = validar_fecha_de_hecho(
+            parse_ddmmyyyy(clean_text(detalle.get("descripcion_fecha_de_asesinato")))
+        )
         place_ase = resolve_place(
             detalle.get("Lugar de asesinato"),
             use_georef=use_georef,

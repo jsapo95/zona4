@@ -33,3 +33,21 @@ def clean_text(value: Any) -> Optional[str]:
 
 def persona_key_from_name(name: str) -> str:
     return f"nombre:{slugify_name(name)}"
+
+
+def genero_from_sexo(sexo: Any) -> str:
+    """Normaliza `detalle.Sexo` (p.ej. "Masculino", "Femenino") al vocabulario
+    fijo de `Persona.genero`. Factorizado (Fix E, hallazgo I1) para que
+    `builders/personas.py` y `builders/ccds.py` -que necesita el género para
+    no emitir `PARIO_EN` sobre un registro marcado como masculino- lean el
+    mismo campo de la misma manera en vez de reimplementar la normalización.
+    """
+    texto = clean_text(sexo)
+    if not texto:
+        return "INDETERMINADO"
+    bajo = texto.lower()
+    if "masc" in bajo:
+        return "MASCULINO"
+    if "fem" in bajo:
+        return "FEMENINO"
+    return "INDETERMINADO"

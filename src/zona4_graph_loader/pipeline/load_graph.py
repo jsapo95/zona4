@@ -1,15 +1,23 @@
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 from typing import Any, Dict, List, LiteralString, cast
 
 from neo4j import GraphDatabase, Query
 
-from zona4_graph_loader.builders.base import CanonicalDataset
+from zona4_graph_loader.builders.archivo_memoria import build_archivo_memoria_rows
+from zona4_graph_loader.builders.base import TIPOS_ENTIDAD_CONTEXTO, CanonicalDataset
 from zona4_graph_loader.builders.candidatos import build_v3_candidate_rows
 from zona4_graph_loader.builders.ccds import build_ccd_rows
+from zona4_graph_loader.builders.eaaf_lugares import build_eaaf_lugares_rows
+from zona4_graph_loader.builders.juicios_condenados import build_juicios_condenados_rows
 from zona4_graph_loader.builders.lugares import build_lugar_layer_rows, build_safe_place_merge_rows
+from zona4_graph_loader.builders.minjus_ccds import build_minjus_ccds_rows
+from zona4_graph_loader.builders.minjus_imputados import build_minjus_imputados_rows
+from zona4_graph_loader.builders.minjus_sentencias import build_sentencias_index
+from zona4_graph_loader.builders.minjus_victimas import build_minjus_victimas_rows
 from zona4_graph_loader.builders.personas import build_detalles_rows, build_nietx_protagonistas
 from zona4_graph_loader.builders.relaciones import build_detalles_rel_rows, build_nietx_rel_rows
 from zona4_graph_loader.config import get_config
@@ -19,22 +27,32 @@ from zona4_graph_loader.db.cypher import (
     CYPHER_APPLY_SAFE_PLACE_MERGES,
     CYPHER_CLEAN_ALL,
     CYPHER_CLEAN_PROJECT,
+    CYPHER_LINK_ALIAS_PERSONA,
     CYPHER_LINK_DIRECCION_CCD_LUGAR,
+    CYPHER_LINK_PERSONA_ENTIDAD,
     CYPHER_LINK_PERSONA_LUGAR_DYNAMIC,
     CYPHER_LINK_LUGAR_PARENT,
     CYPHER_UPSERT_ALIAS_LUGAR,
+    CYPHER_UPSERT_ALIAS_PERSONA,
     CYPHER_UPSERT_CANDIDATO_MERGE,
+    CYPHER_UPSERT_CARGO,
     CYPHER_UPSERT_DIRECCION_CCD,
+    CYPHER_UPSERT_INSTITUCION,
     CYPHER_UPSERT_LUGARES,
+    CYPHER_UPSERT_ORG,
     CYPHER_UPSERT_PERSONAS,
+    CYPHER_UPSERT_PROFESION,
     CYPHER_UPSERT_PROTAGONISTAS,
     CYPHER_UPSERT_REL_FAMILIAR,
     CYPHER_UPSERT_REL_PERSONA,
 )
 from zona4_graph_loader.db.qa import run_qa_report
 from zona4_graph_loader.db.writer import run_batches
+from zona4_graph_loader.domain.identity_resolution import resolve_identities
+from zona4_graph_loader.domain.roles import graph_labels, normalize_roles
 from zona4_graph_loader.io.sources_ingestor import empty_canonical_dataset, load_direct_sources
 from zona4_graph_loader.io.files import CCDS_PATH, DETALLES_PATH, NIETXS_PATH, read_json
+from zona4_graph_loader.io.raw_files import read_raw_csv, read_raw_json
 
 
 def _merge_datasets(dest: CanonicalDataset, src: CanonicalDataset) -> None:
@@ -43,6 +61,51 @@ def _merge_datasets(dest: CanonicalDataset, src: CanonicalDataset) -> None:
             if key not in dest:
                 dest[key] = []
             dest[key].extend(rows)
+
+
+def contar_eventos_huerfanos(
+    dataset: CanonicalDataset, lugares_se_escriben: bool = True
+) -> List[Dict[str, Any]]:
+    """Eventos espaciales que no van a terminar en una arista real.
+
+    El Cypher de eventos hace MATCH sobre el lugar, así que una fila cuyo
+    lugar_key no existe como nodo :Lugar en el CDM se descartaría en
+    silencio. Se reporta en vez de perderse.
+
+    `lugares_se_escriben=False` cubre --skip-lugares: los builders de
+    nuevas fuentes (eaaf_lugares, archivo_memoria, etc.) siguen agregando
+    `lugares` y `eventos_espaciales` al CDM consolidado sin importar ese
+    flag, así que comparar contra `dataset["lugares"]` no detecta nada raro
+    y el run reporta éxito. Pero con --skip-lugares el batch
+    CYPHER_LINK_PERSONA_LUGAR_DYNAMIC (y todo lo demás bajo ese `if`) no
+    corre: ningún :Lugar se escribe y por lo tanto ningún evento espacial se
+    puede enlazar, exista o no su lugar_key en el CDM. En ese caso se
+    reportan TODOS los eventos como huérfanos.
+    """
+    eventos = dataset.get("eventos_espaciales", [])
+    if not lugares_se_escriben:
+        return list(eventos)
+
+    lugar_keys = {
+        l.get("lugar_key")
+        for l in dataset.get("lugares", [])
+        if l.get("tipo_entidad") == "Lugar"
+    }
+    return [e for e in eventos if e.get("lugar_key") not in lugar_keys]
+
+
+def contar_relaciones_source_huerfanas(
+    rows: List[Dict[str, Any]], persona_keys: set
+) -> List[Dict[str, Any]]:
+    """Filas de relaciones Persona->Persona cuyo `source_key` no está entre las
+    personas consolidadas.
+
+    CYPHER_UPSERT_REL_PERSONA (y CYPHER_UPSERT_REL_FAMILIAR) hacen MATCH -no
+    MERGE- sobre `source_key`: si ese nodo no existe como :Persona, la fila
+    entera se descarta en silencio, incluida su arista (p.ej. TORTURO_A). Se
+    reportan en vez de perderse.
+    """
+    return [r for r in rows if r.get("source_key") not in persona_keys]
 
 
 def run_load(args: argparse.Namespace) -> None:
@@ -59,6 +122,12 @@ def run_load(args: argparse.Namespace) -> None:
     _merge_datasets(consolidated, build_nietx_protagonistas(nietxs))
     _merge_datasets(consolidated, build_nietx_rel_rows(nietxs))
     _merge_datasets(consolidated, build_detalles_rel_rows(detalles))
+
+    # minjus_ccd_keys mapea slug de CCD de MinJus -> lugar_key resuelto (propio o
+    # reutilizado de RUVTE). Se inicializa aca, antes de --skip-lugares y
+    # --skip-nuevas-fuentes, para que quede ligado en toda combinacion de flags:
+    # las Tasks 11 y 12 lo consumen para colgar aristas PRESENTE_EN.
+    minjus_ccd_keys: Dict[str, str] = {}
 
     if not args.skip_lugares:
         lugar_layer = build_lugar_layer_rows(
@@ -87,6 +156,51 @@ def run_load(args: argparse.Namespace) -> None:
         )
         _merge_datasets(consolidated, ccd_layer)
 
+    if not args.skip_nuevas_fuentes:
+        _merge_datasets(consolidated, build_eaaf_lugares_rows(read_raw_csv("eaaf_lugares.csv")))
+        _merge_datasets(
+            consolidated,
+            build_archivo_memoria_rows(read_raw_json("archivo_memoria_san_martin.json")),
+        )
+        _merge_datasets(
+            consolidated,
+            build_juicios_condenados_rows(read_raw_json("juicios_lesa_humanidad_condenados.json")),
+        )
+
+        # CCDs de MinJus GBA, deduplicados contra los CCDs de RUVTE ya
+        # mergeados en `consolidated` (bloque de ccd_layer, arriba). El mapa
+        # slug -> lugar_key resultante lo consumen las Tasks 11 y 12 para
+        # colgar aristas PRESENTE_EN sin recurrir a texto libre.
+        ccds_existentes = {
+            l["nombre"]: l["lugar_key"]
+            for l in consolidated.get("lugares", [])
+            if l.get("tipo_entidad") == "Lugar" and l.get("tipoGeopolitico") == "CCD"
+        }
+        minjus_ccd_dataset, minjus_ccd_keys = build_minjus_ccds_rows(
+            read_raw_json("derechos_humanos_minjus_gba_centros_clandestinos.json"),
+            existing_ccds=ccds_existentes,
+        )
+        _merge_datasets(consolidated, minjus_ccd_dataset)
+
+        sentencias_index = build_sentencias_index(
+            read_raw_json("derechos_humanos_minjus_gba_sentencias.json")
+        )
+        _merge_datasets(
+            consolidated,
+            build_minjus_imputados_rows(
+                read_raw_json("derechos_humanos_minjus_gba_imputados.json"),
+                sentencias_index=sentencias_index,
+            ),
+        )
+        _merge_datasets(
+            consolidated,
+            build_minjus_victimas_rows(
+                read_raw_json("derechos_humanos_minjus_gba_victimas.json"),
+                ccd_key_by_slug=minjus_ccd_keys,
+                sentencias_index=sentencias_index,
+            ),
+        )
+
     # 3. Load and merge direct static sources
     if not args.skip_direct_sources:
         sources_dir = Path(args.sources_dir)
@@ -97,13 +211,42 @@ def run_load(args: argparse.Namespace) -> None:
             print("sources_loaded: 0")
         _merge_datasets(consolidated, direct_rows)
 
+    # 3.5 Reconcile identities across sources before writing anything
+    for persona in consolidated.get("personas", []):
+        persona["roles"] = normalize_roles(persona)
+
+    identity_candidatos: List[Dict[str, Any]] = []
+    if not args.skip_identity_resolution:
+        identity_report = resolve_identities(consolidated)
+        identity_candidatos = identity_report.candidatos
+        print(
+            f"identity_resolution: {len(identity_report.merges)} merges, "
+            f"{len(identity_candidatos)} candidatos"
+        )
+        dump_path = Path("data/processed/identity_merges.json")
+        dump_path.parent.mkdir(parents=True, exist_ok=True)
+        with dump_path.open("w", encoding="utf-8") as f:
+            json.dump(identity_report.merges, f, ensure_ascii=False, indent=2)
+
+    if args.dump_cdm:
+        dump_cdm_path = Path(args.dump_cdm)
+        dump_cdm_path.parent.mkdir(parents=True, exist_ok=True)
+        with dump_cdm_path.open("w", encoding="utf-8") as f:
+            json.dump(consolidated, f, ensure_ascii=False, indent=2)
+        print(f"dump_cdm: {dump_cdm_path}")
+
     # 4. Extract entities and relationships from the unificated CDM for Cypher execution
     personas_detalles = [
-        p for p in consolidated.get("personas", []) if not p.get("es_nietx")
+        p for p in consolidated.get("personas", []) if "NIETX" not in p["roles"]
     ]
     protagonistas = [
-        p for p in consolidated.get("personas", []) if p.get("es_nietx")
+        p for p in consolidated.get("personas", []) if "NIETX" in p["roles"]
     ]
+
+    # apoc.create.addLabels necesita las labels de Neo4j (título), no el
+    # vocabulario en mayúsculas del CDM: ver domain/roles.graph_labels.
+    for persona in personas_detalles:
+        persona["role_labels"] = graph_labels(persona["roles"])
 
     rel_familiares = [
         r for r in consolidated.get("relaciones_interpersonales", [])
@@ -132,6 +275,73 @@ def run_load(args: argparse.Namespace) -> None:
     ]
 
     persona_lugar_links = consolidated.get("eventos_espaciales", [])
+
+    eventos_huerfanos = contar_eventos_huerfanos(consolidated, lugares_se_escriben=not args.skip_lugares)
+    if eventos_huerfanos:
+        por_tipo: Dict[str, int] = {}
+        for evento in eventos_huerfanos:
+            tipo = evento.get("tipo_relacion", "DESCONOCIDO")
+            por_tipo[tipo] = por_tipo.get(tipo, 0) + 1
+        detalle = ", ".join(f"{k}={v}" for k, v in sorted(por_tipo.items()))
+        if args.skip_lugares:
+            print(
+                f"Warning: {len(eventos_huerfanos)} eventos espaciales no se escribirán "
+                f"porque --skip-lugares está activo ({detalle})"
+            )
+        else:
+            print(f"Warning: {len(eventos_huerfanos)} eventos espaciales sin lugar resuelto ({detalle})")
+
+    # CYPHER_UPSERT_REL_PERSONA/CYPHER_UPSERT_REL_FAMILIAR hacen MATCH (no
+    # MERGE) sobre source_key: una fila cuyo perpetrador/origen no tiene nodo
+    # :Persona propio se descarta en silencio, incluida su arista (p.ej.
+    # TORTURO_A). Se cuenta ANTES de escribir, sobre las personas ya
+    # consolidadas (post identity resolution), para que el aviso refleje lo
+    # que de verdad se va a escribir.
+    persona_keys_existentes = {
+        p.get("persona_key") for p in consolidated.get("personas", [])
+    }
+    relaciones_huerfanas = contar_relaciones_source_huerfanas(rel_personas, persona_keys_existentes)
+    relaciones_huerfanas += contar_relaciones_source_huerfanas(rel_familiares, persona_keys_existentes)
+    if relaciones_huerfanas:
+        por_tipo_rel: Dict[str, int] = {}
+        for fila in relaciones_huerfanas:
+            tipo = fila.get("tipo", "DESCONOCIDO")
+            por_tipo_rel[tipo] = por_tipo_rel.get(tipo, 0) + 1
+        detalle_rel = ", ".join(f"{k}={v}" for k, v in sorted(por_tipo_rel.items()))
+        print(
+            f"Warning: {len(relaciones_huerfanas)} relaciones interpersonales con source_key "
+            f"sin nodo :Persona, se descartarán ({detalle_rel})"
+        )
+
+    entidades = consolidated.get("entidades_contexto", [])
+    orgs = [e for e in entidades if e.get("tipo_entidad") == "Org"]
+    instituciones = [e for e in entidades if e.get("tipo_entidad") == "Institucion"]
+    profesiones = [e for e in entidades if e.get("tipo_entidad") == "Profesion"]
+    cargos = [e for e in entidades if e.get("tipo_entidad") == "Cargo"]
+    alias_personas = [e for e in entidades if e.get("tipo_entidad") == "AliasPersona"]
+
+    entidades_sin_particion = [
+        e for e in entidades if e.get("tipo_entidad") not in TIPOS_ENTIDAD_CONTEXTO
+    ]
+    if entidades_sin_particion:
+        por_tipo_entidad: Dict[str, int] = {}
+        for entidad in entidades_sin_particion:
+            tipo = entidad.get("tipo_entidad", "DESCONOCIDO")
+            por_tipo_entidad[tipo] = por_tipo_entidad.get(tipo, 0) + 1
+        detalle_entidad = ", ".join(f"{k}={v}" for k, v in sorted(por_tipo_entidad.items()))
+        print(
+            f"Warning: {len(entidades_sin_particion)} entidades de contexto con tipo_entidad "
+            f"no reconocido, descartadas de toda partición ({detalle_entidad})"
+        )
+
+    rel_contexto = [
+        r for r in consolidated.get("relaciones_contexto", [])
+        if r.get("tipo_relacion") != "IDENTIFICA_A"
+    ]
+    rel_alias_persona = [
+        r for r in consolidated.get("relaciones_contexto", [])
+        if r.get("tipo_relacion") == "IDENTIFICA_A"
+    ]
 
     # 5. Build Safe Place Merges and Identity Reconciliations
     safe_place_merges = (
@@ -169,6 +379,15 @@ def run_load(args: argparse.Namespace) -> None:
         run_batches(session, CYPHER_UPSERT_PERSONAS, personas_detalles, "personas_detalles", BATCH_SIZE)
         run_batches(session, CYPHER_UPSERT_PROTAGONISTAS, protagonistas, "protagonistas_nietx", BATCH_SIZE)
 
+        # Ingest context entities (V1.2)
+        run_batches(session, CYPHER_UPSERT_ORG, orgs, "orgs", BATCH_SIZE)
+        run_batches(session, CYPHER_UPSERT_INSTITUCION, instituciones, "instituciones", BATCH_SIZE)
+        run_batches(session, CYPHER_UPSERT_PROFESION, profesiones, "profesiones", BATCH_SIZE)
+        run_batches(session, CYPHER_UPSERT_CARGO, cargos, "cargos", BATCH_SIZE)
+        run_batches(session, CYPHER_UPSERT_ALIAS_PERSONA, alias_personas, "alias_personas", BATCH_SIZE)
+        run_batches(session, CYPHER_LINK_PERSONA_ENTIDAD, rel_contexto, "rel_contexto", BATCH_SIZE)
+        run_batches(session, CYPHER_LINK_ALIAS_PERSONA, rel_alias_persona, "rel_alias_persona", BATCH_SIZE)
+
         # Ingest Family and Interpersonal relationships
         run_batches(session, CYPHER_UPSERT_REL_FAMILIAR, rel_familiares, "relaciones_familiares_nietx", BATCH_SIZE)
         run_batches(session, CYPHER_UPSERT_REL_PERSONA, rel_personas, "relaciones_detalles", BATCH_SIZE)
@@ -203,9 +422,19 @@ def run_load(args: argparse.Namespace) -> None:
         # Ingest Candidate merges
         if not args.skip_v3_candidates:
             run_batches(session, CYPHER_UPSERT_CANDIDATO_MERGE, v3_candidates, "v3_candidatos_merge", BATCH_SIZE)
+        if not args.skip_identity_resolution:
+            run_batches(
+                session, CYPHER_UPSERT_CANDIDATO_MERGE, identity_candidatos, "identity_candidatos", BATCH_SIZE
+            )
 
-        # Run QA closure report
+        # Run QA closure report. candidatos_merge_total se reporta si CUALQUIERA
+        # de los dos batches de CANDIDATO_MERGE corrió: con --skip-v3-candidates
+        # pero identity resolution activa (o viceversa), la arista se escribe
+        # igual y el contador no debe suprimirse (Fix 8).
         if not args.skip_qa_report:
-            run_qa_report(session, include_candidates=not args.skip_v3_candidates)
+            algun_batch_de_candidatos_corrio = (
+                not args.skip_v3_candidates or not args.skip_identity_resolution
+            )
+            run_qa_report(session, include_candidates=algun_batch_de_candidatos_corrio)
 
     driver.close()

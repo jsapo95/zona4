@@ -14,6 +14,10 @@ CONSTRAINTS = [
     
     "CREATE CONSTRAINT nietx_caso_exist IF NOT EXISTS FOR (n:Nietx) REQUIRE n.caso IS NOT NULL",
     "CREATE CONSTRAINT nietx_adn_exist IF NOT EXISTS FOR (n:Nietx) REQUIRE n.ADN IS NOT NULL",
+    # Fix D (V1.3): `estado` es el campo que distingue un nietx restituido de
+    # uno que sigue en búsqueda; la fuente lo trae en el 100% de los 392
+    # registros.
+    "CREATE CONSTRAINT nietx_estado_exist IF NOT EXISTS FOR (n:Nietx) REQUIRE n.estado IS NOT NULL",
     
     "CREATE CONSTRAINT complice_tipo_exist IF NOT EXISTS FOR (c:Complice) REQUIRE c.tipo IS NOT NULL",
 
@@ -23,20 +27,39 @@ CONSTRAINTS = [
     "CREATE INDEX lugar_tipo_ccd_idx IF NOT EXISTS FOR (l:Lugar) ON (l.tipoGeopolitico, l.id_ccd)",
     "CREATE INDEX lugar_geo_idx IF NOT EXISTS FOR (l:Lugar) ON (l.geo_point)",
     "CREATE INDEX alias_lugar_norm_idx IF NOT EXISTS FOR (a:AliasLugar) ON (a.alias_norm)",
+
+    "CREATE CONSTRAINT entidad_contexto_key_unique IF NOT EXISTS FOR (e:EntidadContexto) REQUIRE e.entidad_key IS UNIQUE",
 ]
 
-# UPSERT Base Person (labeled: Persona:Victima)
+# UPSERT Base Person (labels dinámicas según row.roles)
+# `estudiante_universitario` (Fix E, V1.3, hallazgo I4): sólo la puebla
+# `archivo_memoria` (True cuando la fuente lo trae; nunca False). Se lee con
+# coalesce igual que `fecha_nacimiento`/`fecha_secuestro` para no perder el
+# valor si la persona ya existía por otra fuente sin este dato.
 CYPHER_UPSERT_PERSONAS = """
 UNWIND $rows AS row
 MERGE (p:Persona {persona_key: row.persona_key})
 SET p.nombre = row.nombre,
     p.genero = row.genero,
     p.fuente = row.fuente,
-    p.registro = coalesce(row.registro, p.registro)
-SET p:Victima
+    p.registro = coalesce(row.registro, p.registro),
+    p.fecha_nacimiento = coalesce(row.fecha_nacimiento, p.fecha_nacimiento),
+    p.fecha_secuestro = coalesce(row.fecha_secuestro, p.fecha_secuestro),
+    p.edad = coalesce(row.edad, p.edad),
+    p.claves_alt = coalesce(row.claves_alt, p.claves_alt),
+    p.tipo = coalesce(row.complice_tipo, p.tipo),
+    p.estudiante_universitario = coalesce(row.estudiante_universitario, p.estudiante_universitario),
+    p.fuerza = coalesce(row.fuerza, p.fuerza)
+WITH p, row
+CALL apoc.create.addLabels(p, row.role_labels) YIELD node
+RETURN count(*)
 """
 
 # UPSERT Grandkid Person (labeled: Persona:Nietx)
+# Fix D (V1.3): `estado` se persiste junto a `ADN` -es el campo que distingue
+# un nietx restituido de uno que sigue en búsqueda; sin él, "ADN":
+# "DESCONOCIDA" no se puede diferenciar de "aún no identificadx" vs
+# "identificadx pero sin fecha de ADN registrada en la fuente".
 CYPHER_UPSERT_PROTAGONISTAS = """
 UNWIND $rows AS row
 MERGE (p:Persona {persona_key: row.persona_key})
@@ -44,7 +67,8 @@ SET p.nombre = row.nombre,
     p.genero = row.genero,
     p.fuente = row.fuente,
     p.caso = row.caso,
-    p.ADN = row.ADN
+    p.ADN = row.ADN,
+    p.estado = row.estado
 SET p:Nietx
 """
 
@@ -57,11 +81,29 @@ SET t.nombre = coalesce(row.target_nombre, t.nombre),
     t.genero = coalesce(row.target_genero, t.genero, "INDETERMINADO"),
     t.fuente = coalesce(row.target_fuente, t.fuente, row.fuente)
 WITH s, t, row
-CALL apoc.create.relationship(s, row.tipo, {fecha: coalesce(row.fecha, "DESCONOCIDA"), origen: row.fuente}, t) YIELD rel
+CALL apoc.merge.relationship(
+    s,
+    row.tipo,
+    {origen: row.fuente},
+    {fecha: coalesce(row.fecha, "DESCONOCIDA")},
+    t,
+    {fecha: coalesce(row.fecha, "DESCONOCIDA")}
+) YIELD rel
 RETURN count(*)
 """
 
-# Dynamic Person relationship (uses apoc.create.relationship for specific V1.1 labels)
+# Dynamic Person relationship (uses apoc.merge.relationship for specific V1.1 labels, idempotent per origen)
+# `fecha_sentencia` sólo la pueblan las filas TORTURO_A/IMPUTADO_POR de los
+# builders de MinJus, que ya escriben el string "DESCONOCIDA" en Python
+# cuando la sentencia no trae fecha (ver minjus_imputados.py / minjus_victimas.py)
+# -nunca dependen de un coalesce acá. Fix E (auditoría 2026-08-29, hallazgo M1):
+# antes este coalesce completaba `fecha_sentencia` con "DESCONOCIDA" para
+# CUALQUIER tipo de relación, incluidos los 2.710 vínculos de parentesco del
+# Parque de la Memoria (PAREJA_DE, HERMANX_DE, HIJE_DE, etc.), que no tienen
+# nada que ver con una sentencia judicial y para los que `row.fecha_sentencia`
+# es null. Ya no se coalesce: cuando la fila no trae valor, Neo4j no escribe
+# la propiedad (mismo comportamiento que `delitos`, que nunca tuvo este
+# coalesce y nunca tuvo este problema).
 CYPHER_UPSERT_REL_PERSONA = """
 UNWIND $rows AS row
 MATCH (s:Persona {persona_key: row.source_key})
@@ -70,17 +112,36 @@ SET t.nombre = coalesce(row.target_nombre, t.nombre),
     t.genero = coalesce(row.target_genero, t.genero, "INDETERMINADO"),
     t.fuente = coalesce(row.target_fuente, t.fuente, row.fuente)
 WITH s, t, row
-CALL apoc.create.relationship(s, row.tipo, {fecha: coalesce(row.fecha, "DESCONOCIDA"), origen: row.fuente}, t) YIELD rel
+CALL apoc.merge.relationship(
+    s,
+    row.tipo,
+    {origen: row.fuente},
+    {fecha: coalesce(row.fecha, "DESCONOCIDA"), fecha_sentencia: row.fecha_sentencia, delitos: row.delitos},
+    t,
+    {fecha: coalesce(row.fecha, "DESCONOCIDA"), fecha_sentencia: row.fecha_sentencia, delitos: row.delitos}
+) YIELD rel
 RETURN count(*)
 """
 
-# Dynamic spatiotemporal relationship Persona -> Lugar (uses apoc.create.relationship for dynamic event mapping)
+# Dynamic spatiotemporal relationship Persona -> Lugar (uses apoc.merge.relationship, idempotent per origen)
+# `fecha_fin` / `precision_fecha` (Fix E, V1.3, hallazgo I2): sólo las
+# puebla `builders/ccds.py` (fuente `ccds_json`), cuando la fecha original
+# no tiene precisión de día. Para el resto de las filas `row.fecha_fin` y
+# `row.precision_fecha` son null y Neo4j no escribe esas propiedades (mismo
+# patrón que `delitos` en `CYPHER_UPSERT_REL_PERSONA`).
 CYPHER_LINK_PERSONA_LUGAR_DYNAMIC = """
 UNWIND $rows AS row
 MATCH (p:Persona {persona_key: row.persona_key})
 MATCH (l:Lugar {lugar_key: row.lugar_key})
 WITH p, l, row
-CALL apoc.create.relationship(p, row.tipo_relacion, {fecha: coalesce(row.fecha, "DESCONOCIDA"), origen: row.origen}, l) YIELD rel
+CALL apoc.merge.relationship(
+    p,
+    row.tipo_relacion,
+    {origen: row.origen},
+    {fecha: coalesce(row.fecha, "DESCONOCIDA"), fecha_fin: row.fecha_fin, precision_fecha: row.precision_fecha},
+    l,
+    {fecha: coalesce(row.fecha, "DESCONOCIDA"), fecha_fin: row.fecha_fin, precision_fecha: row.precision_fecha}
+) YIELD rel
 RETURN count(*)
 """
 
@@ -142,11 +203,21 @@ SET r.fecha = "ETERNA",
 """
 
 # UPSERT DirecciónCCD (representing precise CCD coordinates/addresses)
+# `tipo_direccion` (Fix E, V1.3, hallazgo I5): la label `:DirecciónCCD` se
+# usa para tres cosas distintas -un centro clandestino real ("CCD"), un
+# domicilio o lugar de un hecho narrado por la fuente ("HECHO_NARRATIVO",
+# 188 de 393 nodos: domicilios de víctimas, vía pública, lugares de
+# trabajo), o un cementerio/enterramiento de EAAF ("CEMENTERIO"/
+# "ENTERRAMIENTO"/"SITIO_HALLAZGO", 82 de 393). No se renombra la label
+# -cambiarla afecta la constraint única y toda consulta existente sobre
+# `:DirecciónCCD`, un cambio estructural mayor fuera de alcance de un fix
+# aditivo- pero ahora cada nodo declara honestamente cuál de los tres es.
 CYPHER_UPSERT_DIRECCION_CCD = """
 UNWIND $rows AS row
 MERGE (d:DirecciónCCD {direccion_ccd_key: row.direccion_ccd_key})
 SET d.coordenadas = row.coordenadas,
-    d.direccionExacta = row.direccionExacta
+    d.direccionExacta = row.direccionExacta,
+    d.tipo_direccion = row.tipo_direccion
 """
 
 # Link DirecciónCCD -> Lugar
@@ -160,12 +231,16 @@ SET r.fecha = "ETERNA",
 """
 
 # Reconciled Candidate links
+# `score_nombre` (Fix E, V1.3, hallazgo I7): antes `score`. Es similitud de
+# cadena tras normalización de erratas, no una confianza de identidad -el
+# nombre viejo invitaba a leerlo como tal (un par víctima-represor con
+# `score` 1.0 y `confianza` "baja" a la vez).
 CYPHER_UPSERT_CANDIDATO_MERGE = """
 UNWIND $rows AS row
 MATCH (p:Persona {persona_key: row.placeholder_key})
 MATCH (c:Persona {persona_key: row.candidate_key})
 MERGE (p)-[r:CANDIDATO_MERGE {metodo: row.metodo}]->(c)
-SET r.score = row.score,
+SET r.score_nombre = row.score_nombre,
     r.slug = row.slug,
     r.confianza = row.confianza,
     r.fuente = row.fuente,
@@ -235,4 +310,84 @@ SET src.merged_into = row.target_key,
     src.merge_reason = row.reason,
     src.merge_score = row.score
 DETACH DELETE src
+"""
+
+# --- Entidades de contexto (V1.2) ---
+# Todas llevan la label técnica :EntidadContexto, que sostiene el índice único
+# de entidad_key compartido entre los cinco tipos.
+
+CYPHER_UPSERT_ORG = """
+UNWIND $rows AS row
+MERGE (e:EntidadContexto {entidad_key: row.entidad_key})
+SET e:Org,
+    e.nombre = row.nombre,
+    e.tipoOrg = coalesce(row.tipoOrg, e.tipoOrg),
+    e.fuente = row.fuente
+"""
+
+CYPHER_UPSERT_INSTITUCION = """
+UNWIND $rows AS row
+MERGE (e:EntidadContexto {entidad_key: row.entidad_key})
+SET e:Institución,
+    e.nombre = row.nombre,
+    e.fuente = row.fuente
+"""
+
+CYPHER_UPSERT_PROFESION = """
+UNWIND $rows AS row
+MERGE (e:EntidadContexto {entidad_key: row.entidad_key})
+SET e:Profesión,
+    e.descripcion = row.descripcion,
+    e.fuente = row.fuente
+"""
+
+CYPHER_UPSERT_CARGO = """
+UNWIND $rows AS row
+MERGE (e:EntidadContexto {entidad_key: row.entidad_key})
+SET e:Cargo,
+    e.titulo = row.titulo,
+    e.fuente = row.fuente
+"""
+
+CYPHER_UPSERT_ALIAS_PERSONA = """
+UNWIND $rows AS row
+MERGE (e:EntidadContexto {entidad_key: row.entidad_key})
+SET e:AliasPersona,
+    e.alias = row.alias,
+    e.fuente = row.fuente
+"""
+
+# Persona -> entidad de contexto (PARTE_DE, FUNDO, EJERCIO, ESTUDIO_EN, TRABAJO_EN)
+CYPHER_LINK_PERSONA_ENTIDAD = """
+UNWIND $rows AS row
+MATCH (p:Persona {persona_key: row.persona_key})
+MATCH (e:EntidadContexto {entidad_key: row.entidad_key})
+WITH p, e, row
+CALL apoc.merge.relationship(
+    p,
+    row.tipo_relacion,
+    {origen: row.origen},
+    {fecha: coalesce(row.fecha, "DESCONOCIDA")},
+    e,
+    {fecha: coalesce(row.fecha, "DESCONOCIDA")}
+) YIELD rel
+RETURN count(*)
+"""
+
+# AliasPersona -> Persona. Va invertida respecto de las demás: la arista
+# IDENTIFICA_A nace en el alias y apunta a la persona real.
+CYPHER_LINK_ALIAS_PERSONA = """
+UNWIND $rows AS row
+MATCH (e:EntidadContexto:AliasPersona {entidad_key: row.entidad_key})
+MATCH (p:Persona {persona_key: row.persona_key})
+WITH p, e, row
+CALL apoc.merge.relationship(
+    e,
+    "IDENTIFICA_A",
+    {origen: row.origen},
+    {fecha: coalesce(row.fecha, "DESCONOCIDA")},
+    p,
+    {fecha: coalesce(row.fecha, "DESCONOCIDA")}
+) YIELD rel
+RETURN count(*)
 """
