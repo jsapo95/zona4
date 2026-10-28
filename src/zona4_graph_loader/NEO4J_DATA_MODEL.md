@@ -52,6 +52,16 @@
   con una sentencia judicial (M1). Ver `semantic-fixes-report.md` para el
   detalle completo, los conteos y lo que queda deliberadamente sin arreglar
   (I3a, I3b, I3c).
+- Fix 2026-10-28 (sin bump de versión): CABA genérica deja de crearse como
+  un `:Lugar` CIUDAD huérfano. `EQUIV_CITIES` ("CAPITAL FEDERAL", "CABA",
+  etc.) y `_resolve_caba` armaban la clave sin padre
+  (`lugar:CIUDAD:ciudad_autonoma_de_buenos_aires`), duplicando al nodo CIUDAD
+  que cuelga de `lugar:PROVINCIA:ciudad_autonoma_de_buenos_aires`. Ahora usan
+  esa provincia como padre y caen en el nodo anclado. No agrega labels, nodos
+  ni propiedades; se documenta acá porque cambia los roll-ups por provincia
+  (CABA pasa de 97 a 2.142 hechos) y deja en 0 las validaciones 5.2 y 5.3.
+  Georef trata a CABA como jurisdicción de primer nivel, por eso su
+  `tipoGeopolitico` es PROVINCIA.
 
 Este documento define la arquitectura exacta e inmutable del grafo en Neo4j. Cualquier proceso de extracción, estructuración o ingesta automática de datos ejecutado por un LLM debe adherirse estrictamente a las reglas, etiquetas, relaciones y propiedades declaradas a continuación. Está prohibido inventar o inferir entidades intermedias.
 
