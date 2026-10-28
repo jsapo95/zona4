@@ -87,13 +87,23 @@ SENTINEL_INSTITUCION_VALUES = {
     "DESCONOCIDA",
 }
 
+# CABA es a la vez ciudad y jurisdicción de primer nivel. Georef la trae como
+# PROVINCIA, y las fuentes que pasan por el gazetteer cuelgan sus lugares de
+# `lugar:PROVINCIA:ciudad_autonoma_de_buenos_aires|lugar:PAIS:argentina`.
+# Antes estas entradas no tenían padre (`None`), lo que creaba un segundo nodo
+# CIUDAD huérfano (`lugar:CIUDAD:ciudad_autonoma_de_buenos_aires`) con 2.386
+# hechos de detalles_personas que ningún roll-up por provincia veía
+# (validación 5.2/5.3). Con la provincia como padre, la clave resultante es
+# exactamente la del nodo CIUDAD que ya cuelga de la provincia.
+CABA_NOMBRE = "CIUDAD AUTÓNOMA DE BUENOS AIRES"
+
 EQUIV_CITIES = {
-    "CAPITAL": ("CIUDAD", "CIUDAD AUTONOMA DE BUENOS AIRES", None),
-    "CAPITAL FEDERAL": ("CIUDAD", "CIUDAD AUTONOMA DE BUENOS AIRES", None),
-    "FEDERAL": ("CIUDAD", "CIUDAD AUTONOMA DE BUENOS AIRES", None),
-    "CABA": ("CIUDAD", "CIUDAD AUTONOMA DE BUENOS AIRES", None),
-    "CIUDAD DE BS AS": ("CIUDAD", "CIUDAD AUTONOMA DE BUENOS AIRES", None),
-    "CIUDAD DE BUENOS AIRES": ("CIUDAD", "CIUDAD AUTONOMA DE BUENOS AIRES", None),
+    "CAPITAL": ("CIUDAD", CABA_NOMBRE, CABA_NOMBRE),
+    "CAPITAL FEDERAL": ("CIUDAD", CABA_NOMBRE, CABA_NOMBRE),
+    "FEDERAL": ("CIUDAD", CABA_NOMBRE, CABA_NOMBRE),
+    "CABA": ("CIUDAD", CABA_NOMBRE, CABA_NOMBRE),
+    "CIUDAD DE BS AS": ("CIUDAD", CABA_NOMBRE, CABA_NOMBRE),
+    "CIUDAD DE BUENOS AIRES": ("CIUDAD", CABA_NOMBRE, CABA_NOMBRE),
     "CORDOBA CAPITAL": ("CIUDAD", "CORDOBA", "CORDOBA"),
     "MENDOZA CAPITAL": ("CIUDAD", "MENDOZA", "MENDOZA"),
     "SAN MIGUEL DE TUCUMAN": ("CIUDAD", "SAN MIGUEL DE TUCUMAN", "TUCUMAN"),

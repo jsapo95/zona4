@@ -34,9 +34,9 @@ ORDER BY hechos DESC
 LIMIT 60;
 
 // 1.2) Roll-up por provincia subiendo la jerarquía PARTE_DE.
-//      CAVEAT: el nodo "CIUDAD AUTONOMA DE BUENOS AIRES" (sin tilde) está
-//      huérfano y arrastra 2.386 hechos que este roll-up no ve
-//      (validación 5.2/5.3). Hasta unificarlo, CABA queda subcontada.
+//      Hasta el 2026-10-28 CABA quedaba subcontada (97 hechos en vez de
+//      2.142) porque un nodo CIUDAD huérfano arrastraba 2.386 hechos.
+//      Corregido; validación 5.2/5.3 da 0.
 MATCH (p:Persona)-[h:SECUESTRADO_EN|ASESINADO_EN|PRESENTE_EN]->(l:Lugar)
 MATCH (l)-[:PARTE_DE*0..3]->(prov:Lugar {tipoGeopolitico:'PROVINCIA'})
 RETURN prov.nombre AS provincia,
