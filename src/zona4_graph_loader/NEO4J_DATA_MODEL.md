@@ -62,6 +62,10 @@
   (CABA pasa de 97 a 2.142 hechos) y deja en 0 las validaciones 5.2 y 5.3.
   Georef trata a CABA como jurisdicción de primer nivel, por eso su
   `tipoGeopolitico` es PROVINCIA.
+  Requiere recargar con `--clean-project`: el loader sólo hace MERGE, y como
+  cambia la clave del lugar, una recarga incremental sobre un grafo anterior
+  conserva el nodo huérfano con sus 2.386 hechos, sus 400 `:AliasLugar` y sus
+  79 `:DirecciónCCD`, y crea un juego paralelo en el nodo anclado.
 
 Este documento define la arquitectura exacta e inmutable del grafo en Neo4j. Cualquier proceso de extracción, estructuración o ingesta automática de datos ejecutado por un LLM debe adherirse estrictamente a las reglas, etiquetas, relaciones y propiedades declaradas a continuación. Está prohibido inventar o inferir entidades intermedias.
 
