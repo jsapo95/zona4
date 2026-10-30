@@ -197,7 +197,10 @@ recorre `personas` agrupando por nombre normalizado y fusiona un grupo sólo si
 forma un **clique completo** de fechas confirmadas: para cada par del grupo,
 `fecha_nacimiento` o `fecha_secuestro` deben coincidir cuando ambos registros
 traen el campo, y si un par trae fechas contradictorias el merge completo se
-veta (no se hace un merge parcial del subconjunto que sí coincide). Los grupos
+veta (no se hace un merge parcial del subconjunto que sí coincide). Si el nodo
+no trae el campo, se usa la fecha de su arista `SECUESTRADO_EN` o `NACIO_EN`:
+así se comparan las fichas del Parque de la Memoria, que guardan la fecha sólo
+en la arista. Esa fecha no se copia al nodo. Los grupos
 que fallan ese criterio, pero son sospechosos por nombre o similitud fuzzy,
 quedan como aristas `CANDIDATO_MERGE` para revisión humana en vez de perderse.
 Cada merge registra su procedencia (`persona_key` absorbida, campo de fecha que
