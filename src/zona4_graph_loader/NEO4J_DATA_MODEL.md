@@ -65,7 +65,9 @@
   Parque) y las personas de 14.285 a 13.556. En los candidatos de nombre
   exacto, `nombre_exacto_sin_fecha` baja de 1.163 a 257,
   `nombre_exacto_fecha_contradictoria` sube de 36 a 199 y
-  `nombre_exacto_clique_incompleto` de 10 a 18. No agrega labels, nodos ni
+  `nombre_exacto_clique_incompleto` de 10 a 18; los fuzzy
+  (`set_dice_typo_v1`) bajan de 144 a 139. En total, los candidatos de la
+  reconciliación pasan de 1.353 a 613. No agrega labels, nodos ni
   propiedades. Requiere recargar con `--clean-project`: el loader sólo hace
   MERGE, y una recarga incremental conserva los nodos de MinJus que ahora se
   absorben.
