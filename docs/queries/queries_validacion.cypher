@@ -185,7 +185,7 @@ ORDER BY personas DESC;
 
 // 5.1) COBERTURA: anclaje jerárquico de lugares por tipo.
 //      2026-09-11 sin padre: 72 CCD, 29 PAIS (correcto), 3 INDETERMINADO y
-//      1 CIUDAD (ver 5.2).
+//      1 CIUDAD (ver 5.2). Desde 2026-10-28 la CIUDAD sin padre es 0.
 MATCH (l:Lugar)
 RETURN l.tipoGeopolitico AS tipo,
        count(*) AS lugares,
@@ -193,10 +193,10 @@ RETURN l.tipoGeopolitico AS tipo,
 ORDER BY lugares DESC;
 
 // 5.2) DEBE DAR 0: ciudades sin anclaje provincial, ordenadas por los hechos
-//      que cuelgan de ellas. 2026-09-11 FALLA: "CIUDAD AUTONOMA DE BUENOS
-//      AIRES" (sin tilde) quedó huérfana con 2.386 hechos encima, duplicando
-//      al nodo tildado que sí cuelga de ARGENTINA. Todo roll-up por provincia
-//      subcuenta CABA hasta que se unifiquen.
+//      que cuelgan de ellas. 2026-09-11 FALLABA: "CIUDAD AUTONOMA DE BUENOS
+//      AIRES" (sin tilde) quedaba huérfana con 2.386 hechos encima. Causa:
+//      EQUIV_CITIES y _resolve_caba armaban la clave de CABA sin provincia.
+//      Corregido el 2026-10-28 (tests/domain/test_place_norm_caba.py): da 0.
 MATCH (l:Lugar {tipoGeopolitico:'CIUDAD'})
 WHERE NOT (l)-[:PARTE_DE]->(:Lugar)
 RETURN l.nombre AS lugar,
@@ -206,7 +206,7 @@ ORDER BY hechos DESC;
 
 // 5.3) DEBE DAR 0: el mismo topónimo cargado dos veces, una de ellas sin
 //      anclaje jerárquico. Es la firma del duplicado por tilde/abreviatura.
-//      2026-09-11 FALLA: 1 caso, el par CABA de 5.2.
+//      2026-09-11 FALLABA: 1 caso, el par CABA de 5.2. Desde 2026-10-28 da 0.
 MATCH (l:Lugar)
 WITH apoc.text.clean(l.nombre) AS nombre_limpio, l.tipoGeopolitico AS tipo, collect(l) AS nodos
 WHERE size(nodos) > 1

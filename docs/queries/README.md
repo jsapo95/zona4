@@ -191,11 +191,12 @@ La capa `DirecciónCCD` captura la direccion puntual de cada CCD.
     resolucion de identidades. Cada bloque declara si es invariante dura
     ("DEBE DAR 0") o metrica de cobertura, y anota el valor de la corrida del
     2026-09-11 para comparar despues de cada recarga.
-  - Reescrita el 2026-09-11. Dos invariantes fallan hoy y estan documentadas
+  - Reescrita el 2026-09-11. Ese dia fallaban dos invariantes, documentadas
     en el propio archivo: una auto-relacion `HIJE_DE` (bloque 2.5) y el nodo
     "CIUDAD AUTONOMA DE BUENOS AIRES" sin tilde, huerfano y con 2.386 hechos
-    encima, duplicado del nodo tildado (bloques 5.2 y 5.3). Ese duplicado hace
-    que todo roll-up por provincia subcuente CABA.
+    encima, duplicado del nodo tildado (bloques 5.2 y 5.3). El duplicado de
+    CABA se corrigio el 2026-10-28: los bloques 5.2 y 5.3 dan 0 y el roll-up
+    por provincia pasa de 97 a 2.142 hechos en CABA.
 
 ## Potencial de analisis
 

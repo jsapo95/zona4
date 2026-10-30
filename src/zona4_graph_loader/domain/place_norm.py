@@ -363,13 +363,16 @@ def _resolve_caba(alias_norm: str) -> Optional[Dict[str, Any]]:
     if not any(hint in padded for hint in hints):
         return None
 
-    lugar_key = make_lugar_key("CIUDAD", "CIUDAD AUTONOMA DE BUENOS AIRES", None)
+    # Misma clave que la rama EQUIV_CITIES de `resolve_place`: CABA cuelga de
+    # su provincia homónima, nunca queda huérfana (validación 5.2/5.3).
+    tipo, nombre, provincia = EQUIV_CITIES["CABA"]
+    parent_key = make_lugar_key("PROVINCIA", provincia, "lugar:PAIS:argentina")
     return {
         "alias_norm": alias_norm,
-        "tipo": "CIUDAD",
-        "nombre_canonico": "CIUDAD AUTONOMA DE BUENOS AIRES",
-        "lugar_key": lugar_key,
-        "parent_key": None,
+        "tipo": tipo,
+        "nombre_canonico": nombre,
+        "lugar_key": make_lugar_key(tipo, nombre, parent_key),
+        "parent_key": parent_key,
     }
 
 
