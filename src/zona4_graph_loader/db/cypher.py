@@ -261,50 +261,64 @@ DETACH DELETE n
 """
 
 # Safe merges for Place types (updated for V1.1 variables)
+# Traslada TODAS las aristas de `src` a `dst`, de cualquier tipo y en ambos
+# sentidos, antes del DETACH DELETE. Antes se trasladaba una lista fija
+# (ALIAS_DE, SECUESTRADO_EN, ASESINADO_EN, PRESENTE_EN, PARTE_DE) y el DETACH
+# DELETE borraba en silencio el resto: NACIO_EN (verificado en el grafo el
+# 2026-10-28: 2.159 sin fusionar contra 2.158 fusionando), PARIO_EN,
+# MURIO_EN, LIBERADO_EN y UBICADA_EN. Además, los hechos trasladados
+# conservaban sólo `fecha` y `origen` y perdían `fecha_fin`/`precision_fecha`.
+#
+# Identidad de la arista trasladada:
+# - Estructurales (PARTE_DE, ALIAS_DE, UBICADA_EN): una por par de nodos; si
+#   `dst` ya la tiene, se le copian las propiedades de la de `src` (mismo
+#   comportamiento que la lista fija anterior).
+# - Todo lo demás (hechos persona->lugar): tipo + TODAS sus propiedades. Sólo
+#   se colapsa con un duplicado exacto en `dst`; dos hechos que difieren en
+#   `fecha`, `origen` o `fecha_fin` se conservan los dos. La igualdad es
+#   `properties(x) = properties(r)` y no un MERGE/apoc.merge.relationship,
+#   que matchean por subconjunto: `{fecha, origen}` se colapsaría con un
+#   `{fecha, origen, fecha_fin}` distinto que ya estuviera en `dst`.
+# Cada arista se traslada en su propio CALL para que la siguiente vea lo que
+# creó la anterior. Las aristas entre `src` y `dst` (o un lazo de `src` sobre
+# sí mismo) no se trasladan: quedarían como lazo de `dst` sobre sí mismo.
 CYPHER_APPLY_SAFE_PLACE_MERGES = """
 UNWIND $rows AS row
 MATCH (src:Lugar {lugar_key: row.source_key})
 MATCH (dst:Lugar {lugar_key: row.target_key})
 WHERE src <> dst
-WITH src, dst, row
-OPTIONAL MATCH (a:AliasLugar)-[ad:ALIAS_DE]->(src)
-FOREACH (_ IN CASE WHEN ad IS NULL THEN [] ELSE [1] END |
-    MERGE (a)-[r:ALIAS_DE]->(dst)
-    SET r.fecha = ad.fecha, r.origen = ad.origen
-    DELETE ad
-)
-WITH src, dst, row
-OPTIONAL MATCH (p:Persona)-[rp:SECUESTRADO_EN]->(src)
-FOREACH (_ IN CASE WHEN rp IS NULL THEN [] ELSE [1] END |
-    MERGE (p)-[rp2:SECUESTRADO_EN {fecha: rp.fecha, origen: rp.origen}]->(dst)
-    DELETE rp
-)
-WITH src, dst, row
-OPTIONAL MATCH (p:Persona)-[rp:ASESINADO_EN]->(src)
-FOREACH (_ IN CASE WHEN rp IS NULL THEN [] ELSE [1] END |
-    MERGE (p)-[rp2:ASESINADO_EN {fecha: rp.fecha, origen: rp.origen}]->(dst)
-    DELETE rp
-)
-WITH src, dst, row
-OPTIONAL MATCH (p:Persona)-[rp:PRESENTE_EN]->(src)
-FOREACH (_ IN CASE WHEN rp IS NULL THEN [] ELSE [1] END |
-    MERGE (p)-[rp2:PRESENTE_EN {fecha: rp.fecha, origen: rp.origen}]->(dst)
-    DELETE rp
-)
-WITH src, dst, row
-OPTIONAL MATCH (src)-[r1:PARTE_DE]->(parent:Lugar)
-FOREACH (_ IN CASE WHEN r1 IS NULL THEN [] ELSE [1] END |
-    MERGE (dst)-[r1_new:PARTE_DE]->(parent)
-    SET r1_new.fecha = r1.fecha, r1_new.origen = r1.origen
-    DELETE r1
-)
-WITH src, dst, row
-OPTIONAL MATCH (child:Lugar)-[r2:PARTE_DE]->(src)
-FOREACH (_ IN CASE WHEN r2 IS NULL THEN [] ELSE [1] END |
-    MERGE (child)-[r2_new:PARTE_DE]->(dst)
-    SET r2_new.fecha = r2.fecha, r2_new.origen = r2.origen
-    DELETE r2
-)
+CALL (src, dst) {
+    MATCH (o)-[r]->(src)
+    WHERE o <> src AND o <> dst
+    CALL (o, r, dst) {
+        WITH o, r, dst, type(r) IN ["PARTE_DE", "ALIAS_DE", "UBICADA_EN"] AS estructural
+        OPTIONAL MATCH (o)-[x]->(dst)
+        WHERE type(x) = type(r) AND (estructural OR properties(x) = properties(r))
+        WITH o, r, dst, estructural, collect(x) AS existentes
+        FOREACH (x IN CASE WHEN estructural THEN existentes ELSE [] END | SET x += properties(r))
+        WITH o, r, dst, existentes
+        WHERE existentes = []
+        CALL apoc.create.relationship(o, type(r), properties(r), dst) YIELD rel
+        RETURN count(rel) AS creadas
+    }
+    DELETE r
+}
+CALL (src, dst) {
+    MATCH (src)-[r]->(o)
+    WHERE o <> src AND o <> dst
+    CALL (o, r, dst) {
+        WITH o, r, dst, type(r) IN ["PARTE_DE", "ALIAS_DE", "UBICADA_EN"] AS estructural
+        OPTIONAL MATCH (dst)-[x]->(o)
+        WHERE type(x) = type(r) AND (estructural OR properties(x) = properties(r))
+        WITH o, r, dst, estructural, collect(x) AS existentes
+        FOREACH (x IN CASE WHEN estructural THEN existentes ELSE [] END | SET x += properties(r))
+        WITH o, r, dst, existentes
+        WHERE existentes = []
+        CALL apoc.create.relationship(dst, type(r), properties(r), o) YIELD rel
+        RETURN count(rel) AS creadas
+    }
+    DELETE r
+}
 WITH src, row
 SET src.merged_into = row.target_key,
     src.merge_reason = row.reason,

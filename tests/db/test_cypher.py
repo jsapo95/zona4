@@ -18,7 +18,42 @@ from __future__ import annotations
 
 import re
 
-from zona4_graph_loader.db.cypher import CYPHER_UPSERT_REL_PERSONA
+from zona4_graph_loader.db.cypher import CYPHER_APPLY_SAFE_PLACE_MERGES, CYPHER_UPSERT_REL_PERSONA
+
+
+def test_fusion_de_lugares_traslada_aristas_de_cualquier_tipo():
+    # Regresión 2026-10-28: la lista fija de tipos dejaba afuera NACIO_EN,
+    # PARIO_EN, MURIO_EN, LIBERADO_EN y UBICADA_EN, que el DETACH DELETE
+    # borraba. El comportamiento real se prueba contra Neo4j en
+    # test_place_merge_neo4j.py; esto cubre el suite sin base.
+    q = CYPHER_APPLY_SAFE_PLACE_MERGES
+    assert "MATCH (o)-[r]->(src)" in q
+    assert "MATCH (src)-[r]->(o)" in q
+    assert "type(r)" in q
+    for tipo in ("NACIO_EN", "SECUESTRADO_EN", "ASESINADO_EN", "PRESENTE_EN", "PARIO_EN"):
+        assert tipo not in q, f"{tipo} no debería estar listado: el traslado es genérico"
+
+
+def test_fusion_de_lugares_copia_todas_las_propiedades():
+    # Antes se copiaban sólo rp.fecha y rp.origen (se perdían fecha_fin y
+    # precision_fecha).
+    assert "properties(r)" in CYPHER_APPLY_SAFE_PLACE_MERGES
+    assert "rp.fecha" not in CYPHER_APPLY_SAFE_PLACE_MERGES
+
+
+def test_fusion_de_lugares_traslada_antes_de_borrar():
+    q = CYPHER_APPLY_SAFE_PLACE_MERGES
+    assert q.rindex("apoc.create.relationship") < q.index("DETACH DELETE src")
+
+
+def test_fusion_de_lugares_compara_propiedades_exactas():
+    # MERGE y apoc.merge.relationship matchean por subconjunto de
+    # propiedades: colapsarían un hecho {fecha, origen} con otro distinto
+    # {fecha, origen, fecha_fin} que ya estuviera en el destino.
+    q = CYPHER_APPLY_SAFE_PLACE_MERGES
+    assert "properties(x) = properties(r)" in q
+    assert "apoc.merge.relationship" not in q
+    assert "MERGE" not in q
 
 
 def test_cypher_upsert_rel_persona_no_coalesce_fecha_sentencia():
