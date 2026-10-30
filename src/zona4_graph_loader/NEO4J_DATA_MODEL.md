@@ -52,20 +52,25 @@
   con una sentencia judicial (M1). Ver `semantic-fixes-report.md` para el
   detalle completo, los conteos y lo que queda deliberadamente sin arreglar
   (I3a, I3b, I3c).
-- Fix 2026-10-28 (sin bump de versión): CABA genérica deja de crearse como
-  un `:Lugar` CIUDAD huérfano. `EQUIV_CITIES` ("CAPITAL FEDERAL", "CABA",
-  etc.) y `_resolve_caba` armaban la clave sin padre
-  (`lugar:CIUDAD:ciudad_autonoma_de_buenos_aires`), duplicando al nodo CIUDAD
-  que cuelga de `lugar:PROVINCIA:ciudad_autonoma_de_buenos_aires`. Ahora usan
-  esa provincia como padre y caen en el nodo anclado. No agrega labels, nodos
-  ni propiedades; se documenta acá porque cambia los roll-ups por provincia
-  (CABA pasa de 97 a 2.142 hechos) y deja en 0 las validaciones 5.2 y 5.3.
-  Georef trata a CABA como jurisdicción de primer nivel, por eso su
-  `tipoGeopolitico` es PROVINCIA.
-  Requiere recargar con `--clean-project`: el loader sólo hace MERGE, y como
-  cambia la clave del lugar, una recarga incremental sobre un grafo anterior
-  conserva el nodo huérfano con sus 2.386 hechos, sus 400 `:AliasLugar` y sus
-  79 `:DirecciónCCD`, y crea un juego paralelo en el nodo anclado.
+- Fix 2026-10-30 (sin bump de versión): la reconciliación de identidades
+  (`domain/identity_resolution.py`) compara también la fecha de las aristas.
+  `detalles_personas` (Parque de la Memoria) guarda la fecha de secuestro en
+  `SECUESTRADO_EN.fecha` y la de nacimiento en `NACIO_EN.fecha`, nunca en el
+  nodo, así que hasta ahora ninguna ficha del Parque podía confirmarse por
+  fecha. Si el nodo no tiene `fecha_secuestro` o `fecha_nacimiento`, se usa la
+  de esa arista, sólo para comparar: no se copia al nodo. Medido sobre el CDM
+  de una carga completa: los merges pasan de 306 a 1.035 (Parque–MinJus
+  víctimas 0 → 705, Parque–San Martín 0 → 37; San Martín–MinJus baja de 18 a
+  5 porque 13 de esos pares ahora se fusionan en un trío con su ficha del
+  Parque) y las personas de 14.285 a 13.556. En los candidatos de nombre
+  exacto, `nombre_exacto_sin_fecha` baja de 1.163 a 257,
+  `nombre_exacto_fecha_contradictoria` sube de 36 a 199 y
+  `nombre_exacto_clique_incompleto` de 10 a 18; los fuzzy
+  (`set_dice_typo_v1`) bajan de 144 a 139. En total, los candidatos de la
+  reconciliación pasan de 1.353 a 613. No agrega labels, nodos ni
+  propiedades. Requiere recargar con `--clean-project`: el loader sólo hace
+  MERGE, y una recarga incremental conserva los nodos de MinJus que ahora se
+  absorben.
 
 Este documento define la arquitectura exacta e inmutable del grafo en Neo4j. Cualquier proceso de extracción, estructuración o ingesta automática de datos ejecutado por un LLM debe adherirse estrictamente a las reglas, etiquetas, relaciones y propiedades declaradas a continuación. Está prohibido inventar o inferir entidades intermedias.
 
@@ -98,6 +103,8 @@ del campo `roles` del CDM. Una fila sin `roles` recibe `["VICTIMA"]`.
     real; nació en 1925)- se descarta.
   * fecha_secuestro [String ISO] (Opcional, V1.2) — se persiste en el nodo cuando
     no hay lugar asociado que permita construir la arista :SECUESTRADO_EN.
+    Para reconciliar identidades, si el nodo no la trae se usa
+    `SECUESTRADO_EN.fecha` (lo mismo con `fecha_nacimiento` y `NACIO_EN`).
     Validada (V1.3, Fix E, hallazgo I6): cualquier valor fuera de
     [1966, 1990] se descarta antes de persistirse (12 registros reales
     tenían fechas entre 1997 y 2077).
@@ -270,7 +277,7 @@ del campo `roles` del CDM. Una fila sin `roles` recibe `["VICTIMA"]`.
 - (:Lugar)-[:PARTE_DE]->(:Lugar)       // RELACIÓN RECURSIVA CRÍTICA. Modela la jerarquía anidada. Va del contenedor menor al contenedor de orden político superior (Ej: Localidad -> Partido -> Provincia).
 
 #### 3.5 Candidatos de reconciliación de identidad (V1.3, Fix E, hallazgo I7)
-- (:Persona)-[:CANDIDATO_MERGE]->(:Persona) // NO es una fusión: es una SUGERENCIA para revisión humana entre dos nodos :Persona que podrían ser la misma persona y que la reconciliación automática (identity_resolution.py) no fusionó -o porque no hay fecha que lo confirme, o porque los roles son mutuamente excluyentes. La dirección del par es arbitraria (orden alfabético de las claves), no semántica.
+- (:Persona)-[:CANDIDATO_MERGE]->(:Persona) // NO es una fusión: es una SUGERENCIA para revisión humana entre dos nodos :Persona que podrían ser la misma persona y que la reconciliación automática (identity_resolution.py) no fusionó -o porque no hay fecha que lo confirme (ni en el nodo ni en su arista `SECUESTRADO_EN`/`NACIO_EN`), o porque los roles son mutuamente excluyentes. La dirección del par es arbitraria (orden alfabético de las claves), no semántica.
   * fecha [String] — siempre `"PROBABILÍSTICA"` (no es un hecho fechado).
   * origen [String] — siempre `"name_similarity"`.
   * metodo [String] — cómo se generó el candidato: `"nombre_exacto_sin_fecha"` (mismo nombre exacto, ninguna fecha compartida confirma ni contradice), `"nombre_exacto_fecha_contradictoria"` (mismo nombre, fechas que se contradicen), `"nombre_exacto_clique_incompleto"` (fecha confirma pero un tercer registro rompe el clique), `"nombre_exacto_roles_incompatibles"` (fecha confirma pero los roles son víctima/nietx vs. represor/cómplice — el bloqueo de merge más fuerte, pero con evidencia real detrás), `"set_dice_typo_v1"` (similitud de cadena entre nombres distintos, sin coincidencia exacta), `"slug_exacto"` (V3, reconciliación asistida contra placeholders sin resolver).

@@ -408,3 +408,100 @@ def test_absorber_copia_campo_no_listado_y_no_pisa_el_ya_presente():
     assert superviviente["nacionalidad"] == "Argentina"
     # Campo ya presente en el canónico: no se pisa con el del absorbido.
     assert superviviente["ocupacion"] == "Docente"
+
+
+def _arista(persona_key, tipo_relacion, fecha, origen="detalles_personas"):
+    return {"persona_key": persona_key, "lugar_key": "lugar:CIUDAD:x",
+            "tipo_relacion": tipo_relacion, "fecha": fecha, "origen": origen}
+
+
+def test_fecha_secuestro_de_la_arista_confirma_contra_la_del_nodo():
+    """El Parque guarda la fecha de secuestro en la arista SECUESTRADO_EN, no en
+    el nodo; MinJus la guarda en el nodo. La misma fecha confirma el merge."""
+    dataset = {
+        "personas": [
+            _persona("registro:1", "Ana Gomez", "detalles_personas"),
+            _persona("minjus_victima:2", "Ana Gomez", "minjus_victimas",
+                     fecha_secuestro="1977-05-10"),
+        ],
+        "eventos_espaciales": [_arista("registro:1", "SECUESTRADO_EN", "1977-05-10")],
+    }
+    report = resolve_identities(dataset)
+    assert [p["persona_key"] for p in dataset["personas"]] == ["registro:1"]
+    assert report.merges == [{"canonical_key": "registro:1",
+                              "absorbed_key": "minjus_victima:2",
+                              "motivo": "fecha_secuestro"}]
+
+
+def test_fecha_nacimiento_de_la_arista_confirma_contra_la_del_nodo():
+    dataset = {
+        "personas": [
+            _persona("registro:1", "Luis Paz", "detalles_personas"),
+            _persona("archivo_memoria:3", "Luis Paz", "archivo_memoria",
+                     fecha_nacimiento="1951-01-20"),
+        ],
+        "eventos_espaciales": [_arista("registro:1", "NACIO_EN", "1951-01-20")],
+    }
+    report = resolve_identities(dataset)
+    assert len(dataset["personas"]) == 1
+    assert report.merges[0]["motivo"] == "fecha_nacimiento"
+
+
+def test_fecha_de_la_arista_contradictoria_veta_el_merge():
+    dataset = {
+        "personas": [
+            _persona("registro:1", "Ana Gomez", "detalles_personas"),
+            _persona("minjus_victima:2", "Ana Gomez", "minjus_victimas",
+                     fecha_secuestro="1977-05-10"),
+        ],
+        "eventos_espaciales": [_arista("registro:1", "SECUESTRADO_EN", "1978-02-01")],
+    }
+    report = resolve_identities(dataset)
+    assert len(dataset["personas"]) == 2
+    assert report.merges == []
+    assert [c["metodo"] for c in report.candidatos] == ["nombre_exacto_fecha_contradictoria"]
+    # La fecha de la arista sólo se usa para comparar: no se copia al nodo.
+    assert "fecha_secuestro" not in dataset["personas"][0]
+
+
+def test_arista_sin_fecha_completa_o_ambigua_no_confirma():
+    """Un centinela ("DESCONOCIDA") no es una fecha, y dos aristas del mismo
+    tipo con fechas distintas no dicen cuál es la buena: ninguna confirma."""
+    for eventos in (
+        [_arista("registro:1", "SECUESTRADO_EN", "DESCONOCIDA")],
+        [_arista("registro:1", "SECUESTRADO_EN", "1977-05-10"),
+         _arista("registro:1", "SECUESTRADO_EN", "1977-06-01")],
+    ):
+        dataset = {
+            "personas": [
+                _persona("registro:1", "Ana Gomez", "detalles_personas"),
+                _persona("minjus_victima:2", "Ana Gomez", "minjus_victimas",
+                         fecha_secuestro="1977-05-10"),
+            ],
+            "eventos_espaciales": eventos,
+        }
+        report = resolve_identities(dataset)
+        assert len(dataset["personas"]) == 2
+        assert [c["metodo"] for c in report.candidatos] == ["nombre_exacto_sin_fecha"]
+
+
+
+def test_canonico_fusionado_no_queda_como_candidato_de_otra_ficha_de_su_fuente():
+    """Tras absorber a MinJus, el canónico del Parque tiene `fuente`
+    "detalles_personas|minjus_victimas". Sigue siendo una ficha del Parque: no
+    se propone como candidato contra otra ficha del Parque con el mismo nombre."""
+    dataset = {
+        "personas": [
+            _persona("registro:1", "Ana Gomez", "detalles_personas"),
+            _persona("registro:2", "Ana Gomez", "detalles_personas"),
+            _persona("minjus_victima:3", "Ana Gomez", "minjus_victimas",
+                     fecha_secuestro="1977-05-10"),
+        ],
+        "eventos_espaciales": [
+            _arista("registro:1", "SECUESTRADO_EN", "1977-05-10"),
+            _arista("registro:2", "SECUESTRADO_EN", "1979-01-15"),
+        ],
+    }
+    report = resolve_identities(dataset)
+    assert [m["absorbed_key"] for m in report.merges] == ["minjus_victima:3"]
+    assert report.candidatos == []

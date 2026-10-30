@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple
@@ -27,6 +28,17 @@ MAX_FUZZY_CANDIDATES = 3
 # genérico de campos de `otro`.
 _ABSORBER_CAMPOS_ESPECIALES = {"persona_key", "nombre", "fuente", "roles", "claves_alt", "genero"}
 
+_CAMPOS_FECHA = ("fecha_nacimiento", "fecha_secuestro")
+
+# Aristas Persona→Lugar cuya `fecha` es el mismo dato que el nodo guarda en ese
+# campo. Una fuente con lugar (Parque de la Memoria) guarda la fecha sólo en la
+# arista; una sin lugar (MinJus, San Martín) sólo en el nodo. Para confirmar
+# identidades hay que mirar las dos.
+_CAMPO_POR_ARISTA = {"NACIO_EN": "fecha_nacimiento", "SECUESTRADO_EN": "fecha_secuestro"}
+
+# Sólo fechas completas: los centinelas de arista ("DESCONOCIDA") no confirman.
+_FECHA_ISO = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
 
 @dataclass
 class IdentityReport:
@@ -45,6 +57,30 @@ def _canonical_of(personas: List[Dict[str, Any]]) -> Dict[str, Any]:
     return min(personas, key=lambda p: (_priority(p.get("fuente")), p["persona_key"]))
 
 
+def _fechas_de_aristas(dataset: CanonicalDataset) -> Dict[str, Dict[str, str]]:
+    """Fecha de nacimiento y de secuestro de cada persona según sus aristas.
+
+    Si una persona tiene dos aristas del mismo tipo con fechas distintas, ese
+    campo no se usa: no hay forma de saber cuál es la buena.
+    """
+    fechas: Dict[str, Dict[str, Set[str]]] = defaultdict(lambda: defaultdict(set))
+    for fila in dataset.get("eventos_espaciales") or []:
+        campo = _CAMPO_POR_ARISTA.get(fila.get("tipo_relacion"))
+        fecha = fila.get("fecha")
+        if campo and isinstance(fecha, str) and _FECHA_ISO.match(fecha):
+            fechas[fila["persona_key"]][campo].add(fecha)
+    return {
+        clave: {campo: next(iter(valores)) for campo, valores in campos.items() if len(valores) == 1}
+        for clave, campos in fechas.items()
+    }
+
+
+def _fechas_de(persona: Dict[str, Any], fechas_aristas: Dict[str, Dict[str, str]]) -> Dict[str, Any]:
+    """Fechas de `persona` para comparar: la del nodo y, si falta, la de su arista."""
+    de_aristas = fechas_aristas.get(persona["persona_key"], {})
+    return {campo: persona.get(campo) or de_aristas.get(campo) for campo in _CAMPOS_FECHA}
+
+
 def _fechas_confirman(a: Dict[str, Any], b: Dict[str, Any]) -> Optional[str]:
     """Devuelve el campo de fecha que confirma que `a` y `b` son la misma persona.
 
@@ -54,7 +90,7 @@ def _fechas_confirman(a: Dict[str, Any], b: Dict[str, Any]) -> Optional[str]:
     se devuelve el primer campo que efectivamente confirmó la coincidencia.
     """
     confirmaciones: List[str] = []
-    for campo in ("fecha_nacimiento", "fecha_secuestro"):
+    for campo in _CAMPOS_FECHA:
         va, vb = a.get(campo), b.get(campo)
         if va and vb:
             if va != vb:
@@ -65,7 +101,7 @@ def _fechas_confirman(a: Dict[str, Any], b: Dict[str, Any]) -> Optional[str]:
 
 def _fechas_contradicen(a: Dict[str, Any], b: Dict[str, Any]) -> bool:
     """True si algún campo de fecha presente en ambos registros no coincide."""
-    for campo in ("fecha_nacimiento", "fecha_secuestro"):
+    for campo in _CAMPOS_FECHA:
         va, vb = a.get(campo), b.get(campo)
         if va and vb and va != vb:
             return True
@@ -78,6 +114,18 @@ def _fechas_contradicen(a: Dict[str, Any], b: Dict[str, Any]) -> bool:
 # entre dos registros del mismo lado) es un caso legítimo y no queda vetado.
 _ROLES_VICTIMA = {"VICTIMA", "NIETX"}
 _ROLES_PERPETRADOR = {"REPRESOR", "COMPLICE"}
+
+
+def _comparten_fuente(a: Dict[str, Any], b: Dict[str, Any]) -> bool:
+    """True si `a` y `b` tienen alguna fuente en común.
+
+    Un canónico que ya absorbió a otro registro tiene `fuente` concatenada
+    ("detalles_personas|minjus_victimas"): compararla como texto contra otra
+    ficha de detalles_personas la haría pasar por una fuente distinta.
+    """
+    fuentes_a = set((a.get("fuente") or "").split("|"))
+    fuentes_b = set((b.get("fuente") or "").split("|"))
+    return bool(fuentes_a & fuentes_b)
 
 
 def _roles_incompatibles(a: Dict[str, Any], b: Dict[str, Any]) -> bool:
@@ -191,6 +239,12 @@ def resolve_identities(dataset: CanonicalDataset) -> IdentityReport:
     key_map: Dict[str, str] = {}
     absorbidas: Set[str] = set()
 
+    # Se calcula antes de fusionar, con las claves originales de cada fuente.
+    fechas_aristas = _fechas_de_aristas(dataset)
+
+    def fechas(persona: Dict[str, Any]) -> Dict[str, Any]:
+        return _fechas_de(persona, fechas_aristas)
+
     # --- Paso 1: merge determinista dentro de cada bloque de nombre idéntico ---
     for slug, grupo in por_slug.items():
         if len(grupo) < 2:
@@ -210,7 +264,7 @@ def resolve_identities(dataset: CanonicalDataset) -> IdentityReport:
             for j in range(i + 1, n):
                 if ordenado[i].get("fuente") == ordenado[j].get("fuente"):
                     continue
-                if _fechas_confirman(ordenado[i], ordenado[j]) is None:
+                if _fechas_confirman(fechas(ordenado[i]), fechas(ordenado[j])) is None:
                     continue
                 if _roles_incompatibles(ordenado[i], ordenado[j]):
                     continue
@@ -260,7 +314,7 @@ def resolve_identities(dataset: CanonicalDataset) -> IdentityReport:
             # mutado ya no refleja lo que realmente confirmó la fusión.
             motivos: List[str] = []
             for otro in otros:
-                motivo = _fechas_confirman(canonico, otro)
+                motivo = _fechas_confirman(fechas(canonico), fechas(otro))
                 if motivo is None:
                     raise ValueError(
                         "Inconsistencia interna: clique confirmado sin fecha entre "
@@ -312,9 +366,9 @@ def resolve_identities(dataset: CanonicalDataset) -> IdentityReport:
         sobrevivientes = [p for p in ordenado if p["persona_key"] not in absorbidas]
         for i, a in enumerate(sobrevivientes):
             for b in sobrevivientes[i + 1:]:
-                if a.get("fuente") == b.get("fuente"):
+                if _comparten_fuente(a, b):
                     continue
-                if _fechas_confirman(a, b) is not None:
+                if _fechas_confirman(fechas(a), fechas(b)) is not None:
                     if _roles_incompatibles(a, b):
                         report.candidatos.append(
                             _candidato(a["persona_key"], b["persona_key"],
@@ -325,7 +379,7 @@ def resolve_identities(dataset: CanonicalDataset) -> IdentityReport:
                             _candidato(a["persona_key"], b["persona_key"],
                                        "nombre_exacto_clique_incompleto", 0.95, slug, "alta")
                         )
-                elif _fechas_contradicen(a, b):
+                elif _fechas_contradicen(fechas(a), fechas(b)):
                     report.candidatos.append(
                         _candidato(a["persona_key"], b["persona_key"],
                                    "nombre_exacto_fecha_contradictoria", 0.5, slug, "baja")
