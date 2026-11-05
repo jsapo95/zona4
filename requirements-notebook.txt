@@ -1,0 +1,3 @@
+# Sólo para abrir src/zona4_graph_loader/fellegi_sunter/fellegi-Sunter.ipynb.
+# La carga del grafo y los tests no lo necesitan.
+jupyter
