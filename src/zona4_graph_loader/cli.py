@@ -5,7 +5,7 @@ import argparse
 from zona4_graph_loader.pipeline.load_graph import run_load
 
 
-def parse_args() -> argparse.Namespace:
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Carga y normalizacion de datos en Neo4j")
     parser.add_argument(
         "--clean-project",
@@ -94,7 +94,11 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Vuelca el CDM consolidado a un JSON en la ruta indicada, para auditoría.",
     )
+    return parser
 
+
+def parse_args() -> argparse.Namespace:
+    parser = build_parser()
     args = parser.parse_args()
     if args.clean_project and args.clean_all:
         parser.error("No se puede usar --clean-project y --clean-all al mismo tiempo")

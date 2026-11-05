@@ -108,7 +108,12 @@ def contar_relaciones_source_huerfanas(
     return [r for r in rows if r.get("source_key") not in persona_keys]
 
 
-def run_load(args: argparse.Namespace) -> None:
+def construir_cdm(args: argparse.Namespace) -> CanonicalDataset:
+    """Pasos 1 a 3 de la carga: lee las fuentes, corre los builders y normaliza
+    los roles. No toca Neo4j ni resuelve identidades, así que sirve también a
+    quien necesite las personas tal como vienen de cada fuente (por ejemplo,
+    `fellegi_sunter.correr`).
+    """
     # 1. Read input JSON files from data/sources
     detalles = read_json(DETALLES_PATH)
     nietxs = read_json(NIETXS_PATH)
@@ -211,10 +216,16 @@ def run_load(args: argparse.Namespace) -> None:
             print("sources_loaded: 0")
         _merge_datasets(consolidated, direct_rows)
 
-    # 3.5 Reconcile identities across sources before writing anything
     for persona in consolidated.get("personas", []):
         persona["roles"] = normalize_roles(persona)
 
+    return consolidated
+
+
+def run_load(args: argparse.Namespace) -> None:
+    consolidated = construir_cdm(args)
+
+    # 3.5 Reconcile identities across sources before writing anything
     identity_candidatos: List[Dict[str, Any]] = []
     if not args.skip_identity_resolution:
         identity_report = resolve_identities(consolidated)
