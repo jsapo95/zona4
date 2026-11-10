@@ -17,7 +17,7 @@ from zona4_graph_loader.domain.name_similarity import _levenshtein_distance, nam
 CAMPOS: Tuple[str, ...] = ("apellido", "nombre", "fecha_nacimiento", "fecha_secuestro", "centro")
 
 _NIVELES_TOKENS = ("exacto", "contenido", "errata", "comparte", "distinto")
-_NIVELES_FECHA = ("exacta", "dia_mes_invertidos", "mismo_anio_mes", "mismo_anio", "distinta")
+_NIVELES_FECHA = ("exacta", "dia_mes_invertidos", "mismo_año_mes", "mismo_año", "distinta")
 
 NIVELES: Dict[str, Tuple[str, ...]] = {
     "apellido": _NIVELES_TOKENS,
@@ -41,7 +41,7 @@ Tokens = FrozenSet[str]
 class Fecha:
     """Fecha con la precisión que trae la fuente: año, año y mes, o completa."""
 
-    anio: int
+    año: int
     mes: Optional[int] = None
     dia: Optional[int] = None
 
@@ -58,12 +58,12 @@ def parsear_fecha(valor: Optional[str]) -> Optional[Fecha]:
     match = _FECHA.match(valor.strip())
     if not match:
         return None
-    anio, mes, dia = (int(x) if x else None for x in match.groups())
+    año, mes, dia = (int(x) if x else None for x in match.groups())
     try:
-        date(anio, 1 if mes is None else mes, 1 if dia is None else dia)
+        date(año, 1 if mes is None else mes, 1 if dia is None else dia)
     except ValueError:
         return None
-    return Fecha(anio, mes, dia)
+    return Fecha(año, mes, dia)
 
 
 def separar_nombre(nombre: Optional[str]) -> Tuple[Optional[Tokens], Optional[Tokens]]:
@@ -128,22 +128,22 @@ def nivel_fecha(a: Optional[Fecha], b: Optional[Fecha]) -> Optional[int]:
     """Nivel de una fecha (nacimiento o secuestro).
 
     Se compara con la precisión que tengan los dos: si uno sólo trae el año,
-    el mejor nivel posible es "mismo_anio".
+    el mejor nivel posible es "mismo_año".
     """
     if a is None or b is None:
         return FALTA
-    if a.anio != b.anio:
+    if a.año != b.año:
         return 4  # distinta
     if a.mes is None or b.mes is None:
-        return 3  # mismo_anio
+        return 3  # mismo_año
     completas = a.dia is not None and b.dia is not None
     if completas and a == b:
         return 0  # exacta
     if completas and a.mes == b.dia and a.dia == b.mes:
         return 1  # dia_mes_invertidos
     if a.mes == b.mes:
-        return 2  # mismo_anio_mes
-    return 3  # mismo_anio
+        return 2  # mismo_año_mes
+    return 3  # mismo_año
 
 
 def nivel_centro(a: Optional[FrozenSet[str]], b: Optional[FrozenSet[str]]) -> Optional[int]:

@@ -68,13 +68,13 @@ def test_parsear_fecha(valor, esperado):
 @pytest.mark.parametrize("a, b, esperado", [
     ("1976-03-24", "1976-03-24", "exacta"),
     ("1976-04-05", "1976-05-04", "dia_mes_invertidos"),
-    ("1976-03-24", "1976-03-25", "mismo_anio_mes"),
-    ("1976-03-24", "1976-08-24", "mismo_anio"),
+    ("1976-03-24", "1976-03-25", "mismo_año_mes"),
+    ("1976-03-24", "1976-08-24", "mismo_año"),
     ("1976-03-24", "1977-03-24", "distinta"),
     # Con precisión parcial se compara hasta donde llegan las dos.
-    ("1948", "1948-07-17", "mismo_anio"),
-    ("1948-07", "1948-07-17", "mismo_anio_mes"),
-    ("1948-07", "1948-08-17", "mismo_anio"),
+    ("1948", "1948-07-17", "mismo_año"),
+    ("1948-07", "1948-07-17", "mismo_año_mes"),
+    ("1948-07", "1948-08-17", "mismo_año"),
 ])
 def test_nivel_fecha(a, b, esperado):
     nivel = nivel_fecha(parsear_fecha(a), parsear_fecha(b))
