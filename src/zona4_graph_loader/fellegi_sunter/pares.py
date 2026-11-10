@@ -7,8 +7,15 @@ Se comparan los pares que cumplen las tres condiciones:
 1. vienen de fuentes distintas (la misma regla que la resolución de
    identidades: una fuente nunca se compara consigo misma);
 2. sus roles son compatibles (nunca víctima con represor);
-3. el apellido no cae en el nivel "distinto": comparten un token, o tienen
-   dos tokens que son errata uno del otro.
+3. el apellido base no cae en el nivel "distinto": comparten un token, o
+   tienen dos tokens que son errata uno del otro.
+
+El apellido base es el que trae el nombre de la persona en el CDM. Para
+Parque de la Memoria es sólo el primer apellido ("Abad, Ana Catalina"); el
+nivel del apellido, en cambio, se calcula con el apellido completo, que suma
+los tokens extra de su `descripcion_nombre` ("Ana Catalina Abad Scarlatta").
+Así el filtro deja pasar los mismos pares que antes y el segundo apellido
+sirve para distinguir.
 
 Todo par que no cumple la condición 3 queda fuera del modelo y se trata como
 "no es la misma persona". Sadinle (2018) hace lo mismo con los pares que caen
@@ -18,7 +25,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Dict, FrozenSet, Iterator, List, Optional, Set, Tuple
+from typing import Any, Dict, FrozenSet, Iterator, List, Optional, Set, Tuple
 
 from zona4_graph_loader.builders.base import CanonicalDataset
 from zona4_graph_loader.domain.identity_resolution import (
@@ -26,6 +33,7 @@ from zona4_graph_loader.domain.identity_resolution import (
     _fechas_de_aristas,
     _roles_incompatibles,
 )
+from zona4_graph_loader.domain.name_similarity import name_token_set
 from zona4_graph_loader.fellegi_sunter.comparaciones import (
     CAMPOS,
     LARGO_MINIMO_ERRATA,
@@ -63,16 +71,47 @@ class Registro:
     fecha_nacimiento: Optional[Fecha]
     fecha_secuestro: Optional[Fecha]
     centro: Optional[FrozenSet[str]]
+    # Apellido del filtro de pares. None quiere decir que es igual a `apellido`.
+    apellido_base: Optional[Tokens] = None
+
+    @property
+    def apellido_filtro(self) -> Optional[Tokens]:
+        return self.apellido if self.apellido_base is None else self.apellido_base
 
 
-def construir_registros(dataset: CanonicalDataset) -> List[Registro]:
+def apellido_extra(nombre_largo: Optional[str], apellido: Tokens, nombre: Optional[Tokens]) -> Tokens:
+    """Tokens de `nombre_largo` que no están ni en el apellido ni en el nombre
+    de pila: los apellidos que el nombre corto no trae."""
+    if not nombre_largo:
+        return frozenset()
+    return frozenset(name_token_set(nombre_largo)) - apellido - (nombre or frozenset())
+
+
+def nombres_largos_parque(detalles: List[Dict[str, Any]]) -> Dict[str, str]:
+    """`persona_key` → `detalle.descripcion_nombre` de cada ficha de Parque de
+    la Memoria, para pasarle a `construir_registros`."""
+    return {
+        f"registro:{item['registro']}": (item.get("detalle") or {}).get("descripcion_nombre")
+        for item in detalles
+        if item.get("registro") is not None and (item.get("detalle") or {}).get("descripcion_nombre")
+    }
+
+
+def construir_registros(
+    dataset: CanonicalDataset, nombres_largos: Optional[Dict[str, str]] = None
+) -> List[Registro]:
     """Un `Registro` por persona de `FUENTES`, antes de resolver identidades.
 
     Las fechas salen de `identity_resolution._fechas_de`: la del nodo y, si
     falta, la de su arista `NACIO_EN`/`SECUESTRADO_EN` (así llegan las de
     Parque de la Memoria). El centro es el conjunto de lugares de sus aristas
     `PRESENTE_EN`.
+
+    `nombres_largos` (clave → nombre completo, ver `nombres_largos_parque`)
+    completa el apellido con los apellidos que el nombre del CDM no trae; el
+    apellido original queda como `apellido_base`, para el filtro de pares.
     """
+    nombres_largos = nombres_largos or {}
     fechas_aristas = _fechas_de_aristas(dataset)
     centros: Dict[str, Set[str]] = defaultdict(set)
     for fila in dataset.get("eventos_espaciales") or []:
@@ -87,15 +126,17 @@ def construir_registros(dataset: CanonicalDataset) -> List[Registro]:
         if apellido is None:
             continue
         fechas = _fechas_de(persona, fechas_aristas)
+        extra = apellido_extra(nombres_largos.get(persona["persona_key"]), apellido, nombre)
         registros.append(Registro(
             clave=persona["persona_key"],
             fuente=persona["fuente"],
             roles=frozenset(persona.get("roles") or []),
-            apellido=apellido,
+            apellido=apellido | extra,
             nombre=nombre,
             fecha_nacimiento=parsear_fecha(fechas.get("fecha_nacimiento")),
             fecha_secuestro=parsear_fecha(fechas.get("fecha_secuestro")),
             centro=frozenset(centros[persona["persona_key"]]) or None,
+            apellido_base=apellido if extra else None,
         ))
     return registros
 
@@ -114,7 +155,6 @@ def patron(a: Registro, b: Registro) -> Patron:
     return tuple(_COMPARADOR[campo](getattr(a, campo), getattr(b, campo)) for campo in CAMPOS)
 
 
-_APELLIDO = CAMPOS.index("apellido")
 _DISTINTO = NIVELES["apellido"].index("distinto")
 
 
@@ -146,14 +186,14 @@ def generar_pares(registros: List[Registro]) -> Iterator[Tuple[Registro, Registr
     indice: Dict[str, List[int]] = defaultdict(list)
     for i, registro in enumerate(registros):
         claves: Set[str] = set()
-        for token in registro.apellido or ():
+        for token in registro.apellido_filtro or ():
             claves |= _claves_de_indice(token)
         for clave in claves:
             indice[clave].append(i)
 
     for i, a in enumerate(registros):
         vecinos: Set[int] = set()
-        for token in a.apellido or ():
+        for token in a.apellido_filtro or ():
             for clave in _claves_de_indice(token):
                 vecinos.update(j for j in indice[clave] if j > i)
         for j in sorted(vecinos):
@@ -162,6 +202,10 @@ def generar_pares(registros: List[Registro]) -> Iterator[Tuple[Registro, Registr
                 {"roles": a.roles}, {"roles": b.roles}
             ):
                 continue
-            gamma = patron(a, b)
-            if gamma[_APELLIDO] != _DISTINTO:
-                yield a, b, gamma
+            if pasa_filtro(a, b):
+                yield a, b, patron(a, b)
+
+
+def pasa_filtro(a: Registro, b: Registro) -> bool:
+    """Condición 3: el nivel del apellido base no es "distinto"."""
+    return nivel_tokens(a.apellido_filtro, b.apellido_filtro) != _DISTINTO

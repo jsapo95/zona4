@@ -29,7 +29,14 @@ from zona4_graph_loader.fellegi_sunter.em import (
     pesos_por_campo,
     probabilidad_match,
 )
-from zona4_graph_loader.fellegi_sunter.pares import Patron, Registro, construir_registros, estrato, generar_pares
+from zona4_graph_loader.fellegi_sunter.pares import (
+    Patron,
+    Registro,
+    construir_registros,
+    estrato,
+    generar_pares,
+    nombres_largos_parque,
+)
 
 SALIDA_POR_DEFECTO = Path("data/processed/fellegi_sunter")
 NUM_NIVELES = [len(NIVELES[campo]) for campo in CAMPOS]
@@ -89,10 +96,11 @@ def main() -> None:
     # Import diferido: el loader importa neo4j, que este módulo no necesita
     # para nada más.
     from zona4_graph_loader.cli import build_parser
+    from zona4_graph_loader.io.files import DETALLES_PATH, read_json
     from zona4_graph_loader.pipeline.load_graph import construir_cdm
 
     dataset = construir_cdm(build_parser().parse_args([]))
-    registros = construir_registros(dataset)
+    registros = construir_registros(dataset, nombres_largos_parque(read_json(DETALLES_PATH)))
     pares = list(generar_pares(registros))
     estratos = ajustar_estratos(pares, args.mu, args.lam, args.inicios, args.semilla)
 
@@ -125,6 +133,7 @@ def main() -> None:
 
     resumen = {
         "registros_por_fuente": dict(Counter(r.fuente for r in registros)),
+        "registros_con_apellido_extra": dict(Counter(r.fuente for r in registros if r.apellido_base is not None)),
         "mu": args.mu,
         "lambda": args.lam,
         "estratos": {

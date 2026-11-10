@@ -7,6 +7,8 @@ from zona4_graph_loader.fellegi_sunter.pares import (
     Registro,
     construir_registros,
     generar_pares,
+    nombres_largos_parque,
+    pasa_filtro,
     patron,
 )
 
@@ -64,15 +66,41 @@ def test_generar_pares_coincide_con_recorrer_todos_los_pares():
     registros = _registros([
         (f"k:{i}:{f}", n, f) for i, (n, f) in enumerate(itertools.product(nombres, fuentes))
     ])
-    distinto = NIVELES["apellido"].index("distinto")
     esperado = {
         (a.clave, b.clave)
         for a, b in itertools.combinations(registros, 2)
-        if a.fuente != b.fuente and patron(a, b)[0] != distinto
+        if a.fuente != b.fuente and pasa_filtro(a, b)
     }
     obtenido = {(a.clave, b.clave) for a, b, _ in generar_pares(registros)}
     assert obtenido == esperado
     assert len(obtenido) > 0
+
+
+def test_apellido_largo_del_parque_cambia_el_nivel_pero_no_el_filtro():
+    dataset = {"personas": [
+        _persona("registro:1", "Abad, Ana Catalina", "detalles_personas"),
+        _persona("minjus_victima:1", "Abad Scarlatta, Ana Catalina", "minjus_victimas"),
+        _persona("minjus_victima:2", "Abad Coronel, Ana Catalina", "minjus_victimas"),
+        _persona("archivo_memoria:1", "Scarlatta, Ana", "archivo_memoria"),
+    ]}
+    largos = nombres_largos_parque([
+        {"registro": 1, "detalle": {"descripcion_nombre": "Ana Catalina Abad Scarlatta"}},
+    ])
+    registros = {r.clave: r for r in construir_registros(dataset, largos)}
+    parque = registros["registro:1"]
+    assert parque.apellido == frozenset({"abad", "scarlatta"})
+    assert parque.apellido_base == frozenset({"abad"})
+    assert registros["minjus_victima:1"].apellido_base is None, "sólo cambia quien tiene nombre largo"
+
+    niveles = {
+        (a.clave, b.clave): NIVELES["apellido"][g[0]]
+        for a, b, g in generar_pares(list(registros.values()))
+    }
+    assert niveles[("registro:1", "minjus_victima:1")] == "exacto"   # antes: contenido
+    assert niveles[("registro:1", "minjus_victima:2")] == "comparte"  # antes: contenido
+    # El filtro mira el apellido base: "Scarlatta" sólo no alcanza para comparar
+    # con el registro del Parque, aunque su apellido completo lo tenga.
+    assert ("registro:1", "archivo_memoria:1") not in niveles
 
 
 def test_patron_sigue_el_orden_de_campos():
