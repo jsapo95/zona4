@@ -1,0 +1,834 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Recorridos de la represión</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+  :root {
+    color-scheme: light;
+    --surface-0: #f4f3f0;
+    --surface-1: #fcfcfb;
+    --surface-2: #efeee9;
+    --border: #dcdad3;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #77756f;
+    --accent: #2a78d6;
+    --accent-soft: #cde2fb;
+    --highlight: #eb6834;
+    --dot: 11, 11, 11;
+    --shadow: 0 1px 2px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --surface-0: #121211;
+      --surface-1: #1a1a19;
+      --surface-2: #242422;
+      --border: #383835;
+      --text-primary: #f0efec;
+      --text-secondary: #c3c2b7;
+      --text-muted: #8f8e86;
+      --accent: #3987e5;
+      --accent-soft: #184f95;
+      --highlight: #d95926;
+      --dot: 240, 239, 236;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 16px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-0: #121211;
+    --surface-1: #1a1a19;
+    --surface-2: #242422;
+    --border: #383835;
+    --text-primary: #f0efec;
+    --text-secondary: #c3c2b7;
+    --text-muted: #8f8e86;
+    --accent: #3987e5;
+    --accent-soft: #184f95;
+    --highlight: #d95926;
+    --dot: 240, 239, 236;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 16px rgba(0,0,0,.35);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--surface-0);
+    color: var(--text-primary);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  .app { display: grid; grid-template-columns: minmax(0, 1fr) 400px; height: 100vh; }
+  .mapa-wrap { position: relative; min-height: 0; }
+  #mapa { position: absolute; inset: 0; background: var(--surface-2); }
+  .panel {
+    background: var(--surface-1);
+    border-left: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 20px 22px 32px;
+  }
+  @media (max-width: 860px) {
+    .app { grid-template-columns: 1fr; grid-template-rows: 62vh auto; height: auto; }
+    .mapa-wrap { height: 62vh; }
+    .panel { border-left: 0; border-top: 1px solid var(--border); padding: 16px; overflow: visible; }
+  }
+
+  h1 { font-size: 21px; line-height: 1.25; margin: 0 0 6px; letter-spacing: -.01em; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); margin: 22px 0 8px; font-weight: 600; }
+  p { margin: 0 0 10px; }
+  .bajada { color: var(--text-secondary); font-size: 14px; }
+  .muted { color: var(--text-muted); }
+  .num { font-variant-numeric: tabular-nums; }
+  a { color: var(--accent); }
+
+  /* Selector de versión */
+  .segmentado { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; background: var(--surface-2); padding: 4px; border-radius: 10px; }
+  .segmentado button {
+    border: 0; background: transparent; color: var(--text-secondary); padding: 8px 10px; border-radius: 7px;
+    font: inherit; font-size: 13.5px; line-height: 1.25; cursor: pointer; text-align: left;
+  }
+  .segmentado button[aria-pressed="true"] { background: var(--surface-1); color: var(--text-primary); box-shadow: var(--shadow); }
+  .segmentado b { display: block; font-size: 14px; }
+  .segmentado .num { font-size: 12.5px; color: var(--text-muted); }
+
+  /* Línea de tiempo abstracta */
+  .reproductor { display: flex; align-items: center; gap: 12px; margin-top: 16px; }
+  .btn-play {
+    flex: none; width: 44px; height: 44px; border-radius: 50%; border: 0; cursor: pointer;
+    background: var(--accent); color: #fff; display: grid; place-items: center;
+  }
+  .btn-play svg { width: 18px; height: 18px; fill: currentColor; }
+  .linea { flex: 1; position: relative; padding-top: 2px; }
+  .linea input[type=range] { width: 100%; margin: 0; accent-color: var(--accent); }
+  .paradas { display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 4px; }
+  .paradas button {
+    border: 0; background: none; padding: 2px 0; cursor: pointer; font: inherit; font-size: 11.5px; line-height: 1.2;
+    color: var(--text-muted); text-align: center;
+  }
+  .paradas button:first-child { text-align: left; }
+  .paradas button:last-child { text-align: right; }
+  .paradas button[aria-current="true"] { color: var(--text-primary); font-weight: 600; }
+  .paradas .n { display: block; font-variant-numeric: tabular-nums; font-size: 11px; }
+
+  .etapa-card { background: var(--surface-2); border-radius: 10px; padding: 14px 14px 12px; margin-top: 16px; }
+  .etapa-card h3 { margin: 0 0 4px; font-size: 16px; }
+  .etapa-card .cifra { font-size: 13.5px; color: var(--text-secondary); margin-top: 6px; }
+  .etapa-card .cifra b { color: var(--text-primary); }
+
+  /* Barras: cuántas personas seguimos en cada etapa */
+  .barras { display: grid; gap: 6px; }
+  .barra { display: grid; grid-template-columns: 112px 1fr 52px; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; }
+  .barra .pista { height: 10px; background: var(--surface-2); border-radius: 4px; overflow: hidden; }
+  .barra .relleno { height: 100%; background: var(--accent); opacity: .45; border-radius: 0 4px 4px 0; transition: width .3s; }
+  .barra[aria-current="true"] .relleno { opacity: 1; }
+  .barra[aria-current="true"] { font-weight: 600; }
+  .barra .num { text-align: right; color: var(--text-secondary); }
+
+  .tabla { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .tabla td { padding: 5px 0; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .tabla td.num { text-align: right; padding-left: 8px; white-space: nowrap; color: var(--text-secondary); }
+  .tabla .tipo { color: var(--text-muted); font-size: 12px; }
+
+  .capas { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13.5px; }
+  .capas label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+  .capas input { accent-color: var(--accent); }
+  .zoom { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .chip {
+    border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary);
+    border-radius: 999px; padding: 4px 11px; font: inherit; font-size: 12.5px; cursor: pointer;
+  }
+  .chip:hover { color: var(--text-primary); }
+
+  .leyenda { display: grid; gap: 6px; font-size: 12.5px; color: var(--text-secondary); }
+  .leyenda .fila { display: flex; align-items: center; gap: 8px; }
+  .grad { width: 120px; height: 10px; border-radius: 4px; }
+  .punto { width: 7px; height: 7px; border-radius: 50%; background: rgb(var(--dot)); opacity: .8; display: inline-block; }
+  .punto.fantasma { opacity: .2; }
+  .punto.sel { background: var(--highlight); opacity: 1; width: 9px; height: 9px; }
+
+  .buscador { position: relative; }
+  .buscador input {
+    width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface-1); color: var(--text-primary); font: inherit; font-size: 14px;
+  }
+  .resultados { position: absolute; left: 0; right: 0; top: 100%; z-index: 5; background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow); margin-top: 4px; display: none; max-height: 260px; overflow-y: auto; }
+  .resultados button { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 7px 10px; font: inherit; font-size: 13.5px; color: var(--text-primary); cursor: pointer; }
+  .resultados button:hover, .resultados button:focus { background: var(--surface-2); }
+  .resultados .muted { font-size: 12px; }
+
+  .persona { border: 1px solid var(--border); border-left: 3px solid var(--highlight); border-radius: 8px; padding: 12px 12px 10px; margin-top: 12px; display: none; }
+  .persona h3 { margin: 0; font-size: 15.5px; }
+  .persona ol { margin: 8px 0 6px; padding-left: 0; list-style: none; font-size: 13px; }
+  .persona li { padding: 3px 0 3px 26px; position: relative; }
+  .persona li::before {
+    content: attr(data-n); position: absolute; left: 0; top: 4px; width: 18px; height: 18px; border-radius: 50%;
+    font-size: 11px; line-height: 18px; text-align: center; background: var(--surface-2); color: var(--text-secondary);
+  }
+  .persona li.si::before { background: var(--highlight); color: #fff; }
+  .persona .prec { color: var(--text-muted); font-size: 12px; }
+  .persona blockquote { margin: 6px 0; padding: 6px 10px; background: var(--surface-2); border-radius: 6px; font-size: 12.5px; color: var(--text-secondary); }
+  .persona .cerrar { float: right; border: 0; background: none; color: var(--text-muted); cursor: pointer; font-size: 18px; line-height: 1; }
+
+  details { margin-top: 18px; font-size: 13.5px; color: var(--text-secondary); }
+  details summary { cursor: pointer; color: var(--text-primary); font-weight: 600; }
+  details ul { padding-left: 18px; margin: 8px 0; }
+  details li { margin-bottom: 6px; }
+
+  /* Rótulo grande sobre el mapa */
+  .rotulo {
+    position: absolute; left: 16px; bottom: 26px; z-index: 500; pointer-events: none;
+    background: color-mix(in srgb, var(--surface-1) 88%, transparent); color: var(--text-primary);
+    border-radius: 10px; padding: 10px 14px; box-shadow: var(--shadow); max-width: min(380px, calc(100% - 32px));
+  }
+  .rotulo .grande { font-size: 26px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .rotulo .chico { font-size: 13px; color: var(--text-secondary); }
+  .leaflet-container { font: inherit; background: var(--surface-2); }
+  .leaflet-control-attribution { font-size: 10.5px; }
+  .tooltip-mapa { position: absolute; z-index: 600; pointer-events: none; background: var(--surface-1); color: var(--text-primary); border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; font-size: 12.5px; box-shadow: var(--shadow); display: none; max-width: 260px; }
+  .sin-datos { padding: 40px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="mapa-wrap">
+    <div id="mapa" role="img" aria-label="Mapa de Argentina con la ubicación de las personas en la etapa elegida del recorrido"></div>
+    <div class="rotulo" id="rotulo" aria-live="polite"></div>
+    <div class="tooltip-mapa" id="tooltip"></div>
+  </div>
+
+  <aside class="panel">
+    <h1>Del secuestro al hallazgo</h1>
+    <p class="bajada">Cada punto es una persona víctima de la represión. Al reproducir, el mapa sigue a cada una por las etapas que registran las fuentes: dónde la secuestraron, por qué centros clandestinos pasó, dónde la asesinaron y dónde se encontraron sus restos.</p>
+    <p class="bajada muted" style="font-size:13px">Las etapas no son fechas: son pasos de un recorrido. Las fuentes casi nunca dicen cuándo ocurrió cada uno.</p>
+
+    <div class="segmentado" role="group" aria-label="Versión">
+      <button id="btn-A" aria-pressed="true"><b>Sabemos dónde terminaron</b><span class="num" id="cnt-A"></span></button>
+      <button id="btn-B" aria-pressed="false"><b>No sabemos dónde terminaron</b><span class="num" id="cnt-B"></span></button>
+    </div>
+
+    <div class="reproductor">
+      <button class="btn-play" id="play" aria-label="Reproducir">
+        <svg viewBox="0 0 24 24" id="icono-play"><path d="M7 4.5v15l13-7.5z"/></svg>
+      </button>
+      <div class="linea">
+        <input type="range" id="tiempo" min="0" max="300" step="1" value="0" aria-label="Etapa del recorrido">
+        <div class="paradas" id="paradas"></div>
+      </div>
+    </div>
+
+    <div class="etapa-card" aria-live="polite">
+      <h3 id="etapa-titulo"></h3>
+      <p id="etapa-texto" style="font-size:13.5px;margin:0"></p>
+      <p class="cifra" id="etapa-cifra"></p>
+    </div>
+
+    <h2>Cuántas personas podemos seguir en cada etapa</h2>
+    <div class="barras" id="barras"></div>
+
+    <h2 id="titulo-lugares">Lugares con más personas en esta etapa</h2>
+    <table class="tabla" id="tabla-lugares"></table>
+
+    <h2>Buscar a una persona</h2>
+    <div class="buscador">
+      <input id="buscar" type="search" placeholder="Apellido o nombre" autocomplete="off" aria-label="Buscar a una persona por nombre">
+      <div class="resultados" id="resultados"></div>
+    </div>
+    <div class="persona" id="persona"></div>
+
+    <h2>Mapa</h2>
+    <div class="capas">
+      <label><input type="checkbox" id="capa-calor" checked> Mapa de calor</label>
+      <label><input type="checkbox" id="capa-puntos" checked> Personas</label>
+      <label><input type="checkbox" id="capa-rutas"> Trayectos</label>
+    </div>
+    <div class="zoom">
+      <button class="chip" data-zoom="pais">Todo el país</button>
+      <button class="chip" data-zoom="amba">AMBA</button>
+      <button class="chip" data-zoom="laplata">La Plata</button>
+      <button class="chip" data-zoom="tucuman">Tucumán</button>
+      <button class="chip" data-zoom="cordoba">Córdoba</button>
+      <button class="chip" data-zoom="rosario">Rosario</button>
+    </div>
+    <div class="leyenda" style="margin-top:12px">
+      <div class="fila"><span class="grad" id="grad"></span><span>menos → más personas en el mismo lugar</span></div>
+      <div class="fila"><span class="punto"></span><span>una persona en un lugar conocido de esta etapa</span></div>
+      <div class="fila"><span class="punto fantasma"></span><span>sin lugar registrado en esta etapa (queda en el último conocido)</span></div>
+      <div class="fila"><span class="punto sel"></span><span>persona seleccionada (hacé clic en un punto)</span></div>
+    </div>
+
+    <details>
+      <summary>Cómo se armó y qué no dice</summary>
+      <ul>
+        <li><b>Secuestro</b> y <b>asesinato</b>: aristas <code>SECUESTRADO_EN</code> y <code>ASESINADO_EN</code> del grafo, que vienen de las fichas del Parque de la Memoria. MinJus GBA trae el lugar de secuestro como dirección narrativa y todavía no se procesa: esas personas entran recién en la etapa de centros clandestinos.</li>
+        <li><b>Centro clandestino</b>: aristas <code>PRESENTE_EN</code> (RUVTE y MinJus GBA). <b>No se sabe el orden</b> entre centros: quien pasó por tres aparece en los tres a la vez, con un tercio de peso en cada uno. MinJus cubre sólo la provincia de Buenos Aires, así que esta etapa está sesgada hacia allí.</li>
+        <li><b>Hallazgo de restos</b>: no está en el grafo. Sale del texto de identificación de la ficha del Parque ("sus restos fueron exhumados en el Cementerio de …") y se cruza con los 91 sitios con coordenadas del EAAF. Si el texto nombra una localidad y no un sitio del EAAF, se usa el centroide de la localidad.</li>
+        <li><b>Ubicación aproximada</b>: salvo CCD y sitios del EAAF, que tienen coordenadas propias, cada punto está en el centroide Georef de su localidad o barrio, con una pequeña dispersión para que se vean los puntos superpuestos. "Capital Federal" sin barrio va al centro de CABA. Un lugar que sólo dice la provincia no se dibuja.</li>
+        <li><b>Quiénes están</b>: víctimas del grafo (con las fusiones de identidad entre fuentes ya hechas). En "Sabemos dónde terminaron" están quienes tienen un hallazgo de restos registrado; en "No sabemos" quienes no lo tienen. Las personas liberadas, fugadas o restituidas según MinJus quedan afuera de las dos.</li>
+        <li><b>Lo que falta no es lo que no pasó</b>: un punto apagado indica que la fuente no registra esa etapa, no que la persona no haya pasado por ella.</li>
+      </ul>
+      <p id="meta" class="muted" style="font-size:12.5px"></p>
+    </details>
+  </aside>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="datos/recorridos.js"></script>
+<script>
+(() => {
+  "use strict";
+  const D = window.RECORRIDOS;
+  if (!D || !window.L) {
+    document.querySelector(".mapa-wrap").innerHTML =
+      '<p class="sin-datos">No se pudieron cargar los datos o el mapa. Generá <code>datos/recorridos.js</code> con <code>construir_datos.py</code> y abrí esta página con conexión a internet (el mapa base y Leaflet vienen de un CDN).</p>';
+    return;
+  }
+
+  // ------------------------------------------------------------------ textos
+  const ETAPAS = [
+    { nombre: "Secuestro", corto: "Secuestro",
+      texto: "Dónde fue secuestrada cada persona, según su ficha del Parque de la Memoria. La ubicación es la de la localidad o el barrio, no la del domicilio." },
+    { nombre: "Centro clandestino", corto: "CCD",
+      texto: "Por qué centros clandestinos de detención pasó (RUVTE y MinJus GBA). Las fuentes no dicen en qué orden: si pasó por varios, aparece repartida entre todos." },
+    { nombre: "Asesinato", corto: "Asesinato",
+      texto: "Dónde fue asesinada, cuando la ficha del Parque de la Memoria lo registra." },
+    { nombre: "Hallazgo de restos", corto: "Restos",
+      texto: "Dónde se encontraron sus restos: un cementerio (muchas veces enterrados como NN), una fosa clandestina o el lugar donde apareció el cuerpo. Las identificaciones las hizo, en su mayoría, el EAAF." },
+  ];
+  const ETAPA_FINAL_B = { nombre: "Destino desconocido", corto: "¿?",
+    texto: "No hay registro de dónde terminaron. Cada punto se apaga en el último lugar donde las fuentes la ubican." };
+  const PRECISION = { sitio: "ubicación exacta del sitio", localidad: "centroide de la localidad o barrio",
+    caba: "centro de CABA (la fuente no dice el barrio)", departamento: "centroide del partido o departamento" };
+  const ZOOMS = {
+    pais: [[-55.2, -73.6], [-21.8, -53.6]],
+    amba: [[-34.95, -58.85], [-34.35, -58.15]],
+    laplata: [[-35.05, -58.10], [-34.82, -57.80]],
+    tucuman: [[-27.20, -65.60], [-26.55, -64.95]],
+    cordoba: [[-31.60, -64.45], [-31.25, -64.00]],
+    rosario: [[-33.10, -60.85], [-32.80, -60.55]],
+  };
+  const fmt = new Intl.NumberFormat("es-AR");
+  const $ = (id) => document.getElementById(id);
+
+  // ------------------------------------------------------------------ mapa
+  const mapa = L.map("mapa", { zoomControl: true, preferCanvas: true, minZoom: 3, maxZoom: 14, worldCopyJump: false })
+    .fitBounds(ZOOMS.pais);
+  mapa.attributionControl.setPrefix(false);
+  mapa.createPane("calor").style.zIndex = 350;
+  mapa.createPane("seleccion").style.zIndex = 420;
+
+  const oscuro = () => {
+    const t = document.documentElement.dataset.theme;
+    return t ? t === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  };
+  // Mapa base: Argenmap, del Instituto Geográfico Nacional.
+  let base;
+  function ponerTeselas() {
+    if (base) mapa.removeLayer(base);
+    const capa = oscuro() ? "argenmap_oscuro" : "mapabase_gris";
+    const atrib = '<a href="https://www.ign.gob.ar/AreaServicios/Argenmap/Introduccion">Argenmap · IGN</a> · Datos: Parque de la Memoria, RUVTE, MinJus GBA, EAAF, Georef';
+    base = L.tileLayer(`https://wms.ign.gob.ar/geoserver/gwc/service/tms/1.0.0/${capa}@EPSG%3A3857@png/{z}/{x}/{y}.png`,
+      { attribution: atrib, tms: true, maxZoom: 18 }).addTo(mapa);
+  }
+  ponerTeselas();
+
+  // Canvas propio dentro de un pane, debajo de la persona seleccionada.
+  const lienzo = L.DomUtil.create("canvas", "", mapa.getPane("calor"));
+  const ctx = lienzo.getContext("2d");
+  const calor = document.createElement("canvas");
+  const cctx = calor.getContext("2d", { willReadFrequently: true });
+  let W = 0, H = 0, DPR = 1;
+
+  function redimensionar() {
+    const t = mapa.getSize();
+    W = t.x; H = t.y; DPR = Math.min(2, window.devicePixelRatio || 1);
+    lienzo.width = W * DPR; lienzo.height = H * DPR;
+    lienzo.style.width = W + "px"; lienzo.style.height = H + "px";
+    calor.width = Math.ceil(W / 2); calor.height = Math.ceil(H / 2);
+  }
+
+  // Paleta del mapa de calor: rampa secuencial azul, de "casi nada" (se
+  // funde con el fondo) a "muchas personas" (lo más lejos del fondo).
+  let LUT;
+  function armarLUT() {
+    const c = document.createElement("canvas"); c.width = 256; c.height = 1;
+    const g = c.getContext("2d"); const gr = g.createLinearGradient(0, 0, 256, 0);
+    const pasos = oscuro()
+      ? ["rgba(28,92,171,0)", "#1c5cab", "#3987e5", "#86b6ef", "#e6f0fc"]
+      : ["rgba(134,182,239,0)", "#86b6ef", "#3987e5", "#1c5cab", "#0d366b"];
+    pasos.forEach((col, i) => gr.addColorStop(i / (pasos.length - 1), col));
+    g.fillStyle = gr; g.fillRect(0, 0, 256, 1);
+    LUT = g.getImageData(0, 0, 256, 1).data;
+    $("grad").style.background = `linear-gradient(90deg, ${pasos.join(",")})`;
+  }
+  armarLUT();
+
+  let sprite, spriteR = 0;
+  function armarSprite(r) {
+    if (r === spriteR) return;
+    spriteR = r; sprite = document.createElement("canvas"); sprite.width = sprite.height = r * 2;
+    const g = sprite.getContext("2d"); const gr = g.createRadialGradient(r, r, 0, r, r, r);
+    gr.addColorStop(0, "rgba(0,0,0,1)"); gr.addColorStop(1, "rgba(0,0,0,0)");
+    g.fillStyle = gr; g.fillRect(0, 0, r * 2, r * 2);
+  }
+
+  // ------------------------------------------------------------------ datos
+  // Mercator a "píxeles de mundo" en zoom 0 (256 px): se proyecta una vez y
+  // en cada cuadro sólo se escala y se traslada.
+  const mundo = (lat, lon) => {
+    const s = Math.sin(lat * Math.PI / 180);
+    return [(lon + 180) / 360 * 256, (0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI)) * 256];
+  };
+  const aLatLng = (x, y) => {
+    const n = Math.PI - 2 * Math.PI * (y / 256);
+    return [180 / Math.PI * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n))), x / 256 * 360 - 180];
+  };
+  // Pseudoaleatorio determinístico: la dispersión de un punto no cambia entre recargas.
+  const azar = (a, b) => {
+    let h = (a * 374761393 + b * 668265263) | 0;
+    h = Math.imul(h ^ (h >>> 13), 1274126177); h ^= h >>> 16;
+    return (h >>> 0) / 4294967296;
+  };
+  const RADIO = { sitio: 0.0012, localidad: 0.009, departamento: 0.03, caba: 0.035 };
+
+  function armarGrupo(g) {
+    const personas = [];
+    D.personas.forEach((p, i) => { if (p.g === g) personas.push(i); });
+    let n = 0;
+    for (const i of personas) n += Math.max(1, ...D.personas[i].e.map((x) => x.length));
+    const G = {
+      personas, n,
+      x: new Float64Array(n * 4), y: new Float64Array(n * 4), conocido: new Uint8Array(n * 4),
+      duenio: new Int32Array(n), peso: new Float32Array(n),
+      px: new Float32Array(n), py: new Float32Array(n), alfa: new Float32Array(n), calor: new Float32Array(n),
+    };
+    let q = 0;
+    for (const i of personas) {
+      const p = D.personas[i];
+      const P = Math.max(1, ...p.e.map((x) => x.length));
+      for (let j = 0; j < P; j++, q++) {
+        G.duenio[q] = i; G.peso[q] = 1 / P;
+        for (let s = 0; s < 4; s++) {
+          const lista = p.e[s];
+          if (!lista.length) continue;
+          const li = lista[j % lista.length];
+          const [lat, lon, , , prec] = D.lugares[li];
+          // Disco uniforme para sitios y localidades; nube gaussiana para lo
+          // impreciso (CABA sin barrio, partidos), que si no forma un círculo.
+          const u = Math.max(1e-6, azar(i, li));
+          const r = RADIO[prec] * (prec === "caba" || prec === "departamento"
+            ? 0.55 * Math.sqrt(-2 * Math.log(u)) : Math.sqrt(u));
+          const a = azar(li, i + 7) * 2 * Math.PI;
+          const [wx, wy] = mundo(lat + r * Math.sin(a), lon + r * Math.cos(a) / Math.cos(lat * Math.PI / 180));
+          G.x[q * 4 + s] = wx; G.y[q * 4 + s] = wy; G.conocido[q * 4 + s] = 1;
+        }
+      }
+    }
+    // Conteos por etapa (personas, no partículas) y lugares más frecuentes.
+    G.conocidas = [0, 0, 0, 0];
+    G.lugares = [new Map(), new Map(), new Map(), new Map()];
+    for (const i of personas) {
+      D.personas[i].e.forEach((lista, s) => {
+        if (!lista.length) return;
+        G.conocidas[s]++;
+        for (const li of lista) G.lugares[s].set(li, (G.lugares[s].get(li) || 0) + 1 / lista.length);
+      });
+    }
+    return G;
+  }
+  const GRUPOS = { A: armarGrupo("A"), B: armarGrupo("B") };
+  $("cnt-A").textContent = `${fmt.format(GRUPOS.A.personas.length)} personas`;
+  $("cnt-B").textContent = `${fmt.format(GRUPOS.B.personas.length)} personas`;
+
+  // ------------------------------------------------------------------ estado
+  const estado = { grupo: "A", t: 0, reproduciendo: false, espera: 0, seleccion: null,
+    calor: true, puntos: true, rutas: false };
+
+  const suave = (f) => f * f * (3 - 2 * f);
+  // Curva entre dos puntos: un arco leve, siempre hacia el mismo lado.
+  function curva(ax, ay, bx, by, f, out) {
+    const mx = (ax + bx) / 2, my = (ay + by) / 2, dx = bx - ax, dy = by - ay;
+    const cx = mx - dy * 0.18, cy = my + dx * 0.18;
+    const u = 1 - f;
+    out[0] = u * u * ax + 2 * u * f * cx + f * f * bx;
+    out[1] = u * u * ay + 2 * u * f * cy + f * f * by;
+  }
+
+  // Posición (en píxeles de mundo), peso en el calor y opacidad de una partícula en t.
+  const tmp = [0, 0];
+  function ubicar(G, q, t, out) {
+    const base = q * 4, k = G.conocido;
+    let a = -1, b = -1;
+    for (let s = Math.floor(t); s >= 0; s--) if (k[base + s]) { a = s; break; }
+    for (let s = Math.ceil(t); s < 4; s++) if (k[base + s]) { b = s; break; }
+    const piso = Math.floor(t), techo = Math.min(3, Math.ceil(t)), fr = t - piso;
+    const w = (1 - fr) * k[base + piso] + fr * k[base + techo];
+    let alfa;
+    if (a < 0) { out[0] = G.x[base + b]; out[1] = G.y[base + b]; alfa = w; }
+    else if (b < 0) { out[0] = G.x[base + a]; out[1] = G.y[base + a]; alfa = Math.max(w, 0.11); }
+    else if (a === b) { out[0] = G.x[base + a]; out[1] = G.y[base + a]; alfa = 1; }
+    else {
+      curva(G.x[base + a], G.y[base + a], G.x[base + b], G.y[base + b], suave((t - a) / (b - a)), out);
+      alfa = 0.35 + 0.65 * w;
+    }
+    out[2] = w; out[3] = alfa;
+  }
+
+  // ------------------------------------------------------------------ dibujo
+  const pos = [0, 0, 0, 0];
+  function dibujar() {
+    if (!W) return;
+    const G = GRUPOS[estado.grupo], t = estado.t;
+    L.DomUtil.setPosition(lienzo, mapa.containerPointToLayerPoint([0, 0]));
+    const z = mapa.getZoom(), escala = Math.pow(2, z), origen = mapa.getPixelBounds().min;
+    const ox = origen.x, oy = origen.y;
+
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+
+    // Posiciones en pantalla de todas las partículas.
+    for (let q = 0; q < G.n; q++) {
+      ubicar(G, q, t, pos);
+      G.px[q] = pos[0] * escala - ox; G.py[q] = pos[1] * escala - oy;
+      G.alfa[q] = pos[3]; G.calor[q] = pos[2] * G.peso[q];
+    }
+
+    if (estado.rutas) dibujarRutas(G, escala, ox, oy, t);
+
+    if (estado.calor) {
+      const r = Math.round(Math.max(4, Math.min(13, z * 1.25)));
+      armarSprite(r);
+      cctx.setTransform(1, 0, 0, 1, 0, 0);
+      cctx.clearRect(0, 0, calor.width, calor.height);
+      const ganancia = estado.grupo === "A" ? 0.22 : 0.05;
+      for (let q = 0; q < G.n; q++) {
+        const w = G.calor[q];
+        if (w <= 0.01) continue;
+        const x = G.px[q] / 2, y = G.py[q] / 2;
+        if (x < -r || y < -r || x > calor.width + r || y > calor.height + r) continue;
+        cctx.globalAlpha = Math.min(1, w * ganancia);
+        cctx.drawImage(sprite, x - r, y - r);
+      }
+      const img = cctx.getImageData(0, 0, calor.width, calor.height), d = img.data;
+      for (let i = 3; i < d.length; i += 4) {
+        const a = d[i];
+        if (!a) continue;
+        const j = a * 4;
+        d[i - 3] = LUT[j]; d[i - 2] = LUT[j + 1]; d[i - 1] = LUT[j + 2];
+        d[i] = Math.min(230, LUT[j + 3] * 0.95 + 25);
+      }
+      cctx.putImageData(img, 0, 0);
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(calor, 0, 0, W, H);
+    }
+
+    if (estado.puntos) {
+      const rgb = getComputedStyle(document.documentElement).getPropertyValue("--dot").trim();
+      ctx.fillStyle = `rgb(${rgb})`;
+      const lado = z >= 9 ? 2.6 : z >= 6 ? 2 : 1.6;
+      for (let q = 0; q < G.n; q++) {
+        const a = G.alfa[q];
+        if (a <= 0.02) continue;
+        const x = G.px[q], y = G.py[q];
+        if (x < 0 || y < 0 || x > W || y > H) continue;
+        ctx.globalAlpha = a * (0.4 + 0.5 * Math.sqrt(G.peso[q]));
+        ctx.fillRect(x - lado / 2, y - lado / 2, lado, lado);
+      }
+      ctx.globalAlpha = 1;
+    }
+    actualizarRotulo();
+  }
+
+  function dibujarRutas(G, escala, ox, oy, t) {
+    const rgb = getComputedStyle(document.documentElement).getPropertyValue("--dot").trim();
+    ctx.strokeStyle = `rgba(${rgb},${estado.grupo === "A" ? 0.16 : 0.07})`;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    const p = [0, 0];
+    for (let q = 0; q < G.n; q++) {
+      const base = q * 4;
+      let previo = -1;
+      for (let s = 0; s < 4; s++) {
+        if (!G.conocido[base + s]) continue;
+        if (previo >= 0 && previo < t) {
+          const fin = Math.min(1, (t - previo) / (s - previo));
+          const ax = G.x[base + previo], ay = G.y[base + previo], bx = G.x[base + s], by = G.y[base + s];
+          ctx.moveTo(ax * escala - ox, ay * escala - oy);
+          const pasos = 10;
+          for (let k = 1; k <= pasos; k++) {
+            const f = (k / pasos) * suave(fin) ;
+            curva(ax, ay, bx, by, f, p);
+            ctx.lineTo(p[0] * escala - ox, p[1] * escala - oy);
+          }
+        }
+        previo = s;
+      }
+    }
+    ctx.stroke();
+  }
+
+  let pendiente = false;
+  const pedirDibujo = () => { if (!pendiente) { pendiente = true; requestAnimationFrame(() => { pendiente = false; dibujar(); }); } };
+
+  // ------------------------------------------------------------------ panel
+  const etapa = (s) => (estado.grupo === "B" && s === 3 ? ETAPA_FINAL_B : ETAPAS[s]);
+  function armarParadas() {
+    $("paradas").innerHTML = [0, 1, 2, 3].map((s) =>
+      `<button data-s="${s}"><span class="n">${s}</span>${etapa(s).corto}</button>`).join("");
+    $("paradas").querySelectorAll("button").forEach((b) => b.onclick = () => irA(+b.dataset.s));
+  }
+
+  let etapaMostrada = -1;
+  function actualizarPanel(forzar) {
+    const s = Math.round(estado.t), G = GRUPOS[estado.grupo];
+    $("tiempo").value = Math.round(estado.t * 100);
+    if (s === etapaMostrada && !forzar) return;
+    etapaMostrada = s;
+    const e = etapa(s), total = G.personas.length, k = G.conocidas[s];
+    $("etapa-titulo").textContent = `${s} · ${e.nombre}`;
+    $("etapa-texto").textContent = e.texto;
+    $("etapa-cifra").innerHTML = estado.grupo === "B" && s === 3
+      ? `Para <b class="num">${fmt.format(total)}</b> personas de esta versión no hay registro de dónde terminaron.`
+      : `Conocemos el lugar de <b class="num">${fmt.format(k)}</b> de ${fmt.format(total)} personas (${Math.round(100 * k / total)} %).`;
+    $("paradas").querySelectorAll("button").forEach((b) => b.setAttribute("aria-current", String(+b.dataset.s === s)));
+
+    const max = Math.max(...G.conocidas, 1);
+    $("barras").innerHTML = [0, 1, 2, 3].map((i) => {
+      const v = estado.grupo === "B" && i === 3 ? 0 : G.conocidas[i];
+      return `<div class="barra" data-s="${i}" aria-current="${i === s}" title="${etapa(i).nombre}: ${fmt.format(v)} personas con lugar conocido">
+        <span>${i} · ${etapa(i).nombre}</span><span class="pista"><span class="relleno" style="width:${100 * v / max}%"></span></span>
+        <span class="num">${fmt.format(v)}</span></div>`;
+    }).join("");
+    $("barras").querySelectorAll(".barra").forEach((b) => b.onclick = () => irA(+b.dataset.s));
+
+    const filas = [...G.lugares[s].entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
+    $("titulo-lugares").textContent = estado.grupo === "B" && s === 3
+      ? "Últimos lugares conocidos" : `Lugares con más personas · ${e.nombre.toLowerCase()}`;
+    let lista = filas;
+    if (estado.grupo === "B" && s === 3) lista = ultimosLugares(G);
+    $("tabla-lugares").innerHTML = lista.length ? lista.map(([li, v]) => {
+      const l = D.lugares[li];
+      return `<tr><td>${escapar(l[2])}<div class="tipo">${l[3] === "ccd" ? "centro clandestino" : l[3]}</div></td><td class="num">${fmt.format(Math.round(v))}</td></tr>`;
+    }).join("") : `<tr><td class="muted">Ninguna persona de esta versión tiene un lugar registrado en esta etapa.</td></tr>`;
+  }
+
+  function ultimosLugares(G) {
+    const m = new Map();
+    for (const i of G.personas) {
+      const e = D.personas[i].e;
+      for (let s = 3; s >= 0; s--) if (e[s].length) {
+        for (const li of e[s]) m.set(li, (m.get(li) || 0) + 1 / e[s].length);
+        break;
+      }
+    }
+    return [...m.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
+  }
+
+  function actualizarRotulo() {
+    const s = Math.round(estado.t), G = GRUPOS[estado.grupo];
+    const enParada = Math.abs(estado.t - s) < 0.02;
+    let grande, chico;
+    if (estado.grupo === "B" && s === 3) {
+      grande = fmt.format(G.personas.length);
+      chico = "personas sin registro de dónde terminaron";
+    } else {
+      grande = fmt.format(G.conocidas[s]);
+      chico = `personas con lugar conocido · ${etapa(s).nombre.toLowerCase()}`;
+    }
+    $("rotulo").innerHTML = enParada
+      ? `<div class="grande">${grande}</div><div class="chico">${chico}</div>`
+      : `<div class="chico">Camino de la etapa ${Math.floor(estado.t)} a la ${Math.floor(estado.t) + 1}…</div>`;
+  }
+
+  const escapar = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  // ------------------------------------------------------------------ persona
+  let capaSel = null;
+  function seleccionar(i, volar) {
+    const p = D.personas[i];
+    estado.seleccion = i;
+    if (p.g !== estado.grupo) cambiarGrupo(p.g);
+    const nombres = [0, 1, 2, 3].map((s) => etapa(s).nombre);
+    const items = p.e.map((lista, s) => {
+      if (!lista.length) {
+        return `<li data-n="${s}"><span class="muted">${nombres[s]}: sin registro</span></li>`;
+      }
+      const lugares = lista.map((li) => {
+        const l = D.lugares[li];
+        return `${escapar(l[2])} <span class="prec">(${PRECISION[l[4]]})</span>`;
+      }).join("<br>");
+      const nota = lista.length > 1 ? ` <span class="prec">· sin orden conocido entre estos ${lista.length}</span>` : "";
+      return `<li data-n="${s}" class="si"><b>${nombres[s]}</b>${nota}<br>${lugares}</li>`;
+    }).join("");
+    const fuentes = p.u.filter(Boolean).map((u) => {
+      const etiqueta = u.includes("parquedelamemoria") ? "Ficha en Parque de la Memoria" : "Ficha en MinJus GBA";
+      return `<a href="${escapar(u)}" target="_blank" rel="noopener">${etiqueta}</a>`;
+    }).join(" · ");
+    const el = $("persona");
+    el.style.display = "block";
+    el.innerHTML = `<button class="cerrar" aria-label="Cerrar">×</button><h3>${escapar(p.n)}</h3>
+      <div class="muted" style="font-size:12.5px">${escapar(p.s)}</div><ol>${items}</ol>
+      ${p.h ? `<blockquote>${escapar(p.h)}</blockquote>` : ""}<div style="font-size:12.5px">${fuentes}</div>`;
+    el.querySelector(".cerrar").onclick = deseleccionar;
+
+    if (capaSel) mapa.removeLayer(capaSel);
+    capaSel = L.layerGroup([], { pane: "seleccion" }).addTo(mapa);
+    const color = getComputedStyle(document.documentElement).getPropertyValue("--highlight").trim();
+    const puntos = [];
+    let previos = null;
+    p.e.forEach((lista, s) => {
+      if (!lista.length) return;
+      const actuales = lista.map((li) => [D.lugares[li][0], D.lugares[li][1], li]);
+      if (previos) for (const a of previos) for (const b of actuales) {
+        const [ax, ay] = mundo(a[0], a[1]), [bx, by] = mundo(b[0], b[1]), linea = [];
+        for (let k = 0; k <= 24; k++) { curva(ax, ay, bx, by, k / 24, tmp); linea.push(aLatLng(tmp[0], tmp[1])); }
+        L.polyline(linea, { pane: "seleccion", color, weight: 2.5, opacity: 0.9 }).addTo(capaSel);
+      }
+      for (const a of actuales) {
+        puntos.push([a[0], a[1]]);
+        L.circleMarker([a[0], a[1]], { pane: "seleccion", radius: 6, color: getComputedStyle(document.documentElement).getPropertyValue("--surface-1").trim(), weight: 2, fillColor: color, fillOpacity: 1 })
+          .bindTooltip(`${s} · ${etapa(s).nombre}: ${escapar(D.lugares[a[2]][2])}`, { direction: "top" }).addTo(capaSel);
+      }
+      previos = actuales;
+    });
+    if (volar && puntos.length) {
+      const b = L.latLngBounds(puntos);
+      mapa.flyToBounds(b.pad(0.6), { maxZoom: 11, duration: 0.8 });
+    }
+  }
+  function deseleccionar() {
+    estado.seleccion = null;
+    $("persona").style.display = "none";
+    if (capaSel) { mapa.removeLayer(capaSel); capaSel = null; }
+  }
+
+  // Clic en el mapa: la persona más cercana al cursor (en su posición de ahora).
+  function masCercana(x, y, radio) {
+    const G = GRUPOS[estado.grupo];
+    let mejor = -1, md = radio * radio;
+    for (let q = 0; q < G.n; q++) {
+      if (G.alfa[q] < 0.2) continue;
+      const dx = G.px[q] - x, dy = G.py[q] - y, d = dx * dx + dy * dy;
+      if (d < md) { md = d; mejor = q; }
+    }
+    return mejor < 0 ? -1 : G.duenio[mejor];
+  }
+  mapa.on("click", (ev) => {
+    const i = masCercana(ev.containerPoint.x, ev.containerPoint.y, 10);
+    if (i >= 0) seleccionar(i, false); else deseleccionar();
+  });
+  const tooltip = $("tooltip");
+  mapa.on("mousemove", (ev) => {
+    if (estado.reproduciendo) { tooltip.style.display = "none"; return; }
+    const i = masCercana(ev.containerPoint.x, ev.containerPoint.y, 8);
+    if (i < 0) { tooltip.style.display = "none"; mapa.getContainer().style.cursor = ""; return; }
+    const p = D.personas[i], s = Math.round(estado.t), lista = p.e[s];
+    const donde = lista.length ? lista.map((li) => D.lugares[li][2]).join(" · ") : "sin registro en esta etapa";
+    tooltip.innerHTML = `<b>${escapar(p.n)}</b><br><span class="muted">${etapa(s).nombre}:</span> ${escapar(donde)}`;
+    tooltip.style.display = "block";
+    tooltip.style.left = Math.min(ev.containerPoint.x + 14, W - 270) + "px";
+    tooltip.style.top = (ev.containerPoint.y + 14) + "px";
+    mapa.getContainer().style.cursor = "pointer";
+  });
+  mapa.on("mouseout", () => { tooltip.style.display = "none"; });
+
+  // Buscador por nombre (sobre las dos versiones).
+  const indiceNombres = D.personas.map((p, i) => [p.n.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase(), i]);
+  $("buscar").addEventListener("input", (e) => {
+    const q = e.target.value.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+    const res = $("resultados");
+    if (q.length < 3) { res.style.display = "none"; return; }
+    const palabras = q.split(/\s+/);
+    const hallados = indiceNombres.filter(([n]) => palabras.every((w) => n.includes(w))).slice(0, 12);
+    res.innerHTML = hallados.length ? hallados.map(([, i]) =>
+      `<button data-i="${i}">${escapar(D.personas[i].n)} <span class="muted">· ${D.personas[i].g === "A" ? "sabemos dónde terminó" : "no sabemos dónde terminó"}</span></button>`).join("")
+      : `<div class="muted" style="padding:8px 10px;font-size:13px">Sin resultados entre las personas del mapa.</div>`;
+    res.style.display = "block";
+    res.querySelectorAll("button").forEach((b) => b.onclick = () => {
+      res.style.display = "none"; $("buscar").value = D.personas[+b.dataset.i].n; seleccionar(+b.dataset.i, true);
+    });
+  });
+  document.addEventListener("click", (e) => { if (!e.target.closest(".buscador")) $("resultados").style.display = "none"; });
+
+  // ------------------------------------------------------------------ tiempo
+  const VIAJE = 2.6, PAUSA = 1.4;
+  let antes = 0, objetivo = null;
+  function cuadro(ahora) {
+    const dt = Math.min(0.05, (ahora - antes) / 1000); antes = ahora;
+    if (estado.reproduciendo) {
+      if (estado.espera > 0) estado.espera -= dt;
+      else {
+        const siguiente = Math.floor(estado.t + 1e-6) + 1;
+        estado.t = Math.min(siguiente, estado.t + dt / VIAJE);
+        if (estado.t >= siguiente - 1e-6) {
+          estado.t = siguiente; estado.espera = PAUSA;
+          if (siguiente >= 3 || (objetivo !== null && siguiente >= objetivo)) { pausar(); objetivo = null; }
+        }
+      }
+      actualizarPanel(); pedirDibujo();
+    }
+    requestAnimationFrame(cuadro);
+  }
+  requestAnimationFrame((t) => { antes = t; cuadro(t); });
+
+  function reproducir() {
+    if (estado.t >= 3) { estado.t = 0; estado.espera = 0.6; }
+    estado.reproduciendo = true;
+    $("play").setAttribute("aria-label", "Pausar");
+    $("icono-play").innerHTML = '<path d="M6 4h4v16H6zM14 4h4v16h-4z"/>';
+  }
+  function pausar() {
+    estado.reproduciendo = false;
+    $("play").setAttribute("aria-label", estado.t >= 3 ? "Volver a reproducir" : "Reproducir");
+    $("icono-play").innerHTML = estado.t >= 3
+      ? '<path d="M12 5V2L7 6l5 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/>' : '<path d="M7 4.5v15l13-7.5z"/>';
+  }
+  // A la etapa siguiente se llega viajando; a cualquier otra, saltando.
+  function irA(s) {
+    if (Math.abs(s - estado.t) > 0.01 && s === Math.floor(estado.t + 1e-6) + 1) {
+      objetivo = s; estado.espera = 0; reproducir(); return;
+    }
+    objetivo = null; pausar(); estado.t = s; actualizarPanel(); pedirDibujo();
+  }
+  $("play").onclick = () => (estado.reproduciendo ? pausar() : reproducir());
+  $("tiempo").addEventListener("input", (e) => { pausar(); estado.t = +e.target.value / 100; actualizarPanel(); pedirDibujo(); });
+  document.addEventListener("keydown", (e) => {
+    if (e.target.matches("input[type=search]")) return;
+    if (e.code === "Space") { e.preventDefault(); estado.reproduciendo ? pausar() : reproducir(); }
+    if (e.key === "ArrowRight" && !e.target.matches("input[type=range]")) irA(Math.min(3, Math.floor(estado.t + 1e-6) + 1));
+    if (e.key === "ArrowLeft" && !e.target.matches("input[type=range]")) irA(Math.max(0, Math.ceil(estado.t - 1e-6) - 1));
+  });
+
+  function cambiarGrupo(g) {
+    estado.grupo = g;
+    $("btn-A").setAttribute("aria-pressed", String(g === "A"));
+    $("btn-B").setAttribute("aria-pressed", String(g === "B"));
+    armarParadas(); actualizarPanel(true); pedirDibujo();
+  }
+  $("btn-A").onclick = () => { deseleccionar(); cambiarGrupo("A"); };
+  $("btn-B").onclick = () => { deseleccionar(); cambiarGrupo("B"); };
+
+  for (const id of ["calor", "puntos", "rutas"]) {
+    $("capa-" + id).addEventListener("change", (e) => { estado[id] = e.target.checked; pedirDibujo(); });
+  }
+  document.querySelectorAll("[data-zoom]").forEach((b) => b.onclick = () => mapa.flyToBounds(ZOOMS[b.dataset.zoom], { duration: 0.8 }));
+
+  mapa.on("zoomstart", () => { lienzo.style.visibility = "hidden"; });
+  mapa.on("zoomend", () => { lienzo.style.visibility = ""; pedirDibujo(); });
+  mapa.on("move", pedirDibujo);
+  mapa.on("resize", () => { redimensionar(); pedirDibujo(); });
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { ponerTeselas(); armarLUT(); pedirDibujo(); });
+
+  const r = D.resumen.personas;
+  $("meta").textContent = `Datos generados el ${D.generado} por construir_datos.py. ` +
+    `Quedan fuera del mapa ${fmt.format((r.sin_ningun_punto_A || 0) + (r.sin_ningun_punto_B || 0))} víctimas sin ningún lugar ubicable ` +
+    `y ${fmt.format(r.excluidas_sobrevivientes || 0)} personas liberadas, fugadas o restituidas.`;
+
+  redimensionar();
+  cambiarGrupo("A");
+})();
+</script>
+</body>
+</html>
