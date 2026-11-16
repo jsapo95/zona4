@@ -159,6 +159,9 @@
   .resultados button:hover, .resultados button:focus { background: var(--surface-2); }
   .resultados .muted { font-size: 12px; }
 
+  .filtro { margin-top: 8px; padding: 9px 10px; border-radius: 8px; background: var(--surface-2); font-size: 13px; color: var(--text-secondary); }
+  .filtro b { color: var(--text-primary); }
+  .filtro .cerrar { float: right; border: 0; background: none; color: var(--text-muted); cursor: pointer; font-size: 18px; line-height: 1; margin-left: 8px; }
   .persona { border: 1px solid var(--border); border-left: 3px solid var(--highlight); border-radius: 8px; padding: 12px 12px 10px; margin-top: 12px; display: none; }
   .persona h3 { margin: 0; font-size: 15.5px; }
   .persona ol { margin: 8px 0 6px; padding-left: 0; list-style: none; font-size: 13px; }
@@ -230,6 +233,13 @@
       <p id="etapa-texto" style="font-size:13.5px;margin:0"></p>
       <p class="cifra" id="etapa-cifra"></p>
     </div>
+
+    <h2>Seguir a quienes pasaron por un centro clandestino</h2>
+    <div class="buscador">
+      <input id="buscar-ccd" type="search" placeholder="Escribí un CCD, por ejemplo ESMA" autocomplete="off" aria-label="Filtrar por centro clandestino">
+      <div class="resultados" id="resultados-ccd"></div>
+    </div>
+    <div class="filtro" id="filtro-activo" hidden></div>
 
     <h2>Cuántas personas podemos seguir en cada etapa</h2>
     <div class="barras" id="barras"></div>
@@ -454,25 +464,43 @@
         }
       }
     }
-    // Conteos por etapa (personas, no partículas) y lugares más frecuentes.
-    G.conocidas = [0, 0, 0, 0];
-    G.lugares = [new Map(), new Map(), new Map(), new Map()];
+    G.visible = new Uint8Array(n).fill(1);
+    G.vista = contar(personas);
+    return G;
+  }
+  // Conteos por etapa (personas, no partículas) y lugares más frecuentes.
+  function contar(personas) {
+    const conocidas = [0, 0, 0, 0];
+    const lugares = [new Map(), new Map(), new Map(), new Map()];
     for (const i of personas) {
       D.personas[i].e.forEach((lista, s) => {
         if (!lista.length) return;
-        G.conocidas[s]++;
-        for (const li of lista) G.lugares[s].set(li, (G.lugares[s].get(li) || 0) + 1 / lista.length);
+        conocidas[s]++;
+        for (const li of lista) lugares[s].set(li, (lugares[s].get(li) || 0) + 1 / lista.length);
       });
     }
-    return G;
+    return { personas, conocidas, lugares };
   }
   const GRUPOS = { A: armarGrupo("A"), B: armarGrupo("B") };
-  $("cnt-A").textContent = `${fmt.format(GRUPOS.A.personas.length)} personas`;
-  $("cnt-B").textContent = `${fmt.format(GRUPOS.B.personas.length)} personas`;
 
   // ------------------------------------------------------------------ estado
   const estado = { grupo: "A", t: 0, reproduciendo: false, espera: 0, seleccion: null,
-    calor: true, puntos: true, rutas: false };
+    calor: true, puntos: true, rutas: false, ccd: null };
+
+  // Filtro por CCD: deja visibles sólo a quienes pasaron por ese centro, en
+  // todas las etapas, para ver de dónde venían y adónde fueron.
+  const pasaFiltro = (i) => estado.ccd === null || D.personas[i].e[1].includes(estado.ccd);
+  function aplicarFiltro() {
+    for (const g of ["A", "B"]) {
+      const G = GRUPOS[g];
+      for (let q = 0; q < G.n; q++) G.visible[q] = pasaFiltro(G.duenio[q]) ? 1 : 0;
+      G.vista = contar(G.personas.filter(pasaFiltro));
+      $("cnt-" + g).textContent = estado.ccd === null
+        ? `${fmt.format(G.personas.length)} personas`
+        : `${fmt.format(G.vista.personas.length)} de ${fmt.format(G.personas.length)} personas`;
+    }
+  }
+  aplicarFiltro();
 
   const suave = (f) => f * f * (3 - 2 * f);
   // Curva entre dos puntos: un arco leve, siempre hacia el mismo lado.
@@ -518,6 +546,7 @@
 
     // Posiciones en pantalla de todas las partículas.
     for (let q = 0; q < G.n; q++) {
+      if (!G.visible[q]) { G.alfa[q] = 0; G.calor[q] = 0; continue; }
       ubicar(G, q, t, pos);
       G.px[q] = pos[0] * escala - ox; G.py[q] = pos[1] * escala - oy;
       G.alfa[q] = pos[3]; G.calor[q] = pos[2] * G.peso[q];
@@ -530,7 +559,8 @@
       armarSprite(r);
       cctx.setTransform(1, 0, 0, 1, 0, 0);
       cctx.clearRect(0, 0, calor.width, calor.height);
-      const ganancia = estado.grupo === "A" ? 0.22 : 0.05;
+      // Con menos personas a la vista (un filtro), cada una pesa más.
+      const ganancia = Math.min(0.5, 6 / Math.sqrt(Math.max(1, G.vista.personas.length)));
       for (let q = 0; q < G.n; q++) {
         const w = G.calor[q];
         if (w <= 0.01) continue;
@@ -571,11 +601,13 @@
 
   function dibujarRutas(G, escala, ox, oy, t) {
     const rgb = getComputedStyle(document.documentElement).getPropertyValue("--dot").trim();
-    ctx.strokeStyle = `rgba(${rgb},${estado.grupo === "A" ? 0.16 : 0.07})`;
+    const n = G.vista.personas.length;
+    ctx.strokeStyle = `rgba(${rgb},${n < 300 ? 0.4 : n < 1500 ? 0.16 : 0.07})`;
     ctx.lineWidth = 1;
     ctx.beginPath();
     const p = [0, 0];
     for (let q = 0; q < G.n; q++) {
+      if (!G.visible[q]) continue;
       const base = q * 4;
       let previo = -1;
       for (let s = 0; s < 4; s++) {
@@ -614,24 +646,24 @@
     $("tiempo").value = Math.round(estado.t * 100);
     if (s === etapaMostrada && !forzar) return;
     etapaMostrada = s;
-    const e = etapa(s), total = G.personas.length, k = G.conocidas[s];
+    const V = G.vista, e = etapa(s), total = V.personas.length, k = V.conocidas[s];
     $("etapa-titulo").textContent = `${s} · ${e.nombre}`;
     $("etapa-texto").textContent = e.texto;
     $("etapa-cifra").innerHTML = estado.grupo === "B" && s === 3
       ? `Para <b class="num">${fmt.format(total)}</b> personas de esta versión no hay registro de dónde terminaron.`
-      : `Conocemos el lugar de <b class="num">${fmt.format(k)}</b> de ${fmt.format(total)} personas (${Math.round(100 * k / total)} %).`;
+      : `Conocemos el lugar de <b class="num">${fmt.format(k)}</b> de ${fmt.format(total)} personas (${total ? Math.round(100 * k / total) : 0} %).`;
     $("paradas").querySelectorAll("button").forEach((b) => b.setAttribute("aria-current", String(+b.dataset.s === s)));
 
-    const max = Math.max(...G.conocidas, 1);
+    const max = Math.max(...V.conocidas, 1);
     $("barras").innerHTML = [0, 1, 2, 3].map((i) => {
-      const v = estado.grupo === "B" && i === 3 ? 0 : G.conocidas[i];
+      const v = estado.grupo === "B" && i === 3 ? 0 : V.conocidas[i];
       return `<div class="barra" data-s="${i}" aria-current="${i === s}" title="${etapa(i).nombre}: ${fmt.format(v)} personas con lugar conocido">
         <span>${i} · ${etapa(i).nombre}</span><span class="pista"><span class="relleno" style="width:${100 * v / max}%"></span></span>
         <span class="num">${fmt.format(v)}</span></div>`;
     }).join("");
     $("barras").querySelectorAll(".barra").forEach((b) => b.onclick = () => irA(+b.dataset.s));
 
-    const filas = [...G.lugares[s].entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
+    const filas = [...V.lugares[s].entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
     $("titulo-lugares").textContent = estado.grupo === "B" && s === 3
       ? "Últimos lugares conocidos" : `Lugares con más personas · ${e.nombre.toLowerCase()}`;
     let lista = filas;
@@ -644,7 +676,7 @@
 
   function ultimosLugares(G) {
     const m = new Map();
-    for (const i of G.personas) {
+    for (const i of G.vista.personas) {
       const e = D.personas[i].e;
       for (let s = 3; s >= 0; s--) if (e[s].length) {
         for (const li of e[s]) m.set(li, (m.get(li) || 0) + 1 / e[s].length);
@@ -659,10 +691,10 @@
     const enParada = Math.abs(estado.t - s) < 0.02;
     let grande, chico;
     if (estado.grupo === "B" && s === 3) {
-      grande = fmt.format(G.personas.length);
+      grande = fmt.format(G.vista.personas.length);
       chico = "personas sin registro de dónde terminaron";
     } else {
-      grande = fmt.format(G.conocidas[s]);
+      grande = fmt.format(G.vista.conocidas[s]);
       chico = `personas con lugar conocido · ${etapa(s).nombre.toLowerCase()}`;
     }
     $("rotulo").innerHTML = enParada
@@ -778,7 +810,71 @@
       res.style.display = "none"; $("buscar").value = D.personas[+b.dataset.i].n; seleccionar(+b.dataset.i, true);
     });
   });
-  document.addEventListener("click", (e) => { if (!e.target.closest(".buscador")) $("resultados").style.display = "none"; });
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".buscador")) document.querySelectorAll(".resultados").forEach((r) => { r.style.display = "none"; });
+  });
+
+  // Buscador de CCD: cuántas personas de cada versión pasaron por cada uno.
+  const sinTildes = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  const pasoPorCcd = new Map();
+  D.personas.forEach((p) => {
+    for (const li of p.e[1]) {
+      const c = pasoPorCcd.get(li) || { A: 0, B: 0 };
+      c[p.g]++; pasoPorCcd.set(li, c);
+    }
+  });
+  const indiceCcd = [...pasoPorCcd.keys()].map((li) => [sinTildes(D.lugares[li][2]), li]);
+  $("buscar-ccd").addEventListener("input", (e) => {
+    const q = sinTildes(e.target.value).trim(), res = $("resultados-ccd");
+    if (q.length < 2) { res.style.display = "none"; return; }
+    const palabras = q.split(/\s+/);
+    const hallados = indiceCcd.filter(([n]) => palabras.every((w) => n.includes(w)))
+      .map(([, li]) => li)
+      .sort((a, b) => (pasoPorCcd.get(b).A + pasoPorCcd.get(b).B) - (pasoPorCcd.get(a).A + pasoPorCcd.get(a).B))
+      .slice(0, 12);
+    res.innerHTML = hallados.length ? hallados.map((li) => {
+      const c = pasoPorCcd.get(li);
+      return `<button data-li="${li}">${escapar(D.lugares[li][2])} <span class="muted">· ${fmt.format(c.A + c.B)} personas</span></button>`;
+    }).join("") : `<div class="muted" style="padding:8px 10px;font-size:13px">Ningún CCD del mapa coincide.</div>`;
+    res.style.display = "block";
+    res.querySelectorAll("button").forEach((b) => b.onclick = () => {
+      res.style.display = "none"; $("buscar-ccd").value = ""; filtrarCcd(+b.dataset.li);
+    });
+  });
+
+  let capaFiltro = null;
+  function filtrarCcd(li) {
+    estado.ccd = li;
+    deseleccionar();
+    aplicarFiltro();
+    if (capaFiltro) { mapa.removeLayer(capaFiltro); capaFiltro = null; }
+    if (li === null) {
+      $("filtro-activo").hidden = true;
+      actualizarPanel(true); pedirDibujo();
+      return;
+    }
+    const c = pasoPorCcd.get(li), [lat, lon, nombre] = D.lugares[li];
+    // Se muestra la versión donde hay más personas de ese CCD (en la ESMA,
+    // 1 en "Sabemos" y 70 en "No sabemos"); la otra queda a un clic.
+    const g = c.A >= c.B ? "A" : "B";
+    if (g !== estado.grupo) cambiarGrupo(g);
+    $("filtro-activo").hidden = false;
+    $("filtro-activo").innerHTML = `<button class="cerrar" aria-label="Quitar el filtro">×</button>
+      Siguiendo a quienes pasaron por <b>${escapar(nombre)}</b>: ${fmt.format(c.A)} en "Sabemos dónde terminaron"
+      y ${fmt.format(c.B)} en "No sabemos". Mové la línea de tiempo para ver de dónde venían y adónde fueron.`;
+    $("filtro-activo").querySelector(".cerrar").onclick = () => filtrarCcd(null);
+    const color = getComputedStyle(document.documentElement).getPropertyValue("--highlight").trim();
+    capaFiltro = L.circleMarker([lat, lon], { pane: "seleccion", radius: 11, color, weight: 2.5, fill: false })
+      .bindTooltip(escapar(nombre), { direction: "top" }).addTo(mapa);
+    // Encuadre: todos los lugares conocidos de esas personas.
+    const puntos = [];
+    for (const i of GRUPOS[estado.grupo].vista.personas) {
+      for (const lista of D.personas[i].e) for (const k of lista) puntos.push([D.lugares[k][0], D.lugares[k][1]]);
+    }
+    mapa.flyToBounds(L.latLngBounds(puntos).pad(0.15), { maxZoom: 11, duration: 0.8 });
+    objetivo = null; pausar(); estado.t = 1;
+    actualizarPanel(true); pedirDibujo();
+  }
 
   // ------------------------------------------------------------------ tiempo
   const VIAJE = 2.6, PAUSA = 1.4;

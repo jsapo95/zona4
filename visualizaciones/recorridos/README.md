@@ -32,6 +32,10 @@ rotula Malvinas como Argenmap.
 
 - **Reproducir** (o barra espaciadora): recorre las cuatro etapas.
 - Los números 0–3 debajo de la barra, o las flechas, saltan a una etapa.
+- **Seguir a quienes pasaron por un centro clandestino**: escribir un CCD (por
+  ejemplo "ESMA") deja en el mapa sólo a esas personas, en todas las etapas, para
+  ver de dónde venían y adónde fueron. Se elige sola la versión con más personas
+  de ese CCD.
 - **Clic en un punto**: muestra el recorrido de esa persona, con la precisión de
   cada lugar y el link a su ficha en la fuente. También se la puede buscar por
   nombre.
@@ -90,6 +94,12 @@ Los tests de las reglas de ubicación están en
   la vez, con un tercio de peso en cada uno.
 - **La etapa de CCD está sesgada hacia la provincia de Buenos Aires**: MinJus GBA
   es la fuente con más pasos por CCD y sólo cubre esa provincia.
+- **Los grandes CCD de CABA casi no aparecen.** Las fichas del Parque de la
+  Memoria no tienen un campo de CCD, así que los pasos por CCD salen sólo de
+  MinJus GBA (3.308) y de RUVTE (206). La ESMA, por ejemplo, tiene 117 personas
+  con `PRESENTE_EN` en el grafo (97 de MinJus, 30 de RUVTE); 46 son liberadas o
+  restituidas y quedan afuera, y en el mapa se ven 71 (70 en "No sabemos", 1 en
+  "Sabemos").
 - **MinJus no tiene lugar de secuestro procesado** (es texto narrativo, pendiente
   en el grafo). Esas personas aparecen recién en la etapa 1.
 - **Las fichas que el grafo no fusionó son dos personas.** Por ejemplo, Juan
