@@ -207,10 +207,10 @@
       <button class="chip" data-zoom="rosario">Rosario</button>
     </div>
     <div class="leyenda" style="margin-top:12px">
-      <div class="fila"><span class="linea-ley" style="background:var(--hacia-ccd)"></span>hacia el centro clandestino donde estuvo detenida</div>
-      <div class="fila"><span class="linea-ley" style="background:var(--hacia-asesinato)"></span>hacia donde la asesinaron</div>
-      <div class="fila"><span class="linea-ley" style="background:var(--hacia-restos)"></span>hacia donde aparecieron sus restos (cementerio, fosa o el lugar donde dejaron el cuerpo)</div>
-      <p class="muted" style="font-size:12.5px;margin:2px 0 0">Son dos datos distintos: dónde la mataron (ficha del Parque) y dónde se encontraron sus restos, muchas veces enterrados como NN (identificación del EAAF). Sólo 90 personas tienen los dos registrados; por ejemplo, asesinadas en Rosario y halladas en el Cementerio La Piedad.</p>
+      <div class="fila"><span class="linea-ley" style="background:var(--hacia-ccd)"></span>hacia el centro clandestino donde estuvieron detenidas</div>
+      <div class="fila"><span class="linea-ley" style="background:var(--hacia-asesinato)"></span>hacia donde las asesinaron</div>
+      <div class="fila"><span class="linea-ley" style="background:var(--hacia-restos)"></span>hacia donde aparecieron sus restos (cementerio, fosa o el lugar donde dejaron los cuerpos)</div>
+      <p class="muted" style="font-size:12.5px;margin:2px 0 0">Son dos datos distintos: dónde las mataron (ficha del Parque) y dónde se encontraron sus restos, muchas veces enterrados como NN (identificación del EAAF). Sólo 90 personas tienen los dos registrados; por ejemplo, asesinadas en Rosario y halladas en el Cementerio La Piedad.</p>
       <div class="fila"><svg width="28" height="8" aria-hidden="true"><line x1="2" y1="4" x2="26" y2="4" stroke="var(--text-secondary)" stroke-width="3" stroke-linecap="round" stroke-dasharray="1 6"/></svg>punteado y tenue: salta etapas sin registro (no se sabe por dónde pasó en el medio)</div>
       <div class="fila"><span class="nodo-ley"></span>partido o departamento</div>
       <div class="fila"><span class="nodo-ley sitio"></span>centro clandestino o sitio del EAAF</div>
@@ -246,7 +246,7 @@
   const escapar = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const sinTildes = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   const ETAPA = ["secuestro", "CCD", "asesinato", "restos"];
-  const HACIA = ["", "hacia el centro clandestino", "hacia donde la asesinaron", "hacia donde aparecieron sus restos"];
+  const HACIA = ["", "hacia el centro clandestino", "hacia donde las asesinaron", "hacia donde aparecieron sus restos"];
   const COLOR_DESTINO = ["", "--hacia-ccd", "--hacia-asesinato", "--hacia-restos"];
   const ANIOS = [1974, 1975, 1976, 1977, 1978, 1979, 1980, 1981, 1982, 1983];
 
