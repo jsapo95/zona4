@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import csv
 import json
+import math
 import re
 import sys
 from collections import Counter, defaultdict
@@ -225,7 +226,8 @@ class Centroides:
                 for variante in variantes:
                     row = self._buscar(nivel, variante, provincia, departamento)
                     if row:
-                        return _tupla(row, LOCALIDAD, nivel), "ok"
+                        # Un municipio es un partido: su centroide no es el de una localidad.
+                        return _tupla(row, LOCALIDAD if nivel == "localidades" else DEPARTAMENTO, nivel), "ok"
             # Un asentamiento sólo si el nombre es único en la provincia.
             filas = self.indices["asentamientos"].get((ciudad, self._provincia(provincia)), [])
             if len(filas) == 1:
@@ -268,17 +270,18 @@ PISTAS_PROVINCIA = {
     "la rioja": "LA RIOJA", "catamarca": "CATAMARCA", "san juan": "SAN JUAN", "san luis": "SAN LUIS",
     "santiago del estero": "SANTIAGO DEL ESTERO", "formosa": "FORMOSA", "la pampa": "LA PAMPA",
     "capital federal": "CAPITAL FEDERAL", "cap fed": "CAPITAL FEDERAL",
-    "ciudad de buenos aires": "CAPITAL FEDERAL",
+    "ciudad de buenos aires": "CAPITAL FEDERAL", "caba": "CAPITAL FEDERAL",
 }
 # Una calle, una intersección o un número no son un topónimo: el resolver
 # los engancha con ciudades homónimas ("Perito Moreno y Dellepiane" -> Moreno).
-_NO_TOPONIMO = re.compile(r"\d|\b(y|e|entre|esq|esquina|av|avenida|calle|ruta|km|camino|altura|frente)\b")
+_NO_TOPONIMO = re.compile(r"\d|\b(y|e|entre|esq|esquina|av|avenida|calle|ruta|km|camino|altura|frente|s n)\b")
+_INTERSECCION = re.compile(r"\b(y|e|entre|esq|esquina)\b")
 _ABREVIATURAS = [
     (r"\bBs\.?\s*As\b\.?", "Buenos Aires"), (r"\bCap\.?\s*Fed\b\.?", "Capital Federal"),
     (r"\bPcia\b\.?", "Provincia "), (r"\bGral\b\.?", "General"), (r"\bSgto\b\.?", "Sargento"),
     (r"\bSta\b\.?", "Santa"), (r"\bPque\b\.?", "Parque"), (r"\bDto\b\.?", "Departamento"),
     (r"\bE\.\s*R[ií]os\b", "Entre Ríos"), (r"\bCba\b\.?", "Córdoba"), (r"\bVte\b\.?", "Vicente"),
-    (r"\bPza\b\.?", "Plaza"), (r"\bCem\b\.?", "Cementerio"), (r"\bMdP\b", "Mar del Plata"),
+    (r"\bPza\b\.?", "Plaza"), (r"\bL\.\s*Olmos\b", "Lisandro Olmos"), (r"\bCem\b\.?", "Cementerio"), (r"\bMdP\b", "Mar del Plata"),
 ]
 # Cuerpos de agua: "Río de la Plata" no es La Plata; no hay un punto honesto.
 _AGUA = re.compile(r"\b(rio de la plata|riachuelo|aguas del|costa uruguaya)\b")
@@ -294,6 +297,9 @@ def expandir_abreviaturas(texto: str) -> str:
     return texto
 
 
+_BARRIO = re.compile(r"(b|bo|barrio)\b")
+
+
 def _candidatos(texto: str) -> List[str]:
     """Segmentos de `texto` que pueden ser un topónimo, en orden de prueba."""
     out = []
@@ -303,8 +309,15 @@ def _candidatos(texto: str) -> List[str]:
         # de los Leones"), no una localidad: se saca.
         s = re.sub(r"[\"“”«»][^\"“”«»]*[\"“”«»]?", " ", s).strip()
         n = norm(s)
-        # "Bº Esperanza": un barrio suelto engancha localidades homónimas.
-        if not n or n in PISTAS_PROVINCIA or _NO_TOPONIMO.search(n) or re.match(r"(b|barrio)\b", n):
+        # Una dirección ("CHILE 2635 MAR DEL PLATA") deja probar lo que sigue
+        # al último número, si es corto y no es otra calle.
+        if re.search(r"\d", n) and not _INTERSECCION.search(n):
+            cola = re.split(r"\d+\S*", s)[-1].strip()
+            if 0 < len(norm(cola).split()) <= 4 and not _NO_TOPONIMO.search(norm(cola)):
+                s, n = cola, norm(cola)
+        # "Bº Esperanza": un barrio suelto engancha localidades homónimas
+        # ("º" se normaliza como "o").
+        if not n or n in PISTAS_PROVINCIA or _NO_TOPONIMO.search(n) or _BARRIO.match(n):
             continue
         piezas = [s]
         if len(n.split()) > 4:
@@ -317,7 +330,7 @@ def _candidatos(texto: str) -> List[str]:
                 palabras.pop()
             while palabras and palabras[0].lower() in {"en", "de", "del", "un", "una"}:
                 palabras.pop(0)
-            if len(piezas) > 1 and (len(palabras) > 4 or re.match(r"(b|barrio)\b", norm(" ".join(palabras)))):
+            if len(piezas) > 1 and (len(palabras) > 4 or _BARRIO.match(norm(" ".join(palabras)))):
                 continue
             if palabras and " ".join(palabras).lower() not in _PALABRAS_VACIAS:
                 out.append(" ".join(palabras))
@@ -352,6 +365,80 @@ def ubicar_fragmento(texto: str, centroides: Centroides) -> Tuple[Optional[Tuple
         p = centroides.provincias[CABA]
         return (p["lat"], p["lon"], CABA_GENERICA, NOMBRE_CABA, (NOMBRE_CABA_PARTIDO, p["nombre"])), NOMBRE_CABA
     return None, None
+
+
+def km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Distancia aproximada en km (equirrectangular: alcanza para comparar)."""
+    x = math.radians(lon2 - lon1) * math.cos(math.radians((lat1 + lat2) / 2))
+    return 6371 * math.hypot(x, math.radians(lat2 - lat1))
+
+
+# CCD de `ccds.json` (RUVTE) cuyas coordenadas contradicen su propia
+# dirección. Se encontraron comparando cada coordenada con la localidad de su
+# `ubicacion` (más de 20 km) y se revisaron a mano: la comparación sola da
+# falsos positivos (la Comisaría 4ª de San Isidro está en la calle Balcarce).
+COORDENADAS_RUVTE_ERRONEAS = {
+    "86": "Comisaría 1ª de San Martín: cae en la ciudad de 9 de Julio, que es el nombre de la calle",
+    "291": "Regimiento de Infantería 6 (Mercedes): cae en CABA",
+    "670": "Brigada Güemes (Ciudad Evita): cae cerca de Quilmes",
+    "268": "Escuelita de Neuquén (Neuquén capital): cae cerca de Zapala",
+}
+
+
+def pista_de_provincia(lugar: Dict[str, Any]) -> str:
+    """Provincia de un CCD para orientar al resolver de texto.
+
+    RUVTE la trae en `zona` ("Zona 4 · Provincia de BUENOS AIRES"); MinJus GBA
+    es toda de la provincia de Buenos Aires salvo direcciones en CABA. Sin
+    pista, "SAN NICOLAS" cae en el barrio porteño y no en San Nicolás de los
+    Arroyos.
+    """
+    zona, ubicacion = norm(lugar.get("zona")), norm(lugar.get("ubicacion"))
+    if "capital federal" in zona or re.search(r"\b(caba|capital federal)\b", ubicacion):
+        return "Capital Federal"
+    m = re.search(r"provincia de (.+)$", zona)
+    if m:
+        return m.group(1)
+    return "Buenos Aires" if lugar.get("fuente") == "minjus_ccds" else ""
+
+
+def localidad_del_ccd(lugar: Dict[str, Any], centroides: "Centroides") -> Optional[Tuple[Any, ...]]:
+    """Localidad de la dirección de un CCD o, si no hay, la de su nombre
+    ("COMISARÍA 8ª DE LA PLATA"). CABA sin barrio queda como último recurso."""
+    pista = pista_de_provincia(lugar)
+    # Gana la más precisa, en este orden: una localidad de la dirección o del
+    # nombre del CCD ("... DE GRAND BOURG"), la ciudad cabecera del partido
+    # (Tandil en Tandil), el centroide del partido, CABA sin barrio.
+    candidatos: List[Tuple[int, Tuple[Any, ...]]] = []
+    ubicacion = lugar.get("ubicacion") or ""
+    # MinJus escribe "calle | partido". El partido se busca como partido
+    # ("Malvinas Argentinas" es también una localidad de Almirante Brown), y
+    # la calle sola, que puede llamarse como una localidad ("José Hernández").
+    if "|" in ubicacion and pista:
+        ubicacion, cola = ubicacion.rsplit("|", 1)
+        for nivel in ("departamentos", "municipios"):
+            row = centroides._buscar(nivel, norm(cola), norm(pista))
+            if row:
+                ciudad = centroides._buscar("localidades", norm(cola), norm(pista), norm(row["nombre"]))
+                if ciudad and norm(ciudad.get("departamento")) == norm(row["nombre"]):
+                    candidatos.append((1, _tupla(ciudad, LOCALIDAD, "localidades")))
+                candidatos.append((2, _tupla(row, DEPARTAMENTO, nivel)))
+                break
+        else:
+            ubicacion = f"{ubicacion}, {cola}"
+    rango = {LOCALIDAD: 0, DEPARTAMENTO: 2, CABA_GENERICA: 3}
+    # Si con la provincia no aparece nada, se prueba sin ella: MinJus tiene
+    # algún CCD fuera de Buenos Aires (Quinta de Funes, en Santa Fe).
+    for con_pista in ((True, False) if pista else (False,)):
+        for parte in (ubicacion, re.split(r"\bDE\b", lugar.get("nombre") or "")[-1]):
+            if parte.strip():
+                coords, _ = ubicar_fragmento(f"{parte}. {pista}" if con_pista else parte, centroides)
+                if coords:
+                    candidatos.append((rango.get(coords[2], 4), coords))
+        if candidatos:
+            break
+    # `min` se queda con el primero entre iguales: la dirección antes que el nombre.
+    return min(candidatos, key=lambda c: c[0])[1] if candidatos else None
 
 
 def leer_sitios_eaaf() -> List[Dict[str, Any]]:
@@ -493,6 +580,14 @@ def ubicar_hallazgo(texto: str, sitios: SitiosEAAF, centroides: Centroides) -> O
 # --------------------------------------------------------------------------
 
 SOBREVIVIENTE = {"Persona liberada", "Persona fugado", "Persona restituida"}
+# MinJus escribe el estado distinto que el Parque; se muestra con las
+# palabras del Parque para que la misma situación se lea igual.
+ESTADOS_MINJUS = {
+    "Persona desaparecida": "Detenido/a desaparecido/a",
+    "Persona asesinada": "Asesinado/a",
+    "Persona asesinado": "Asesinado/a",
+    "Persona fallecido": "Fallecido/a",
+}
 
 
 def _fecha_iso(valor: Optional[str]) -> Optional[str]:
@@ -567,18 +662,18 @@ def main() -> None:
         lugar = lugares_cdm.get(lugar_key, {})
         nombre = (lugar.get("nombre") or lugar_key).title()
         if lugar.get("tipoGeopolitico") == "CCD":
+            localidad = localidad_del_ccd(lugar, centroides)
             if lugar.get("lat") is not None and lugar.get("lon") is not None:
+                # Algunas coordenadas de RUVTE contradicen su propia dirección:
+                # para esas (revisadas una por una) se usa la localidad.
+                if lugar.get("id_ccd") in COORDENADAS_RUVTE_ERRONEAS and localidad:
+                    return agregar_lugar(lugar_key, localidad[0], localidad[1], nombre, "ccd", localidad[2]), "ccd_coordenadas_corregidas"
                 return agregar_lugar(lugar_key, lugar["lat"], lugar["lon"], nombre, "ccd", SITIO), "ok"
             sitio = sitios.buscar(lugar.get("nombre", ""))
             if sitio:
                 return agregar_lugar(lugar_key, sitio["lat"], sitio["lon"], nombre, "ccd", SITIO), "ok"
-            # Sin coordenadas propias: se ubica por la localidad de su
-            # dirección o, si no hay dirección, por la de su nombre
-            # ("COMISARÍA 8ª DE LA PLATA").
-            for parte in (lugar.get("ubicacion") or "", re.split(r"\bDE\b", lugar.get("nombre") or "")[-1]):
-                coords, _ = ubicar_fragmento(parte, centroides) if parte.strip() else (None, None)
-                if coords:
-                    return agregar_lugar(lugar_key, coords[0], coords[1], nombre, "ccd", coords[2]), "ccd_por_localidad"
+            if localidad:
+                return agregar_lugar(lugar_key, localidad[0], localidad[1], nombre, "ccd", localidad[2]), "ccd_por_localidad"
             return None, "ccd_sin_coordenadas"
         coords, motivo = centroides.ubicar(lugar_key)
         if not coords:
@@ -660,6 +755,7 @@ def main() -> None:
                 conocidas[etapa["id"]][grupo] += 1
 
         estado = next((e for e in estados if "desaparec" in e.lower()), estados[0] if estados else "Sin dato")
+        estado = ESTADOS_MINJUS.get(estado, estado)
         personas_out.append({
             "n": persona["nombre"],
             "g": grupo,
@@ -671,6 +767,18 @@ def main() -> None:
             # de la ficha de MinJus / Archivo San Martín.
             "f": fecha_secuestro.get(persona["persona_key"]) or _fecha_iso(persona.get("fecha_secuestro")),
         })
+
+    # Un partido se dibuja en su lugar más usado (casi siempre la ciudad), no
+    # en el centroide del departamento: en el interior ese centroide cae a
+    # decenas de km de la ciudad (Confluencia queda lejos de Neuquén capital).
+    uso = Counter(li for p in personas_out for lista in p["e"] for li in lista)
+    mas_usado: Dict[int, Tuple[int, int]] = {}
+    for li, veces in uso.items():
+        nodo = lugares_out[li][5]
+        if nodos_out[nodo][3] == "partido" and veces > mas_usado.get(nodo, (0, -1))[0]:
+            mas_usado[nodo] = (veces, li)
+    for nodo, (_, li) in mas_usado.items():
+        nodos_out[nodo][0], nodos_out[nodo][1] = lugares_out[li][0], lugares_out[li][1]
 
     datos = {
         "generado": date.today().isoformat(),

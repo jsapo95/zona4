@@ -5,6 +5,7 @@ son errores que el resolver de lugares cometía sobre texto narrativo y que
 `construir_datos.py` evita.
 """
 
+import json
 import sys
 from pathlib import Path
 
@@ -110,3 +111,43 @@ def test_barrios_de_caba_y_caba_sin_barrio_son_un_solo_nodo(centroides):
 def test_el_nodo_de_un_partido_esta_en_su_centroide(centroides):
     fila = centroides.partido("General San Martín", "Buenos Aires")
     assert _cerca((fila["lat"], fila["lon"]), -34.55, -58.56)
+
+
+# --- CCD sin coordenadas propias (casos de la revisión adversarial) -------
+
+@pytest.mark.parametrize("lugar, esperado", [
+    # Sin la provincia, "SAN NICOLAS" caía en el barrio porteño (Obelisco).
+    ({"nombre": "BRIGADA DE INVESTIGACIONES DE SAN NICOLAS", "ubicacion": "Alem 114", "fuente": "minjus_ccds"},
+     "San Nicolás"),
+    # La calle "José Hernández" es también una localidad de La Plata.
+    ({"nombre": "CEMENTERIO DE GRAND BOURG", "ubicacion": "José Hernández s/n (esquina Pasco) | Malvinas Argentinas",
+      "fuente": "minjus_ccds"}, "Grand Bourg (Malvinas Argentinas)"),
+    # "entre Mitre y 9 de julio" no es la localidad "Julio".
+    ({"nombre": "COMISARÍA DE CAMPANA", "ubicacion": "Rawson 362 _ entre Mitre y 9 de julio | Campana",
+      "fuente": "minjus_ccds"}, "Campana"),
+    # La dirección sólo da el partido; el nombre, la ciudad.
+    ({"nombre": "CUARTEL DE BOMBEROS DE MAR DEL PLATA",
+      "ubicacion": "SALTA 2440 e/GASCON y FALUCHO MAR DEL PLATA · GRAL. PUEYRREDON · BUENOS AIRES",
+      "fuente": "minjus_ccds"}, "Mar del Plata (General Pueyrredón)"),
+    # MinJus tiene algún CCD fuera de Buenos Aires.
+    ({"nombre": "QUINTA DE FUNES", "ubicacion": "Ruta Nacional Nº 9 y San José | Funes", "fuente": "minjus_ccds"},
+     "Funes (Rosario)"),
+])
+def test_localidad_de_ccd_sin_coordenadas(centroides, lugar, esperado):
+    assert cd.localidad_del_ccd(lugar, centroides)[3] == esperado
+
+
+def test_coordenadas_ruvte_corregidas_quedan_lejos_de_su_direccion(centroides):
+    # Cada corrección de la lista tiene que seguir justificada por los datos.
+    with open(cd.RAIZ / "data" / "sources" / "ccds.json", encoding="utf-8") as f:
+        ccds = {c["id_ccd"]: c for c in json.load(f)}
+    for id_ccd in cd.COORDENADAS_RUVTE_ERRONEAS:
+        c = ccds[id_ccd]
+        lugar = {"nombre": c["denominacion"], "ubicacion": c["ubicacion"], "zona": c["zona"], "fuente": "ccds_json"}
+        localidad = cd.localidad_del_ccd(lugar, centroides)
+        assert cd.km(c["lat"], c["lon"], localidad[0], localidad[1]) > 20, id_ccd
+
+
+def test_barrio_abreviado_no_engancha_una_localidad_homonima(centroides, sitios):
+    texto = "Aparición:Su cuerpo s encontró el 14/12/75 en Bº Esperanza, Villa Celina, La Matanza; Ente:"
+    assert cd.ubicar_hallazgo(texto, sitios, centroides)["nombre"] == "La Matanza"

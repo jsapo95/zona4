@@ -12,11 +12,12 @@ cuatro etapas abstractas (no son fechas):
 
 Hay dos versiones, que se eligen arriba del panel:
 
-- **Sabemos dónde terminaron** (740 personas): tienen registrado el hallazgo de
-  sus restos. En 690 se pudo ubicar el lugar.
-- **No sabemos dónde terminaron** (8.156 personas): desaparecidas o asesinadas
-  sin hallazgo de restos registrado. En la etapa final cada punto se apaga en
-  el último lugar donde las fuentes la ubican.
+- **Restos hallados** (740 personas): tienen registrado el hallazgo de sus
+  restos. En 690 se pudo ubicar el lugar.
+- **Sin hallazgo de restos registrado** (8.156 personas): desaparecidas o
+  asesinadas sin hallazgo de restos registrado (1.574 figuran como asesinadas).
+  En la etapa final cada punto se apaga en el último lugar donde las fuentes
+  ubican a esa persona.
 
 Las personas liberadas, fugadas o restituidas según MinJus (1.662) quedan
 afuera de las dos versiones.
@@ -97,8 +98,13 @@ Los tests de las reglas de ubicación están en
 
 ## Cómo se ubica cada lugar
 
-- **CCD y sitios del EAAF**: coordenadas propias de la fuente. Los CCD de MinJus
-  que no las tienen se ubican por la localidad de su dirección.
+- **Sitios del EAAF y CCD de RUVTE**: coordenadas propias de la fuente, salvo 4
+  CCD de RUVTE cuyas coordenadas contradicen su propia dirección
+  (`COORDENADAS_RUVTE_ERRONEAS`, revisados uno por uno).
+- **CCD de MinJus sin coordenadas** (un tercio de los pasos por CCD): la
+  localidad de su dirección o de su nombre, con la provincia como pista (sin
+  ella, "SAN NICOLAS" caía en el barrio porteño). Si sólo se encuentra el
+  partido, el punto va al partido.
 - **Localidades y barrios**: centroide de Georef (localidad, municipio o
   asentamiento, en ese orden). Los puntos que comparten centroide se dispersan
   un poco para que se vean; la dispersión es fija entre recargas.
@@ -120,10 +126,11 @@ Los tests de las reglas de ubicación están en
   es la fuente con más pasos por CCD y sólo cubre esa provincia.
 - **Los grandes CCD de CABA casi no aparecen.** Las fichas del Parque de la
   Memoria no tienen un campo de CCD, así que los pasos por CCD salen sólo de
-  MinJus GBA (3.308) y de RUVTE (206). La ESMA, por ejemplo, tiene 117 personas
-  con `PRESENTE_EN` en el grafo (97 de MinJus, 30 de RUVTE); 46 son liberadas o
-  restituidas y quedan afuera, y en el mapa se ven 71 (70 en "No sabemos", 1 en
-  "Sabemos").
+  MinJus GBA (3.308) y del campo `ccds` de 148 fichas del Parque (206). La ESMA,
+  por ejemplo, tiene 117 personas con `PRESENTE_EN` en el grafo (127 aristas: 97
+  de MinJus y 30 del Parque, 10 personas en las dos); 46 son liberadas o
+  restituidas y quedan afuera, y en el mapa se ven 71 (70 sin hallazgo de restos
+  registrado, 1 con restos hallados).
 - **MinJus no tiene lugar de secuestro procesado** (es texto narrativo, pendiente
   en el grafo). Esas personas aparecen recién en la etapa 1.
 - **Las fichas que el grafo no fusionó son dos personas.** Por ejemplo, Juan

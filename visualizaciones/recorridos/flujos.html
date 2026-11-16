@@ -70,13 +70,13 @@
   .segmentado button[aria-pressed="true"] { background: var(--surface-1); color: var(--text-primary); box-shadow: var(--shadow); font-weight: 600; }
 
   /* Años: barras clicables con la cantidad de recorridos por año de secuestro */
-  .anios { display: flex; align-items: flex-end; gap: 3px; height: 74px; margin-top: 6px; }
-  .anio { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; border: 0; background: none; padding: 0; cursor: pointer; font: inherit; color: var(--text-muted); }
-  .anio .barra { width: 100%; background: var(--accent); opacity: .35; border-radius: 4px 4px 0 0; min-height: 2px; }
-  .anio .et { font-size: 10.5px; font-variant-numeric: tabular-nums; margin-top: 3px; }
-  .anio[aria-pressed="true"] .barra { opacity: 1; }
-  .anio[aria-pressed="true"] .et { color: var(--text-primary); font-weight: 600; }
-  .fila-anios { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+  .años { display: flex; align-items: flex-end; gap: 3px; height: 74px; margin-top: 6px; }
+  .año { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; border: 0; background: none; padding: 0; cursor: pointer; font: inherit; color: var(--text-muted); }
+  .año .barra { width: 100%; background: var(--accent); opacity: .35; border-radius: 4px 4px 0 0; min-height: 2px; }
+  .año .et { font-size: 10.5px; font-variant-numeric: tabular-nums; margin-top: 3px; }
+  .año[aria-pressed="true"] .barra { opacity: 1; }
+  .año[aria-pressed="true"] .et { color: var(--text-primary); font-weight: 600; }
+  .fila-años { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
   .btn-play { flex: none; width: 36px; height: 36px; border-radius: 50%; border: 0; cursor: pointer; background: var(--accent); color: #fff; display: grid; place-items: center; }
   .btn-play svg { width: 15px; height: 15px; fill: currentColor; }
   .chip { border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); border-radius: 999px; padding: 4px 11px; font: inherit; font-size: 12.5px; cursor: pointer; }
@@ -159,17 +159,17 @@
 
     <div class="segmentado" role="group" aria-label="Versión">
       <button data-grupo="todas" aria-pressed="true">Todas</button>
-      <button data-grupo="A" aria-pressed="false">Sabemos dónde terminaron</button>
-      <button data-grupo="B" aria-pressed="false">No sabemos</button>
+      <button data-grupo="A" aria-pressed="false">Restos hallados</button>
+      <button data-grupo="B" aria-pressed="false">Sin hallazgo registrado</button>
     </div>
 
     <h2>Año de secuestro</h2>
-    <div class="anios" id="anios" role="group" aria-label="Año de secuestro"></div>
-    <div class="fila-anios">
+    <div class="años" id="años" role="group" aria-label="Año de secuestro"></div>
+    <div class="fila-años">
       <button class="btn-play" id="play" aria-label="Recorrer los años">
         <svg viewBox="0 0 24 24" id="icono-play"><path d="M7 4.5v15l13-7.5z"/></svg>
       </button>
-      <button class="chip" id="todos-anios" aria-pressed="true">Todos los años</button>
+      <button class="chip" id="todos-años" aria-pressed="true">Todos los años</button>
       <span class="muted" style="font-size:12.5px" id="sin-fecha"></span>
     </div>
 
@@ -223,6 +223,7 @@
         <li>Si alguien pasó por varios centros clandestinos, el orden entre ellos no se conoce: se dibuja un tramo desde el secuestro a cada uno, repartiendo a la persona entre todos.</li>
         <li>No se dibujan los tramos dentro del mismo partido (por ejemplo, secuestro y asesinato en La Plata); esas personas siguen contando en los recorridos más repetidos.</li>
         <li>El año es el del secuestro. El paso por un CCD no tiene fecha propia en las fuentes.</li>
+        <li>Los partidos son los de hoy (Georef): Malvinas Argentinas, José C. Paz, San Miguel, Hurlingham, Ituzaingó, Ezeiza o Presidente Perón no existían en los años setenta; en ese entonces eran parte de General Sarmiento, Morón, Esteban Echeverría y otros.</li>
       </ul>
       <p id="meta" class="muted" style="font-size:12.5px"></p>
     </details>
@@ -247,8 +248,8 @@
   const sinTildes = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   const ETAPA = ["secuestro", "CCD", "asesinato", "restos"];
   const HACIA = ["", "hacia el centro clandestino", "hacia donde las asesinaron", "hacia donde aparecieron sus restos"];
+  const HACIA_UNA = ["", "hacia el centro clandestino", "hacia donde la asesinaron", "hacia donde aparecieron sus restos"];
   const COLOR_DESTINO = ["", "--hacia-ccd", "--hacia-asesinato", "--hacia-restos"];
-  const ANIOS = [1974, 1975, 1976, 1977, 1978, 1979, 1980, 1981, 1982, 1983];
 
   // ------------------------------------------------------------------ datos
   // Un recorrido es la lista de nodos (partido o sitio) de cada etapa.
@@ -256,17 +257,21 @@
   D.personas.forEach((p, i) => {
     const nodos = p.e.map((lista) => [...new Set(lista.map((li) => D.lugares[li][5]))]);
     if (nodos.filter((x) => x.length).length < 2) return;
-    const anio = p.f ? +p.f.slice(0, 4) : null;
+    const año = p.f ? +p.f.slice(0, 4) : null;
     const firma = nodos.map((x, s) => (x.length ? `${s}:${[...x].sort((a, b) => a - b).join(",")}` : "")).filter(Boolean).join("|");
-    recorridos.push({ i, g: p.g, anio, nodos, firma });
+    recorridos.push({ i, g: p.g, año, nodos, firma });
   });
+  // Los años salen de los datos: un secuestro de 1971 no puede quedar afuera.
+  const conFecha = recorridos.map((r) => r.año).filter((a) => a !== null);
+  const AÑOS = [];
+  for (let a = Math.min(...conFecha); a <= Math.max(...conFecha); a++) AÑOS.push(a);
 
   // ------------------------------------------------------------------ estado
-  const estado = { grupo: "todas", anio: null, lugar: null, firma: null, minimo: 2, reproduciendo: false };
+  const estado = { grupo: "todas", año: null, lugar: null, firma: null, minimo: 2, reproduciendo: false };
 
   const visibles = () => recorridos.filter((r) =>
     (estado.grupo === "todas" || r.g === estado.grupo) &&
-    (estado.anio === null || r.anio === estado.anio) &&
+    (estado.año === null || r.año === estado.año) &&
     (estado.lugar === null || r.nodos.some((x) => x.includes(estado.lugar))) &&
     (estado.firma === null || r.firma === estado.firma));
 
@@ -331,7 +336,7 @@
       });
       const n = t.personas.length;
       const sinRegistro = ETAPA.slice(t.desde + 1, t.destino).join(" ni ");
-      linea.bindTooltip(`<b>${escapar(a[2])} → ${escapar(b[2])}</b><br>${fmt.format(n)} ${n === 1 ? "persona" : "personas"} · ${HACIA[t.destino]}` +
+      linea.bindTooltip(`<b>${escapar(a[2])} → ${escapar(b[2])}</b><br>${fmt.format(n)} ${n === 1 ? "persona" : "personas"} · ${(n === 1 ? HACIA_UNA : HACIA)[t.destino]}` +
         (t.salto ? `<br><i>Sin registro de ${sinRegistro} en el medio: no es un traslado directo.</i>` : ""), { sticky: true });
       linea.on("click", () => mostrarDetalle(`${a[2]} → ${b[2]}`, t.personas));
       linea.on("mouseover", () => linea.setStyle({ opacity: 1 }));
@@ -340,7 +345,7 @@
     }
     // Nodos: tamaño según las personas que pasan por ellos en lo que se ve.
     const porNodo = new Map();
-    for (const r of lista) for (const x of r.nodos) for (const k of x) porNodo.set(k, (porNodo.get(k) || 0) + 1);
+    for (const r of lista) for (const k of new Set(r.nodos.flat())) porNodo.set(k, (porNodo.get(k) || 0) + 1);
     const enTramos = new Set(mostrados.flatMap((t) => [t.a, t.b]));
     const maxNodo = Math.max(1, ...porNodo.values());
     for (const [k, v] of porNodo) {
@@ -366,29 +371,29 @@
   function actualizarPanel(lista, todos, mostrados) {
     const base = recorridos.filter((r) => estado.grupo === "todas" || r.g === estado.grupo);
     // Barras por año (sin el filtro de año, para poder compararlos).
-    const porAnio = new Map(ANIOS.map((a) => [a, 0]));
+    const porAño = new Map(AÑOS.map((a) => [a, 0]));
     for (const r of base) {
-      if ((estado.lugar === null || r.nodos.some((x) => x.includes(estado.lugar))) && porAnio.has(r.anio)) porAnio.set(r.anio, porAnio.get(r.anio) + 1);
+      if ((estado.lugar === null || r.nodos.some((x) => x.includes(estado.lugar))) && porAño.has(r.año)) porAño.set(r.año, porAño.get(r.año) + 1);
     }
-    const maxA = Math.max(1, ...porAnio.values());
-    $("anios").innerHTML = ANIOS.map((a) => `<button class="anio" data-anio="${a}" aria-pressed="${estado.anio === a}" title="${a}: ${fmt.format(porAnio.get(a))} recorridos">
-      <span class="barra" style="height:${Math.max(2, 52 * porAnio.get(a) / maxA)}px"></span><span class="et">${String(a).slice(2)}</span></button>`).join("");
-    $("anios").querySelectorAll(".anio").forEach((b) => b.onclick = () => { pausar(); elegirAnio(+b.dataset.anio === estado.anio ? null : +b.dataset.anio); });
-    $("todos-anios").setAttribute("aria-pressed", String(estado.anio === null));
-    const sinFecha = base.filter((r) => r.anio === null).length;
+    const maxA = Math.max(1, ...porAño.values());
+    $("años").innerHTML = AÑOS.map((a) => `<button class="año" data-año="${a}" aria-pressed="${estado.año === a}" title="${a}: ${fmt.format(porAño.get(a))} recorridos">
+      <span class="barra" style="height:${Math.max(2, 52 * porAño.get(a) / maxA)}px"></span><span class="et">${String(a).slice(2)}</span></button>`).join("");
+    $("años").querySelectorAll(".año").forEach((b) => b.onclick = () => { pausar(); elegirAño(+b.dataset.año === estado.año ? null : +b.dataset.año); });
+    $("todos-años").setAttribute("aria-pressed", String(estado.año === null));
+    const sinFecha = base.filter((r) => r.año === null).length;
     $("sin-fecha").textContent = sinFecha ? `${fmt.format(sinFecha)} sin fecha de secuestro (sólo en "Todos")` : "";
 
     const ocultos = todos.length - mostrados.length;
     $("resumen").innerHTML = `<b class="num">${fmt.format(lista.length)}</b> recorridos con dos etapas o más` +
-      `${estado.anio ? ` de personas secuestradas en <b>${estado.anio}</b>` : ""}. ` +
+      `${estado.año ? ` de personas secuestradas en <b>${estado.año}</b>` : ""}. ` +
       `Se ven <b class="num">${fmt.format(mostrados.length)}</b> tramos` +
       (ocultos ? `; ${fmt.format(ocultos)} tramos con menos de ${estado.minimo} personas quedan ocultos.` : ".");
-    $("rotulo").innerHTML = `<div class="grande">${fmt.format(lista.length)}</div><div class="chico">recorridos${estado.anio ? ` · secuestros de ${estado.anio}` : ""}</div>`;
+    $("rotulo").innerHTML = `<div class="grande">${fmt.format(lista.length)}</div><div class="chico">recorridos${estado.año ? ` · secuestros de ${estado.año}` : ""}</div>`;
 
     // Recorridos similares: misma firma (mismos lugares en las mismas etapas).
     const grupos = new Map();
     for (const r of recorridos.filter((r) =>
-      (estado.grupo === "todas" || r.g === estado.grupo) && (estado.anio === null || r.anio === estado.anio) &&
+      (estado.grupo === "todas" || r.g === estado.grupo) && (estado.año === null || r.año === estado.año) &&
       (estado.lugar === null || r.nodos.some((x) => x.includes(estado.lugar))))) {
       const g = grupos.get(r.firma) || { ejemplo: r, personas: [] };
       g.personas.push(r.i); grupos.set(r.firma, g);
@@ -417,7 +422,7 @@
       <ul>${unicas.map((i) => {
         const p = D.personas[i], u = p.u.find(Boolean);
         const nombre = u ? `<a href="${escapar(u)}" target="_blank" rel="noopener">${escapar(p.n)}</a>` : escapar(p.n);
-        return `<li>${nombre} <span class="muted">· ${p.f ? p.f.slice(0, 4) : "sin fecha"} · ${p.g === "A" ? "restos hallados" : "sin destino conocido"}</span></li>`;
+        return `<li>${nombre} <span class="muted">· ${p.f ? p.f.slice(0, 4) : "sin fecha"} · ${p.g === "A" ? "restos hallados" : "sin hallazgo registrado"}</span></li>`;
       }).join("")}</ul>`;
     $("detalle").querySelector(".cerrar").onclick = () => { $("detalle").style.display = "none"; };
   }
@@ -434,8 +439,8 @@
     document.querySelectorAll("[data-grupo]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
     dibujar();
   });
-  function elegirAnio(a) { estado.anio = a; estado.firma = null; dibujar(); }
-  $("todos-anios").onclick = () => { pausar(); elegirAnio(null); };
+  function elegirAño(a) { estado.año = a; estado.firma = null; dibujar(); }
+  $("todos-años").onclick = () => { pausar(); elegirAño(null); };
   $("minimo").onchange = (e) => { estado.minimo = +e.target.value; dibujar(); };
   $("movimiento").onchange = () => $("mapa").classList.toggle("quieto", !$("movimiento").checked);
   const ZOOMS = {
@@ -458,12 +463,12 @@
     if (estado.reproduciendo) { pausar(); return; }
     estado.reproduciendo = true;
     $("icono-play").innerHTML = '<path d="M6 4h4v16H6zM14 4h4v16h-4z"/>'; $("play").setAttribute("aria-label", "Pausar");
-    let k = estado.anio === null ? 0 : (ANIOS.indexOf(estado.anio) + 1) % ANIOS.length;
-    elegirAnio(ANIOS[k]);
+    let k = estado.año === null ? 0 : (AÑOS.indexOf(estado.año) + 1) % AÑOS.length;
+    elegirAño(AÑOS[k]);
     reloj = setInterval(() => {
       k++;
-      if (k >= ANIOS.length) { pausar(); return; }
-      elegirAnio(ANIOS[k]);
+      if (k >= AÑOS.length) { pausar(); return; }
+      elegirAño(AÑOS[k]);
     }, 1800);
   };
 

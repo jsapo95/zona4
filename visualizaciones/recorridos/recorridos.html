@@ -215,8 +215,8 @@
     <p class="bajada muted" style="font-size:13px">Las etapas no son fechas: son pasos de un recorrido. Las fuentes casi nunca dicen cuándo ocurrió cada uno.</p>
 
     <div class="segmentado" role="group" aria-label="Versión">
-      <button id="btn-A" aria-pressed="true"><b>Sabemos dónde terminaron</b><span class="num" id="cnt-A"></span></button>
-      <button id="btn-B" aria-pressed="false"><b>No sabemos dónde terminaron</b><span class="num" id="cnt-B"></span></button>
+      <button id="btn-A" aria-pressed="true"><b>Restos hallados</b><span class="num" id="cnt-A"></span></button>
+      <button id="btn-B" aria-pressed="false"><b>Sin hallazgo de restos registrado</b><span class="num" id="cnt-B"></span></button>
     </div>
 
     <div class="reproductor">
@@ -280,10 +280,10 @@
       <summary>Cómo se armó y qué no dice</summary>
       <ul>
         <li><b>Secuestro</b> y <b>asesinato</b>: aristas <code>SECUESTRADO_EN</code> y <code>ASESINADO_EN</code> del grafo, que vienen de las fichas del Parque de la Memoria. MinJus GBA trae el lugar de secuestro como dirección narrativa y todavía no se procesa: esas personas entran recién en la etapa de centros clandestinos.</li>
-        <li><b>Centro clandestino</b>: aristas <code>PRESENTE_EN</code> (RUVTE y MinJus GBA). <b>No se sabe el orden</b> entre centros: quien pasó por tres aparece en los tres a la vez, con un tercio de peso en cada uno. MinJus cubre sólo la provincia de Buenos Aires, así que esta etapa está sesgada hacia allí.</li>
+        <li><b>Centro clandestino</b>: aristas <code>PRESENTE_EN</code> (MinJus GBA y el campo <code>ccds</code> de 148 fichas del Parque). Incluye unidades penales y comisarías que las fuentes registran como lugar de detención. <b>No se sabe el orden</b> entre centros: quien pasó por tres aparece en los tres a la vez, con un tercio de peso en cada uno. MinJus cubre sólo la provincia de Buenos Aires, así que esta etapa está sesgada hacia allí.</li>
         <li><b>Hallazgo de restos</b>: no está en el grafo. Sale del texto de identificación de la ficha del Parque ("sus restos fueron exhumados en el Cementerio de …") y se cruza con los 91 sitios con coordenadas del EAAF. Si el texto nombra una localidad y no un sitio del EAAF, se usa el centroide de la localidad.</li>
-        <li><b>Ubicación aproximada</b>: salvo CCD y sitios del EAAF, que tienen coordenadas propias, cada punto está en el centroide Georef de su localidad o barrio, con una pequeña dispersión para que se vean los puntos superpuestos. "Capital Federal" sin barrio va al centro de CABA. Un lugar que sólo dice la provincia no se dibuja.</li>
-        <li><b>Quiénes están</b>: víctimas del grafo (con las fusiones de identidad entre fuentes ya hechas). En "Sabemos dónde terminaron" están quienes tienen un hallazgo de restos registrado; en "No sabemos" quienes no lo tienen. Las personas liberadas, fugadas o restituidas según MinJus quedan afuera de las dos.</li>
+        <li><b>Ubicación aproximada</b>: los sitios del EAAF y los CCD del catálogo de RUVTE usan sus coordenadas; los CCD de MinJus sin coordenadas (un tercio de los pasos por CCD) se ubican en su localidad o partido, igual que el resto de los puntos, que van al centroide Georef de su localidad o barrio, con una pequeña dispersión para que se vean los puntos superpuestos. "Capital Federal" sin barrio va al centro de CABA. Un lugar que sólo dice la provincia no se dibuja.</li>
+        <li><b>Quiénes están</b>: víctimas del grafo (con las fusiones de identidad entre fuentes ya hechas). En "Restos hallados" están quienes tienen un hallazgo de restos registrado; en "Sin hallazgo de restos registrado" quienes no lo tienen, aunque muchas figuren como asesinadas. Las personas liberadas, fugadas o restituidas según MinJus quedan afuera de las dos.</li>
         <li><b>Lo que falta no es lo que no pasó</b>: un punto apagado indica que la fuente no registra esa etapa, no que la persona no haya pasado por ella.</li>
       </ul>
       <p id="meta" class="muted" style="font-size:12.5px"></p>
@@ -315,8 +315,8 @@
     { nombre: "Hallazgo de restos", corto: "Restos",
       texto: "Dónde se encontraron sus restos: un cementerio (muchas veces enterrados como NN), una fosa clandestina o el lugar donde apareció el cuerpo. Las identificaciones las hizo, en su mayoría, el EAAF." },
   ];
-  const ETAPA_FINAL_B = { nombre: "Destino desconocido", corto: "¿?",
-    texto: "No hay registro de dónde terminaron. Cada punto se apaga en el último lugar donde las fuentes la ubican." };
+  const ETAPA_FINAL_B = { nombre: "Sin hallazgo registrado", corto: "Sin hallazgo",
+    texto: "No hay registro de dónde se encontraron sus restos; muchas de estas personas figuran como asesinadas. Cada punto se apaga en el último lugar donde las fuentes ubican a esa persona." };
   const PRECISION = { sitio: "ubicación exacta del sitio", localidad: "centroide de la localidad o barrio",
     caba: "centro de CABA (la fuente no dice el barrio)", departamento: "centroide del partido o departamento" };
   const ZOOMS = {
@@ -618,7 +618,7 @@
     $("etapa-titulo").textContent = `${s} · ${e.nombre}`;
     $("etapa-texto").textContent = e.texto;
     $("etapa-cifra").innerHTML = estado.grupo === "B" && s === 3
-      ? `Para <b class="num">${fmt.format(total)}</b> personas de esta versión no hay registro de dónde terminaron.`
+      ? `Para <b class="num">${fmt.format(total)}</b> personas de esta versión no hay registro del hallazgo de sus restos.`
       : `Conocemos el lugar de <b class="num">${fmt.format(k)}</b> de ${fmt.format(total)} personas (${total ? Math.round(100 * k / total) : 0} %).`;
     $("paradas").querySelectorAll("button").forEach((b) => b.setAttribute("aria-current", String(+b.dataset.s === s)));
 
@@ -660,7 +660,7 @@
     let grande, chico;
     if (estado.grupo === "B" && s === 3) {
       grande = fmt.format(G.vista.personas.length);
-      chico = "personas sin registro de dónde terminaron";
+      chico = "personas sin hallazgo de restos registrado";
     } else {
       grande = fmt.format(G.vista.conocidas[s]);
       chico = `personas con lugar conocido · ${etapa(s).nombre.toLowerCase()}`;
@@ -771,7 +771,7 @@
     const palabras = q.split(/\s+/);
     const hallados = indiceNombres.filter(([n]) => palabras.every((w) => n.includes(w))).slice(0, 12);
     res.innerHTML = hallados.length ? hallados.map(([, i]) =>
-      `<button data-i="${i}">${escapar(D.personas[i].n)} <span class="muted">· ${D.personas[i].g === "A" ? "sabemos dónde terminó" : "no sabemos dónde terminó"}</span></button>`).join("")
+      `<button data-i="${i}">${escapar(D.personas[i].n)} <span class="muted">· ${D.personas[i].g === "A" ? "restos hallados" : "sin hallazgo registrado"}</span></button>`).join("")
       : `<div class="muted" style="padding:8px 10px;font-size:13px">Sin resultados entre las personas del mapa.</div>`;
     res.style.display = "block";
     res.querySelectorAll("button").forEach((b) => b.onclick = () => {
@@ -823,13 +823,13 @@
     }
     const c = pasoPorCcd.get(li), [lat, lon, nombre] = D.lugares[li];
     // Se muestra la versión donde hay más personas de ese CCD (en la ESMA,
-    // 1 en "Sabemos" y 70 en "No sabemos"); la otra queda a un clic.
+    // 1 con restos hallados y 70 sin hallazgo); la otra queda a un clic.
     const g = c.A >= c.B ? "A" : "B";
     if (g !== estado.grupo) cambiarGrupo(g);
     $("filtro-activo").hidden = false;
     $("filtro-activo").innerHTML = `<button class="cerrar" aria-label="Quitar el filtro">×</button>
-      Siguiendo a quienes pasaron por <b>${escapar(nombre)}</b>: ${fmt.format(c.A)} en "Sabemos dónde terminaron"
-      y ${fmt.format(c.B)} en "No sabemos". Mové la línea de tiempo para ver de dónde venían y adónde fueron.`;
+      Siguiendo a quienes pasaron por <b>${escapar(nombre)}</b>: ${fmt.format(c.A)} en "Restos hallados"
+      y ${fmt.format(c.B)} en "Sin hallazgo registrado". Mové la línea de tiempo para ver de dónde venían y adónde fueron.`;
     $("filtro-activo").querySelector(".cerrar").onclick = () => filtrarCcd(null);
     const color = getComputedStyle(document.documentElement).getPropertyValue("--highlight").trim();
     capaFiltro = L.circleMarker([lat, lon], { pane: "seleccion", radius: 11, color, weight: 2.5, fill: false })
