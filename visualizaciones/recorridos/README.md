@@ -26,6 +26,9 @@ afuera de las dos versiones.
 Abrir `recorridos.html` en el navegador (doble clic alcanza; no hace falta
 servidor). Necesita internet: Leaflet viene de cdnjs y el mapa base es
 [Argenmap](https://www.ign.gob.ar/AreaServicios/Argenmap/Introduccion), del IGN.
+Si el servidor del IGN no responde en 6 segundos, la página pasa sola a
+OpenStreetMap en gris y lo aclara en la atribución del mapa. Ojo: ese mapa no
+rotula Malvinas como Argenmap.
 
 - **Reproducir** (o barra espaciadora): recorre las cuatro etapas.
 - Los números 0–3 debajo de la barra, o las flechas, saltan a una etapa.

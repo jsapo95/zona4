@@ -187,6 +187,12 @@
   .rotulo .chico { font-size: 13px; color: var(--text-secondary); }
   .leaflet-container { font: inherit; background: var(--surface-2); }
   .leaflet-control-attribution { font-size: 10.5px; }
+  /* OpenStreetMap de respaldo, en gris para que no compita con el calor. */
+  .teselas-respaldo { filter: grayscale(1) contrast(1.05) brightness(.97); }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .teselas-respaldo { filter: grayscale(1) invert(1) brightness(.78) contrast(.9); }
+  }
+  :root[data-theme="dark"] .teselas-respaldo { filter: grayscale(1) invert(1) brightness(.78) contrast(.9); }
   .tooltip-mapa { position: absolute; z-index: 600; pointer-events: none; background: var(--surface-1); color: var(--text-primary); border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; font-size: 12.5px; box-shadow: var(--shadow); display: none; max-width: 260px; }
   .sin-datos { padding: 40px; }
 </style>
@@ -323,14 +329,36 @@
     const t = document.documentElement.dataset.theme;
     return t ? t === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
   };
-  // Mapa base: Argenmap, del Instituto Geográfico Nacional.
-  let base;
+  // Mapa base: Argenmap, del Instituto Geográfico Nacional. Si el servidor
+  // del IGN no responde, se pasa a OpenStreetMap en gris para que el mapa no
+  // quede sin geografía.
+  const DATOS = "Datos: Parque de la Memoria, RUVTE, MinJus GBA, EAAF, Georef";
+  const ESPERA_IGN = 6000;
+  let base, respaldo = false, vigia;
   function ponerTeselas() {
     if (base) mapa.removeLayer(base);
+    clearTimeout(vigia);
+    if (respaldo) {
+      base = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: `&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> (respaldo: Argenmap no respondió) · ${DATOS}`,
+        maxZoom: 19, className: "teselas-respaldo",
+      }).addTo(mapa);
+      return;
+    }
     const capa = oscuro() ? "argenmap_oscuro" : "mapabase_gris";
-    const atrib = '<a href="https://www.ign.gob.ar/AreaServicios/Argenmap/Introduccion">Argenmap · IGN</a> · Datos: Parque de la Memoria, RUVTE, MinJus GBA, EAAF, Georef';
-    base = L.tileLayer(`https://wms.ign.gob.ar/geoserver/gwc/service/tms/1.0.0/${capa}@EPSG%3A3857@png/{z}/{x}/{y}.png`,
-      { attribution: atrib, tms: true, maxZoom: 18 }).addTo(mapa);
+    base = L.tileLayer(`https://wms.ign.gob.ar/geoserver/gwc/service/tms/1.0.0/${capa}@EPSG%3A3857@png/{z}/{x}/{y}.png`, {
+      attribution: `<a href="https://www.ign.gob.ar/AreaServicios/Argenmap/Introduccion">Argenmap · IGN</a> · ${DATOS}`,
+      tms: true, maxZoom: 18,
+    }).addTo(mapa);
+    let cargadas = 0, errores = 0;
+    base.on("tileload", () => { cargadas++; });
+    base.on("tileerror", () => { if (++errores >= 3 && !cargadas) pasarARespaldo(); });
+    vigia = setTimeout(() => { if (!cargadas) pasarARespaldo(); }, ESPERA_IGN);
+  }
+  function pasarARespaldo() {
+    if (respaldo) return;
+    respaldo = true;
+    ponerTeselas();
   }
   ponerTeselas();
 
