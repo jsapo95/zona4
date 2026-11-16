@@ -130,9 +130,11 @@
   :root[data-theme="dark"] .teselas-respaldo { filter: grayscale(1) invert(1) brightness(.78) contrast(.9); }
   /* Flujo: el trazo avanza en el sentido del recorrido. */
   .flujo { stroke-dasharray: 7 9; animation: avanzar 1.4s linear infinite; }
+  .flujo.salto { stroke-dasharray: 1 7; }
   .quieto .flujo { animation: none; stroke-dasharray: none; }
+  .quieto .flujo.salto { stroke-dasharray: 1 7; }
   @keyframes avanzar { to { stroke-dashoffset: -16; } }
-  @media (prefers-reduced-motion: reduce) { .flujo { animation: none; stroke-dasharray: none; } }
+  @media (prefers-reduced-motion: reduce) { .flujo { animation: none; stroke-dasharray: none; } .flujo.salto { stroke-dasharray: 1 7; } }
   .rotulo {
     position: absolute; left: 16px; bottom: 26px; z-index: 500; pointer-events: none;
     background: color-mix(in srgb, var(--surface-1) 88%, transparent); border-radius: 10px; padding: 10px 14px; box-shadow: var(--shadow);
@@ -209,6 +211,7 @@
       <div class="fila"><span class="linea-ley" style="background:var(--hacia-asesinato)"></span>hacia donde la asesinaron</div>
       <div class="fila"><span class="linea-ley" style="background:var(--hacia-restos)"></span>hacia donde aparecieron sus restos (cementerio, fosa o el lugar donde dejaron el cuerpo)</div>
       <p class="muted" style="font-size:12.5px;margin:2px 0 0">Son dos datos distintos: dónde la mataron (ficha del Parque) y dónde se encontraron sus restos, muchas veces enterrados como NN (identificación del EAAF). Sólo 90 personas tienen los dos registrados; por ejemplo, asesinadas en Rosario y halladas en el Cementerio La Piedad.</p>
+      <div class="fila"><svg width="28" height="8" aria-hidden="true"><line x1="2" y1="4" x2="26" y2="4" stroke="var(--text-secondary)" stroke-width="3" stroke-linecap="round" stroke-dasharray="1 6"/></svg>punteado y tenue: salta etapas sin registro (no se sabe por dónde pasó en el medio)</div>
       <div class="fila"><span class="nodo-ley"></span>partido o departamento</div>
       <div class="fila"><span class="nodo-ley sitio"></span>centro clandestino o sitio del EAAF</div>
     </div>
@@ -278,8 +281,10 @@
           const peso = 1 / (r.nodos[previa].length * r.nodos[s].length);
           for (const a of r.nodos[previa]) for (const b of r.nodos[s]) {
             if (a === b) continue;
-            const k = `${a}>${b}>${s}`;
-            const t = m.get(k) || { a, b, destino: s, peso: 0, personas: [] };
+            // Un tramo que salta etapas sin registro (secuestro → restos sin CCD
+            // ni asesinato conocidos) no es un traslado directo: se dibuja aparte.
+            const k = `${a}>${b}>${previa}>${s}`;
+            const t = m.get(k) || { a, b, desde: previa, destino: s, salto: s - previa > 1, peso: 0, personas: [] };
             t.peso += peso; t.personas.push(r.i); m.set(k, t);
           }
         }
@@ -319,15 +324,18 @@
     const max = Math.max(1, ...mostrados.map((t) => t.peso));
     for (const t of mostrados) {
       const a = D.nodos[t.a], b = D.nodos[t.b];
+      const opacidad = t.salto ? 0.4 : 0.75;
       const linea = L.polyline(arco(a, b), {
         color: css(COLOR_DESTINO[t.destino]), weight: 1.5 + 9 * Math.sqrt(t.peso / max),
-        opacity: 0.75, className: "flujo", lineCap: "round",
+        opacity: opacidad, className: t.salto ? "flujo salto" : "flujo", lineCap: "round",
       });
       const n = t.personas.length;
-      linea.bindTooltip(`<b>${escapar(a[2])} → ${escapar(b[2])}</b><br>${fmt.format(n)} ${n === 1 ? "persona" : "personas"} · ${HACIA[t.destino]}`, { sticky: true });
+      const sinRegistro = ETAPA.slice(t.desde + 1, t.destino).join(" ni ");
+      linea.bindTooltip(`<b>${escapar(a[2])} → ${escapar(b[2])}</b><br>${fmt.format(n)} ${n === 1 ? "persona" : "personas"} · ${HACIA[t.destino]}` +
+        (t.salto ? `<br><i>Sin registro de ${sinRegistro} en el medio: no es un traslado directo.</i>` : ""), { sticky: true });
       linea.on("click", () => mostrarDetalle(`${a[2]} → ${b[2]}`, t.personas));
       linea.on("mouseover", () => linea.setStyle({ opacity: 1 }));
-      linea.on("mouseout", () => linea.setStyle({ opacity: 0.75 }));
+      linea.on("mouseout", () => linea.setStyle({ opacity: opacidad }));
       linea.addTo(capaTramos);
     }
     // Nodos: tamaño según las personas que pasan por ellos en lo que se ve.
