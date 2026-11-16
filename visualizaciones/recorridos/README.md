@@ -14,7 +14,7 @@ Hay dos versiones, que se eligen arriba del panel:
 
 - **Restos hallados** (740 personas): tienen registrado el hallazgo de sus
   restos. En 690 se pudo ubicar el lugar.
-- **Sin hallazgo de restos registrado** (8.156 personas): desaparecidas o
+- **Sin hallazgo de restos registrado** (8.155 personas): desaparecidas o
   asesinadas sin hallazgo de restos registrado (1.574 figuran como asesinadas).
   En la etapa final cada punto se apaga en el último lugar donde las fuentes
   ubican a esa persona.
@@ -84,14 +84,14 @@ hace que la carga tarde más de media hora) y corre en un directorio temporal
 para no reescribir `data/processed/identity_merges.json`.
 
 Al final imprime un resumen con cuántos lugares se ubicaron en cada etapa y por
-qué no se ubicaron los demás. Medido el 2026-11-12:
+qué no se ubicaron los demás. Medido el 2026-11-16:
 
 | Etapa | Registrados | Ubicados | No ubicados |
 | ----- | ----------- | -------- | ----------- |
-| Secuestro | 7.133 | 6.749 | 262 sólo provincia, 88 sin centroide, 34 en el exterior |
-| Centro clandestino | 3.472 | 3.428 (1.255 por la localidad de su dirección) | 44 sin coordenadas ni dirección |
+| Secuestro | 7.133 | 6.748 | 262 sólo provincia, 89 sin centroide, 34 en el exterior |
+| Centro clandestino o lugar de detención | 3.472 | 3.428 (1.255 por la localidad de su dirección, 14 con coordenadas de RUVTE corregidas) | 44 sin coordenadas ni dirección |
 | Asesinato | 1.667 | 1.549 | 90 sólo provincia, 15 sin centroide, 13 en el exterior |
-| Hallazgo de restos | 745 | 690 | 55 textos sin lugar ("Identificado por el EAAF en 2009") |
+| Hallazgo de restos | 745 | 690 | 55 que no se pudieron ubicar: algunos textos no nombran un lugar ("Identificado por el EAAF en 2009"), otros nombran uno que el lector no reconoce |
 
 Los tests de las reglas de ubicación están en
 `tests/visualizaciones/test_recorridos_ubicacion.py`.
@@ -110,6 +110,11 @@ Los tests de las reglas de ubicación están en
   un poco para que se vean; la dispersión es fija entre recargas.
 - **"Capital Federal" sin barrio** (1.801 secuestros): centro de CABA, con una
   dispersión mayor.
+- **Nombres que en Georef son otro lugar**: "Guadalupe" (Santa Fe) no se ubica,
+  porque el único candidato es Guadalupe Norte, a 300 km; "Fronterita"
+  (Tucumán) va a Famaillá, donde está el ingenio (`PARTIDO_DE_LOCALIDAD`).
+- **Cementerios con sectores**: si el texto dice "Cementerio de Avellaneda" sin
+  sector, se nombra así, sin inventar el "Sector 134" del EAAF.
 - **Sólo la provincia**: no se dibuja. El centroide de Buenos Aires cae en medio
   de la pampa, lejos de cualquier hecho.
 - **Hallazgo de restos**: primero se busca en el texto un sitio del EAAF
@@ -122,6 +127,10 @@ Los tests de las reglas de ubicación están en
 
 - **El orden entre CCD no se conoce.** Quien pasó por tres aparece en los tres a
   la vez, con un tercio de peso en cada uno.
+- **La etapa 1 incluye cárceles.** Las fuentes registran como lugar de
+  detención unidades penales (la 9 de La Plata, Devoto, la 3 de San Nicolás):
+  358 de los 3.472 pasos. Por eso la etapa se llama "Centro clandestino o lugar
+  de detención".
 - **La etapa de CCD está sesgada hacia la provincia de Buenos Aires**: MinJus GBA
   es la fuente con más pasos por CCD y sólo cubre esa provincia.
 - **Los grandes CCD de CABA casi no aparecen.** Las fichas del Parque de la

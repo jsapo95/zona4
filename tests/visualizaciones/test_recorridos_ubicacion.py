@@ -151,3 +151,24 @@ def test_coordenadas_ruvte_corregidas_quedan_lejos_de_su_direccion(centroides):
 def test_barrio_abreviado_no_engancha_una_localidad_homonima(centroides, sitios):
     texto = "Aparición:Su cuerpo s encontró el 14/12/75 en Bº Esperanza, Villa Celina, La Matanza; Ente:"
     assert cd.ubicar_hallazgo(texto, sitios, centroides)["nombre"] == "La Matanza"
+
+
+def test_prefijo_de_otro_pueblo_no_se_usa(centroides):
+    # "Guadalupe Norte" (General Obligado) no es Guadalupe: mejor no ubicar.
+    coords, motivo = centroides.ubicar("lugar:CIUDAD:guadalupe|lugar:PROVINCIA:santa_fe|lugar:PAIS:argentina")
+    assert coords is None and motivo == "sin_centroide"
+
+
+def test_prefijo_de_nombre_compuesto_si(centroides):
+    coords, _ = centroides.ubicar("lugar:CIUDAD:villa_mariano_moreno|lugar:PROVINCIA:tucuman|lugar:PAIS:argentina")
+    assert coords is not None
+
+
+def test_fronterita_es_el_ingenio_de_famailla(centroides):
+    coords, _ = centroides.ubicar("lugar:CIUDAD:fronterita|lugar:PROVINCIA:tucuman|lugar:PAIS:argentina")
+    assert coords[4] == ("Famaillá", "Tucumán")
+
+
+def test_cementerio_sin_sector_no_inventa_el_sector(sitios, centroides):
+    texto = "Identificado por el EAAF en 2010. Sus restos fueron exhumados en el Cementerio de Avellaneda, Bs. As."
+    assert cd.ubicar_hallazgo(texto, sitios, centroides)["nombre"] == "Cementerio de Avellaneda (Avellaneda)"

@@ -103,6 +103,15 @@ ALIAS_LOCALIDADES = {
     "bosques de palermo": "palermo",
 }
 
+# Lugares del grafo cuyo homónimo en Georef es otro lugar; se ubican en su
+# partido. "Fronterita" en Georef es un paraje de Leales; en las fuentes es el
+# ingenio La Fronterita, que el propio grafo ubica en Famaillá ("Ingenio
+# Fronterita", lugar de secuestro de otra ficha del Parque).
+PARTIDO_DE_LOCALIDAD = {
+    ("fronterita", "tucuman"): "famailla",
+}
+
+
 def _nombre(row: Dict[str, Any]) -> str:
     """Nombre de Georef con tildes, con su partido si no es el mismo nombre."""
     nombre, depto = row["nombre"], row.get("departamento")
@@ -168,6 +177,11 @@ class Centroides:
         ]
         if not filas:
             return None
+        # Uno solo vale si es un nombre compuesto ("Villa Mariano Moreno - El
+        # Colmenar"), no otro pueblo ("Guadalupe Norte" no es Guadalupe, barrio
+        # de Santa Fe).
+        if len(filas) == 1 and " - " not in filas[0]["nombre"]:
+            return None
         lat = sum(r["lat"] for r in filas) / len(filas)
         lon = sum(r["lon"] for r in filas) / len(filas)
         # Si los asentamientos están lejos entre sí no es un mismo lugar.
@@ -212,6 +226,10 @@ class Centroides:
         provincia = seg.get("PROVINCIA", "")
         ciudad, departamento = seg.get("CIUDAD"), seg.get("DEPARTAMENTO", "")
         if ciudad:
+            partido_conocido = PARTIDO_DE_LOCALIDAD.get((ciudad, self._provincia(provincia)))
+            if partido_conocido:
+                row = self._buscar("departamentos", partido_conocido, provincia)
+                return _tupla(row, DEPARTAMENTO, "departamentos"), "ok"
             if ciudad == CABA:
                 p = self.provincias[CABA]
                 return (p["lat"], p["lon"], CABA_GENERICA, NOMBRE_CABA, (NOMBRE_CABA_PARTIDO, p["nombre"])), "ok"
@@ -560,7 +578,14 @@ def ubicar_hallazgo(texto: str, sitios: SitiosEAAF, centroides: Centroides) -> O
     """Ubica el lugar donde se hallaron los restos según el texto del Parque."""
     sitio = sitios.buscar(texto)
     if sitio:
-        return {"nombre": f"{sitio['nombre']} ({sitio['localidad']})", "tipo": sitio["tipo"],
+        # El EAAF distingue sectores de un cementerio ("Cementerio de
+        # Avellaneda- Sector 134" y "-Fondo"); si el texto no dice cuál, se
+        # nombra el cementerio sin sector (las coordenadas son del primero).
+        nombre = sitio["nombre"]
+        partes = re.split(r"\s*-\s*(?=Sector|Fondo)", nombre)
+        if len(partes) > 1 and norm(partes[1]) not in norm(texto):
+            nombre = partes[0]
+        return {"nombre": f"{nombre} ({sitio['localidad']})", "tipo": sitio["tipo"],
                 "lat": sitio["lat"], "lon": sitio["lon"], "precision": SITIO}
     for patron in _FRAGMENTO_LUGAR:
         m = patron.search(texto)
