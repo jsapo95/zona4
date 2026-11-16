@@ -41,6 +41,30 @@ rotula Malvinas como Argenmap.
   nombre.
 - Capas: mapa de calor, personas y trayectos (arcos entre etapas).
 
+## Recorridos frecuentes (`flujos.html`)
+
+Segunda vista con los mismos datos: un mapa de flujos con los tramos entre
+etapas. Cada flecha une un lugar con el siguiente del recorrido de una persona y
+su grosor es la cantidad de personas; el color dice hacia qué etapa va (CCD,
+asesinato o hallazgo de restos).
+
+- **Recorridos similares** son los que pasan por los mismos lugares en las mismas
+  etapas. Para que se puedan comparar, secuestro, asesinato y hallazgo se
+  agrupan por partido o departamento de Georef (Villa Ballester y San Andrés
+  son General San Martín; todos los barrios de CABA son la Ciudad de Buenos
+  Aires). Los CCD y los sitios del EAAF quedan como sitios propios.
+- Se filtra por versión, por **año de secuestro** (con un botón que recorre los
+  años) y por un lugar escrito (partido, CCD o cementerio). La lista de
+  recorridos más repetidos deja ver a las personas de cada uno.
+- Sólo entran las 1.207 personas con dos etapas o más ubicadas. Las más
+  repetidas: Tucumán (capital) → Pozo de Vargas (44), CABA → El Vesubio (33),
+  General Pueyrredón → Base Naval Mar del Plata (23).
+- El año es el del secuestro (arista del Parque o ficha de MinJus); 80 de esas
+  1.207 no lo tienen y sólo aparecen con "Todos los años".
+
+`mapa_base.js` tiene el mapa base (Argenmap con respaldo en OpenStreetMap) que
+usan las dos páginas.
+
 ## Cómo regenerar los datos
 
 ```bash

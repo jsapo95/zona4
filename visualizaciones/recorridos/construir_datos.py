@@ -62,6 +62,7 @@ ETAPAS = [
 # muestra y la usa para dispersar levemente los puntos que comparten centroide.
 SITIO, LOCALIDAD, CABA_GENERICA, DEPARTAMENTO = "sitio", "localidad", "caba", "departamento"
 NOMBRE_CABA = "Ciudad de Buenos Aires (sin barrio)"
+NOMBRE_CABA_PARTIDO = "Ciudad de Buenos Aires"
 
 
 def norm(texto: Optional[str]) -> str:
@@ -107,6 +108,24 @@ def _nombre(row: Dict[str, Any]) -> str:
     if row.get("provincia", "").startswith("Ciudad Aut"):
         return f"{nombre} (CABA)"
     return f"{nombre} ({depto})" if depto and norm(depto) != norm(nombre) else nombre
+
+
+def _partido(row: Dict[str, Any], nivel: str) -> Tuple[str, str]:
+    """(partido o departamento, provincia) de una fila de Georef.
+
+    Agrupa los lugares para comparar recorridos: Villa Ballester y San Andrés
+    caen los dos en General San Martín.
+    """
+    provincia = row.get("provincia") or ""
+    if provincia.startswith("Ciudad Aut"):
+        return NOMBRE_CABA_PARTIDO, provincia
+    if nivel in ("departamentos", "municipios") or not row.get("departamento"):
+        return row["nombre"], provincia
+    return row["departamento"], provincia
+
+
+def _tupla(row: Dict[str, Any], precision: str, nivel: str) -> Tuple[float, float, str, str, Tuple[str, str]]:
+    return row["lat"], row["lon"], precision, _nombre(row), _partido(row, nivel)
 
 
 class Centroides:
@@ -155,7 +174,17 @@ class Centroides:
             return None
         return lat, lon
 
-    def por_nombre(self, nombre: str, provincia: Optional[str] = None) -> Optional[Tuple[float, float, str, str]]:
+    def partido(self, nombre: str, provincia: str) -> Dict[str, Any]:
+        """Fila del partido/departamento (centroide); CABA es un único nodo."""
+        if provincia.startswith("Ciudad Aut"):
+            return {**self.provincias[CABA], "nombre": NOMBRE_CABA_PARTIDO}
+        for nivel in ("departamentos", "municipios"):
+            row = self._buscar(nivel, norm(nombre), norm(provincia))
+            if row:
+                return row
+        raise KeyError(f"partido sin centroide: {nombre}, {provincia}")
+
+    def por_nombre(self, nombre: str, provincia: Optional[str] = None) -> Optional[Tuple[Any, ...]]:
         """Busca un nombre exacto de localidad en todo el país (o en una provincia).
 
         Sólo devuelve algo si todas las coincidencias caen en el mismo lugar:
@@ -172,10 +201,10 @@ class Centroides:
             return None
         if max(abs(r["lat"] - filas[0]["lat"]) + abs(r["lon"] - filas[0]["lon"]) for r in filas) > 0.05:
             return None
-        return filas[0]["lat"], filas[0]["lon"], LOCALIDAD, _nombre(filas[0])
+        return _tupla(filas[0], LOCALIDAD, "localidades")
 
-    def ubicar(self, lugar_key: str) -> Tuple[Optional[Tuple[float, float, str, str]], str]:
-        """Devuelve ((lat, lon, precision, nombre), motivo). Si no ubica, la tupla es None."""
+    def ubicar(self, lugar_key: str) -> Tuple[Optional[Tuple[Any, ...]], str]:
+        """Devuelve ((lat, lon, precision, nombre, partido), motivo). Si no ubica, la tupla es None."""
         seg = segmentos(lugar_key)
         if seg.get("PAIS") != "argentina":
             return None, "exterior"
@@ -184,7 +213,7 @@ class Centroides:
         if ciudad:
             if ciudad == CABA:
                 p = self.provincias[CABA]
-                return (p["lat"], p["lon"], CABA_GENERICA, NOMBRE_CABA), "ok"
+                return (p["lat"], p["lon"], CABA_GENERICA, NOMBRE_CABA, (NOMBRE_CABA_PARTIDO, p["nombre"])), "ok"
             # Las claves CIUDAD sin DEPARTAMENTO vienen de EQUIV_CITIES o de
             # abreviaturas, no de Georef: "SAN MARTIN" es General San Martín y
             # "JOSE LEON SUAREZ" es Villa José León Suárez. Se prueban esas
@@ -196,24 +225,24 @@ class Centroides:
                 for variante in variantes:
                     row = self._buscar(nivel, variante, provincia, departamento)
                     if row:
-                        return (row["lat"], row["lon"], LOCALIDAD, _nombre(row)), "ok"
+                        return _tupla(row, LOCALIDAD, nivel), "ok"
             # Un asentamiento sólo si el nombre es único en la provincia.
             filas = self.indices["asentamientos"].get((ciudad, self._provincia(provincia)), [])
             if len(filas) == 1:
-                return (filas[0]["lat"], filas[0]["lon"], LOCALIDAD, _nombre(filas[0])), "ok"
+                return _tupla(filas[0], LOCALIDAD, "asentamientos"), "ok"
             row = self._buscar("departamentos", ciudad, provincia)
             if row:
-                return (row["lat"], row["lon"], DEPARTAMENTO, _nombre(row)), "ok"
+                return _tupla(row, DEPARTAMENTO, "departamentos"), "ok"
             prefijo = self._por_prefijo(ciudad, provincia)
             if prefijo:
-                return (*prefijo, LOCALIDAD, ciudad.title()), "ok"
+                return (*prefijo, LOCALIDAD, ciudad.title(), None), "ok"
         if departamento:
             row = self._buscar("departamentos", departamento, provincia)
             if row:
-                return (row["lat"], row["lon"], DEPARTAMENTO, _nombre(row)), "ok"
+                return _tupla(row, DEPARTAMENTO, "departamentos"), "ok"
         if provincia == CABA and not ciudad:
             p = self.provincias[CABA]
-            return (p["lat"], p["lon"], CABA_GENERICA, NOMBRE_CABA), "ok"
+            return (p["lat"], p["lon"], CABA_GENERICA, NOMBRE_CABA, (NOMBRE_CABA_PARTIDO, p["nombre"])), "ok"
         if not ciudad and not departamento:
             # Sólo provincia: el centroide de Buenos Aires cae en medio de la
             # pampa, lejos de todo hecho real. Se prefiere no dibujarlo.
@@ -321,7 +350,7 @@ def ubicar_fragmento(texto: str, centroides: Centroides) -> Tuple[Optional[Tuple
     if pista == "CAPITAL FEDERAL":
         # Una calle de CABA sin barrio: la ciudad alcanza como ubicación.
         p = centroides.provincias[CABA]
-        return (p["lat"], p["lon"], CABA_GENERICA, NOMBRE_CABA), NOMBRE_CABA
+        return (p["lat"], p["lon"], CABA_GENERICA, NOMBRE_CABA, (NOMBRE_CABA_PARTIDO, p["nombre"])), NOMBRE_CABA
     return None, None
 
 
@@ -454,7 +483,8 @@ def ubicar_hallazgo(texto: str, sitios: SitiosEAAF, centroides: Centroides) -> O
         coords, nombre = ubicar_fragmento(fragmento, centroides)
         if coords:
             return {"nombre": coords[3] if len(coords) > 3 else (nombre or fragmento).title(), "tipo": "localidad del hallazgo",
-                    "lat": coords[0], "lon": coords[1], "precision": coords[2]}
+                    "lat": coords[0], "lon": coords[1], "precision": coords[2],
+                    "partido": coords[4] if len(coords) > 4 else None}
     return None
 
 
@@ -463,6 +493,10 @@ def ubicar_hallazgo(texto: str, sitios: SitiosEAAF, centroides: Centroides) -> O
 # --------------------------------------------------------------------------
 
 SOBREVIVIENTE = {"Persona liberada", "Persona fugado", "Persona restituida"}
+
+
+def _fecha_iso(valor: Optional[str]) -> Optional[str]:
+    return valor if valor and re.fullmatch(r"\d{4}-\d{2}-\d{2}", valor) else None
 
 
 def leer_fuentes() -> Tuple[Dict[str, Dict[str, Any]], Dict[str, Dict[str, Any]]]:
@@ -490,19 +524,40 @@ def main() -> None:
 
     lugares_cdm = {l["lugar_key"]: l for l in cdm["lugares"] if l.get("tipo_entidad") == "Lugar"}
 
-    # Tabla de lugares de salida: [lat, lon, nombre, tipo, precision].
+    # Tabla de lugares de salida: [lat, lon, nombre, tipo, precision, nodo].
+    # `nodo` indexa `nodos_out`: el partido para localidades y el propio
+    # lugar para CCD y sitios del EAAF. Es el nivel en que se comparan los
+    # recorridos en la vista de flujos.
     lugares_out: List[List[Any]] = []
     indice_lugar: Dict[Any, int] = {}
+    nodos_out: List[List[Any]] = []
+    indice_nodo: Dict[Any, int] = {}
     motivos: Dict[str, Counter] = defaultdict(Counter)
 
-    def agregar_lugar(clave: str, lat: float, lon: float, nombre: str, tipo: str, precision: str) -> int:
+    def nodo_de(lat: float, lon: float, nombre: str, tipo: str, partido: Optional[Tuple[str, str]]) -> int:
+        if partido:
+            fila = centroides.partido(*partido)
+            clave, lat, lon, nombre, tipo = ("partido", *partido), fila["lat"], fila["lon"], fila["nombre"], "partido"
+            # "Capital" se repite en varias provincias: se aclara cuál.
+            if norm(nombre) in ("capital", "la capital"):
+                nombre = f"{partido[1]} (capital)"
+        else:
+            clave = (nombre, tipo, round(lat, 4), round(lon, 4))
+        if clave not in indice_nodo:
+            indice_nodo[clave] = len(nodos_out)
+            nodos_out.append([round(lat, 5), round(lon, 5), nombre, tipo])
+        return indice_nodo[clave]
+
+    def agregar_lugar(clave: str, lat: float, lon: float, nombre: str, tipo: str, precision: str,
+                      partido: Optional[Tuple[str, str]] = None) -> int:
         # Dos claves del grafo pueden caer en el mismo punto con el mismo
         # nombre (CORDOBA con y sin DEPARTAMENTO): se dibujan como un lugar.
         mismo_punto = (nombre, tipo, round(lat, 4), round(lon, 4))
         if clave not in indice_lugar:
             if mismo_punto not in indice_lugar:
                 indice_lugar[mismo_punto] = len(lugares_out)
-                lugares_out.append([round(lat, 5), round(lon, 5), nombre, tipo, precision])
+                nodo = nodo_de(lat, lon, nombre, tipo, partido)
+                lugares_out.append([round(lat, 5), round(lon, 5), nombre, tipo, precision, nodo])
             indice_lugar[clave] = indice_lugar[mismo_punto]
         return indice_lugar[clave]
 
@@ -528,7 +583,7 @@ def main() -> None:
         coords, motivo = centroides.ubicar(lugar_key)
         if not coords:
             return None, motivo
-        return agregar_lugar(lugar_key, coords[0], coords[1], coords[3], "localidad", coords[2]), motivo
+        return agregar_lugar(lugar_key, coords[0], coords[1], coords[3], "localidad", coords[2], coords[4]), motivo
 
     def lugar_del_grafo(lugar_key: str, etapa: str) -> Optional[int]:
         if lugar_key not in resolucion_grafo:
@@ -538,7 +593,10 @@ def main() -> None:
         return idx
 
     eventos: Dict[str, Dict[str, List[str]]] = defaultdict(lambda: defaultdict(list))
+    fecha_secuestro: Dict[str, str] = {}
     for ev in cdm["eventos_espaciales"]:
+        if ev["tipo_relacion"] == "SECUESTRADO_EN" and re.fullmatch(r"\d{4}-\d{2}-\d{2}", ev.get("fecha") or ""):
+            fecha_secuestro.setdefault(ev["persona_key"], ev["fecha"])
         for etapa in ETAPAS:
             if ev["tipo_relacion"] == etapa["arista"] and ev["lugar_key"] not in eventos[ev["persona_key"]][etapa["id"]]:
                 eventos[ev["persona_key"]][etapa["id"]].append(ev["lugar_key"])
@@ -577,7 +635,8 @@ def main() -> None:
             if hallazgo:
                 motivos["final"]["ok"] += 1
                 final.append(agregar_lugar(f"hallazgo:{hallazgo['nombre']}", hallazgo["lat"], hallazgo["lon"],
-                                           hallazgo["nombre"], hallazgo["tipo"], hallazgo["precision"]))
+                                           hallazgo["nombre"], hallazgo["tipo"], hallazgo["precision"],
+                                           hallazgo.get("partido")))
             else:
                 motivos["final"]["texto_sin_lugar"] += 1
         etapas.append(final)
@@ -608,12 +667,16 @@ def main() -> None:
             "e": etapas,
             "u": [f.get("detail_url") for f in fichas_parque] + [f.get("source_url") for f in fichas_minjus],
             "h": textos_hallazgo[0] if textos_hallazgo else None,
+            # Fecha de secuestro: la de la arista del Parque o, si no hay, la
+            # de la ficha de MinJus / Archivo San Martín.
+            "f": fecha_secuestro.get(persona["persona_key"]) or _fecha_iso(persona.get("fecha_secuestro")),
         })
 
     datos = {
         "generado": date.today().isoformat(),
         "etapas": [{"id": e["id"], "nombre": e["nombre"]} for e in ETAPAS],
         "lugares": lugares_out,
+        "nodos": nodos_out,
         "personas": personas_out,
         "resumen": {
             "personas": dict(resumen),

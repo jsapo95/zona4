@@ -85,3 +85,28 @@ def test_general_villegas_no_es_el_cementerio_de_villegas_de_la_matanza(sitios, 
     assert sitios.buscar(texto) is None
     hallazgo = cd.ubicar_hallazgo(texto, sitios, centroides)
     assert _cerca(hallazgo and (hallazgo["lat"], hallazgo["lon"]), -35.03, -63.01, tolerancia=0.2)
+
+
+# --- Agrupación por partido (vista de recorridos frecuentes) ---------------
+
+def test_localidades_del_mismo_partido_comparten_nodo(centroides):
+    ballester, _ = centroides.ubicar(
+        "lugar:CIUDAD:villa_ballester|lugar:DEPARTAMENTO:general_san_martin|lugar:PROVINCIA:buenos_aires|lugar:PAIS:argentina"
+    )
+    san_martin, _ = centroides.ubicar("lugar:CIUDAD:san_martin|lugar:PROVINCIA:buenos_aires|lugar:PAIS:argentina")
+    assert ballester[4] == san_martin[4] == ("General San Martín", "Buenos Aires")
+
+
+def test_barrios_de_caba_y_caba_sin_barrio_son_un_solo_nodo(centroides):
+    palermo, _ = centroides.ubicar(
+        "lugar:CIUDAD:palermo|lugar:DEPARTAMENTO:comuna_14|lugar:PROVINCIA:ciudad_autonoma_de_buenos_aires|lugar:PAIS:argentina"
+    )
+    generica, _ = centroides.ubicar(
+        "lugar:CIUDAD:ciudad_autonoma_de_buenos_aires|lugar:PROVINCIA:ciudad_autonoma_de_buenos_aires|lugar:PAIS:argentina"
+    )
+    assert palermo[4][0] == generica[4][0] == cd.NOMBRE_CABA_PARTIDO
+
+
+def test_el_nodo_de_un_partido_esta_en_su_centroide(centroides):
+    fila = centroides.partido("General San Martín", "Buenos Aires")
+    assert _cerca((fila["lat"], fila["lon"]), -34.55, -58.56)

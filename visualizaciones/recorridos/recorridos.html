@@ -209,6 +209,7 @@
   </div>
 
   <aside class="panel">
+    <a href="flujos.html" style="font-size:13px;display:inline-block;margin-bottom:10px">Ver recorridos frecuentes →</a>
     <h1>Del secuestro al hallazgo</h1>
     <p class="bajada">Cada punto es una persona víctima de la represión. Al reproducir, el mapa sigue a cada una por las etapas que registran las fuentes: dónde la secuestraron, por qué centros clandestinos pasó, dónde la asesinaron y dónde se encontraron sus restos.</p>
     <p class="bajada muted" style="font-size:13px">Las etapas no son fechas: son pasos de un recorrido. Las fuentes casi nunca dicen cuándo ocurrió cada uno.</p>
@@ -292,11 +293,12 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="datos/recorridos.js"></script>
+<script src="mapa_base.js"></script>
 <script>
 (() => {
   "use strict";
   const D = window.RECORRIDOS;
-  if (!D || !window.L) {
+  if (!D || !window.L || !window.MapaBase) {
     document.querySelector(".mapa-wrap").innerHTML =
       '<p class="sin-datos">No se pudieron cargar los datos o el mapa. Generá <code>datos/recorridos.js</code> con <code>construir_datos.py</code> y abrí esta página con conexión a internet (el mapa base y Leaflet vienen de un CDN).</p>';
     return;
@@ -335,42 +337,8 @@
   mapa.createPane("calor").style.zIndex = 350;
   mapa.createPane("seleccion").style.zIndex = 420;
 
-  const oscuro = () => {
-    const t = document.documentElement.dataset.theme;
-    return t ? t === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
-  };
-  // Mapa base: Argenmap, del Instituto Geográfico Nacional. Si el servidor
-  // del IGN no responde, se pasa a OpenStreetMap en gris para que el mapa no
-  // quede sin geografía.
-  const DATOS = "Datos: Parque de la Memoria, RUVTE, MinJus GBA, EAAF, Georef";
-  const ESPERA_IGN = 6000;
-  let base, respaldo = false, vigia;
-  function ponerTeselas() {
-    if (base) mapa.removeLayer(base);
-    clearTimeout(vigia);
-    if (respaldo) {
-      base = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: `&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> (respaldo: Argenmap no respondió) · ${DATOS}`,
-        maxZoom: 19, className: "teselas-respaldo",
-      }).addTo(mapa);
-      return;
-    }
-    const capa = oscuro() ? "argenmap_oscuro" : "mapabase_gris";
-    base = L.tileLayer(`https://wms.ign.gob.ar/geoserver/gwc/service/tms/1.0.0/${capa}@EPSG%3A3857@png/{z}/{x}/{y}.png`, {
-      attribution: `<a href="https://www.ign.gob.ar/AreaServicios/Argenmap/Introduccion">Argenmap · IGN</a> · ${DATOS}`,
-      tms: true, maxZoom: 18,
-    }).addTo(mapa);
-    let cargadas = 0, errores = 0;
-    base.on("tileload", () => { cargadas++; });
-    base.on("tileerror", () => { if (++errores >= 3 && !cargadas) pasarARespaldo(); });
-    vigia = setTimeout(() => { if (!cargadas) pasarARespaldo(); }, ESPERA_IGN);
-  }
-  function pasarARespaldo() {
-    if (respaldo) return;
-    respaldo = true;
-    ponerTeselas();
-  }
-  ponerTeselas();
+  const oscuro = MapaBase.oscuro;
+  const ponerTeselas = MapaBase.ponerEn(mapa);
 
   // Canvas propio dentro de un pane, debajo de la persona seleccionada.
   const lienzo = L.DomUtil.create("canvas", "", mapa.getPane("calor"));
