@@ -11,6 +11,7 @@ from zona4_graph_loader.constants import (
     GEOREF_CATALOG_PATH,
     GEOREF_MIN_SCORE,
     PROVINCE_ABBR,
+    PROVINCE_PRIORITY,
     UNKNOWN_PLACE_VALUES,
 )
 from zona4_graph_loader.domain.place_gazetteer import PlaceGazetteer
@@ -471,6 +472,64 @@ def _resolve_foreign_place(alias_norm: str) -> Optional[Dict[str, Any]]:
     }
 
 
+def _resolve_foreign_country_segment(text: str, alias_norm: str) -> Optional[Dict[str, Any]]:
+    # `_resolve_foreign_place` sólo reconoce el país cuando la cadena entera
+    # ES el país o TERMINA en él. Si la fuente agrega detalle después
+    # ("Canelones, Uruguay. Cruce Ruta 9 y Ruta 70") o la cadena es larga
+    # ("Hotel Ermitage, Juan Benito Blanco 783 (Pocitos, Montevideo,
+    # Uruguay)"), el texto seguía a Georef, que matcheaba el departamento
+    # homónimo "Uruguay" de Entre Ríos. Acá se busca el país como segmento
+    # propio del texto crudo (separado por puntuación), no como subcadena:
+    # "Concepción del Uruguay" o "Uruguay 2663" no son el país.
+    #
+    # Si la fuente nombra alguna provincia argentina o CABA, el segmento es
+    # una calle o el departamento homónimo ("CONCEPCIÓN DEL URUGUAY ·
+    # URUGUAY · ENTRE RÍOS"; "San Nicolas (estación subte B, Uruguay)") y no
+    # se toca.
+    padded = f" {alias_norm} "
+    domestic_hints = set(PROVINCE_PRIORITY) | set(PROVINCE_ABBR.keys()) | {"CAPITAL FEDERAL", "CABA"}
+    if any(f" {hint} " in padded for hint in domestic_hints):
+        return None
+
+    segments = [normalize_place_text(s) for s in re.split(r"[^\w\s]+", text)]
+    segments = [s for s in segments if s]
+    for idx, segment in enumerate(segments):
+        if segment not in FOREIGN_COUNTRY_EQUIV:
+            continue
+        country_name, country_code = FOREIGN_COUNTRY_EQUIV[segment]
+        country_key = make_lugar_key("PAIS", country_name, None)
+        # La ciudad es el segmento inmediatamente anterior al país, sólo si
+        # parece un topónimo. Si es una dirección o no hay nada antes, se
+        # afirma sólo el país antes que inventar una ciudad.
+        city_name = segments[idx - 1] if idx > 0 else ""
+        if (
+            not city_name
+            or any(ch.isdigit() for ch in city_name)
+            or len(city_name.split()) > 4
+            or _es_fragmento_no_toponimico(city_name)
+        ):
+            return {
+                "alias_norm": alias_norm,
+                "tipo": "PAIS",
+                "nombre_canonico": country_name,
+                "lugar_key": country_key,
+                "parent_key": None,
+                "hierarchy_keys": [country_key],
+                "pais_code": country_code,
+            }
+        city_key = make_lugar_key("CIUDAD", city_name, country_key)
+        return {
+            "alias_norm": alias_norm,
+            "tipo": "CIUDAD",
+            "nombre_canonico": city_name,
+            "lugar_key": city_key,
+            "parent_key": country_key,
+            "hierarchy_keys": [city_key, country_key],
+            "pais_code": country_code,
+        }
+    return None
+
+
 def _has_explicit_province_hint(alias_norm: str) -> bool:
     province_hints = set(PROVINCE_ABBR.keys()) | {"CAPITAL FEDERAL", "CABA", "CIUDAD AUTONOMA DE BUENOS AIRES"}
     padded = f" {alias_norm} "
@@ -777,6 +836,8 @@ def resolve_place(
             return caba_context
 
     foreign_resolved = _resolve_foreign_place(alias_norm)
+    if foreign_resolved is None:
+        foreign_resolved = _resolve_foreign_country_segment(text, alias_norm)
     if foreign_resolved is not None:
         foreign_resolved["alias_raw"] = text
         return foreign_resolved

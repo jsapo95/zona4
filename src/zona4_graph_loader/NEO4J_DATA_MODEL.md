@@ -71,6 +71,22 @@
   propiedades. Requiere recargar con `--clean-project`: el loader sólo hace
   MERGE, y una recarga incremental conserva los nodos de MinJus que ahora se
   absorben.
+- Fix 2026-11-16 (sin bump de versión): un país extranjero nombrado con
+  detalle extra deja de caer en Argentina. `domain/place_norm.py` sólo
+  reconocía el país si el texto era el país o terminaba en él; "Canelones,
+  Uruguay. Cruce Ruta 9 y Ruta 70" o "Hotel Ermitage, Juan Benito Blanco 783
+  (Pocitos, Montevideo, Uruguay)" seguían a Georef, que matcheaba el
+  departamento homónimo Uruguay de Entre Ríos. Ahora se busca el país como
+  segmento propio del texto, salvo que la fuente nombre una provincia
+  argentina o CABA (así "Concepción del Uruguay · Uruguay · Entre Ríos" y las
+  calles con nombre de país no cambian). Medido sobre el CDM de una carga
+  completa: las aristas hacia `lugar:DEPARTAMENTO:uruguay` de Entre Ríos
+  pasan de 6 a 0 (5 `ASESINADO_EN` y 1 `SECUESTRADO_EN`, todas de
+  `detalles_personas`) y pasan a Canelones o Montevideo, Uruguay; el mismo
+  patrón saca 1 `SECUESTRADO_EN` de un `:Lugar` INDETERMINADO y lo cuelga de
+  Santiago, Chile. Los hechos por tipo no cambian. No agrega labels ni
+  propiedades. Requiere recargar con `--clean-project`: una recarga
+  incremental conserva las aristas viejas hacia el departamento.
 
 Este documento define la arquitectura exacta e inmutable del grafo en Neo4j. Cualquier proceso de extracción, estructuración o ingesta automática de datos ejecutado por un LLM debe adherirse estrictamente a las reglas, etiquetas, relaciones y propiedades declaradas a continuación. Está prohibido inventar o inferir entidades intermedias.
 
