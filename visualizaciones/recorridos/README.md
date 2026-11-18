@@ -59,15 +59,16 @@ asesinato o hallazgo de restos).
   recorridos más repetidos deja ver a las personas de cada uno.
 - Tres casillas en la leyenda prenden o apagan cada tipo de tramo: hacia el
   CCD, hacia el lugar de asesinato y hacia el hallazgo de restos.
-- **Con zoom se ocultan los puntos genéricos**: "Capital Federal" sin barrio
-  desde el zoom 10, partidos y localidades desde el 11 y barrios desde el 13
-  (`ZOOM_OCULTA`), porque su punto parecería una dirección. Los CCD sin
-  coordenadas propias se ocultan como su localidad o partido. Los CCD y sitios
-  del EAAF con coordenadas quedan siempre a la vista, aunque sus tramos vengan
-  de un punto oculto. Abajo a la izquierda
-  se listan los lugares ocultos de la zona que se ve, con cuántos secuestros,
-  asesinatos y hallazgos tiene cada uno. Las etapas sin registro (sin CCD, sin
-  asesinato, etc.) se cuentan en el panel.
+- **Zonas y sitios**: un punto con borde punteado y relleno tenue es una zona
+  (la fuente sólo dice el partido, la localidad, el barrio o "Capital
+  Federal"): es el centro de esa zona, no una dirección. Un punto relleno es un
+  sitio específico (CCD o sitio del EAAF con coordenadas propias); con borde
+  punteado, un CCD sin coordenadas propias, ubicado en el centro de su
+  localidad. Con zoom se siguen viendo todos los tramos, y desde el zoom 10 el
+  rótulo de abajo a la izquierda lista las zonas que se ven con cuántos
+  secuestros, pasos por CCD, asesinatos y hallazgos sin dirección exacta tiene
+  cada una. Las etapas sin registro (sin CCD, sin asesinato, etc.) se cuentan
+  en el panel.
 - Sólo entran las 1.207 personas con dos etapas o más ubicadas. Las más
   repetidas: Tucumán (capital) → Pozo de Vargas (44), CABA → El Vesubio (33),
   General Pueyrredón → Base Naval Mar del Plata (23).
