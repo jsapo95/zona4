@@ -71,6 +71,16 @@
   propiedades. Requiere recargar con `--clean-project`: el loader sólo hace
   MERGE, y una recarga incremental conserva los nodos de MinJus que ahora se
   absorben.
+- Un nombre de provincia a secas en el lugar de secuestro o de asesinato
+  ("CORDOBA", "San Juan", "Santa Fé") es la `:Lugar` PROVINCIA, no su capital
+  homónima: la fuente escribe la ciudad como "CORDOBA CAPITAL" y "TUCUMAN" o
+  "BUENOS AIRES" a secas ya iban a la provincia. En nacimiento no se toca,
+  porque ahí no se puede decidir (decisión del equipo, 2026-11-18;
+  `builders/lugares.py`, `provincia_si_es_solo_su_nombre`). Medido sobre el
+  CDM de una carga completa: 218 `SECUESTRADO_EN` y 122 `ASESINADO_EN` pasan
+  de la capital a la provincia (a provincia: 262 → 480 y 90 → 212); el resto
+  de los hechos, sin cambios. No agrega labels ni propiedades. Requiere
+  recargar con `--clean-project`.
 
 Este documento define la arquitectura exacta e inmutable del grafo en Neo4j. Cualquier proceso de extracción, estructuración o ingesta automática de datos ejecutado por un LLM debe adherirse estrictamente a las reglas, etiquetas, relaciones y propiedades declaradas a continuación. Está prohibido inventar o inferir entidades intermedias.
 
