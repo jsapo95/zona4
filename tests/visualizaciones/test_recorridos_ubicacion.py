@@ -210,3 +210,8 @@ def test_provincia_de_otro_dato_no_descarta_el_sitio(sitios):
 def test_rio_lujan_no_es_la_ciudad_de_lujan(centroides):
     coords, _ = cd.ubicar_fragmento("Río Luján", centroides)
     assert coords is None
+
+
+def test_bs_as_tambien_vale_para_un_sitio_de_caba(sitios):
+    texto = "Identificada en el 2010 por el EAAF. Cementerio de Chacarita, Bs As."
+    assert sitios.buscar(texto)["nombre"] == "Cementerio de la Chacarita"

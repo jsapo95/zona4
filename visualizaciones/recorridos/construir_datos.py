@@ -601,9 +601,15 @@ def _misma_provincia(cola: str, sitio: Dict[str, Any]) -> bool:
     """False si lo que sigue al nombre del sitio, en su frase, nombra otra
     provincia: "Cementerio de la Piedad, Oberá, Misiones" no es La Piedad de
     Rosario."""
-    nombradas = {PROVINCIA_DE_PISTA.get(p, norm(p)) for frase, p in PISTAS_PROVINCIA.items()
-                 if re.search(rf"\b{re.escape(frase)}\b", cola)}
-    return not nombradas or norm(sitio["provincia"]) in nombradas
+    nombradas = {_REGION.get(q, q) for q in (PROVINCIA_DE_PISTA.get(p, norm(p)) for frase, p in PISTAS_PROVINCIA.items()
+                                            if re.search(rf"\b{re.escape(frase)}\b", cola))}
+    provincia = norm(sitio["provincia"])
+    return not nombradas or _REGION.get(provincia, provincia) in nombradas
+
+
+# Los textos dicen "Bs. As." también para CABA ("Cementerio de Chacarita, Bs
+# As."): para esta comparación, CABA y la provincia de Buenos Aires son lo mismo.
+_REGION = {"ciudad autonoma de buenos aires": "buenos aires"}
 
 
 _FRAGMENTO_LUGAR = [

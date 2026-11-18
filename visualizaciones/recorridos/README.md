@@ -13,7 +13,7 @@ cuatro etapas abstractas (no son fechas):
 Hay dos versiones, que se eligen arriba del panel:
 
 - **Restos hallados** (739 personas): tienen registrado el hallazgo de sus
-  restos. En 688 se pudo ubicar el lugar.
+  restos. En 689 se pudo ubicar el lugar.
 - **Sin hallazgo de restos registrado** (8.137 personas): desaparecidas o
   asesinadas sin hallazgo de restos registrado (1.573 figuran como asesinadas).
   En la etapa final cada punto se apaga en el último lugar donde las fuentes
@@ -71,11 +71,11 @@ asesinato o hallazgo de restos).
   secuestros, pasos por CCD, asesinatos y hallazgos sin dirección exacta tiene
   cada una. Las etapas sin registro (sin CCD, sin asesinato, etc.) se cuentan
   en el panel.
-- Sólo entran las 1.198 personas con dos etapas o más ubicadas. Las más
+- Sólo entran las 1.199 personas con dos etapas o más ubicadas. Las más
   repetidas: Tucumán (capital) → Pozo de Vargas (44), CABA → El Vesubio (33),
   General Pueyrredón → Base Naval Mar del Plata (23).
 - El año es el del secuestro (arista del Parque o ficha de MinJus); 80 de esas
-  1.198 no lo tienen y sólo aparecen con "Todos los años".
+  1.199 no lo tienen y sólo aparecen con "Todos los años".
 
 `mapa_base.js` tiene el mapa base (Argenmap con respaldo en OpenStreetMap) que
 usan las dos páginas.
@@ -112,7 +112,7 @@ qué no se ubicaron los demás. Medido el 2026-11-18:
 | Secuestro | 7.133 | 6.737 | 262 sólo provincia, 89 sin centroide, 34 en el exterior, 11 errores conocidos del grafo |
 | Centro clandestino o lugar de detención | 3.472 | 3.428 (1.255 por la localidad de su dirección, 51 con coordenadas de RUVTE corregidas) | 44 sin coordenadas ni dirección |
 | Asesinato | 1.667 | 1.544 | 90 sólo provincia, 15 sin centroide, 13 en el exterior, 5 errores conocidos del grafo |
-| Hallazgo de restos | 745 | 688 | 57 que no se pudieron ubicar: algunos textos no nombran un lugar ("Identificado por el EAAF en 2009"), otros nombran uno que el lector no reconoce o un río |
+| Hallazgo de restos | 745 | 689 | 56 que no se pudieron ubicar: algunos textos no nombran un lugar ("Identificado por el EAAF en 2009"), otros nombran uno que el lector no reconoce o un río |
 
 13 fichas del Parque traen en el lugar de secuestro el del asesinato
 ("asesinado 29/09/76 ROSARIO. SANTA FE"): ese lugar se dibuja en la etapa de
