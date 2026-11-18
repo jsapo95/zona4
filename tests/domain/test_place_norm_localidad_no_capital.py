@@ -75,7 +75,12 @@ CASOS_OTRA_LOCALIDAD = [
     ("GOYA. CORRIENTES", _ciudad("goya", "goya", "corrientes")),
     ("Goya, Pcia. De Corrientes", _ciudad("goya", "goya", "corrientes")),
     ("MERCEDES. CORRIENTES", _ciudad("mercedes", "mercedes", "corrientes")),
-    ("GOBERNADOR VIRASORO. CORRIENTES", f"lugar:CIUDAD:gobernador_virasoro|{_prov('corrientes')}"),
+    # El municipio se lleva a su localidad cabecera (ver
+    # test_place_norm_localidad_en_su_provincia.py).
+    (
+        "GOBERNADOR VIRASORO. CORRIENTES",
+        _ciudad("gobernador_igr_valentin_virasoro", "santo_tome", "corrientes"),
+    ),
     ("ALVEAR. CORRIENTES", _ciudad("alvear", "general_alvear", "corrientes")),
     ("CHAMICAL. LA RIOJA", _ciudad("chamical", "chamical", "la_rioja")),
     ("Parroquia El Salvador (Chamical, La Rioja)", _ciudad("chamical", "chamical", "la_rioja")),
@@ -105,8 +110,10 @@ def test_otra_localidad_de_la_provincia_le_gana_a_la_capital(raw: str, esperada:
 
 # Georef nombra estas localidades con el nombre largo.
 CASOS_NOMBRE_LARGO = [
-    ("METAN. SALTA", f"lugar:CIUDAD:san_jose_de_metan|{_prov('salta')}"),
-    ("Metán, Salta", f"lugar:CIUDAD:san_jose_de_metan|{_prov('salta')}"),
+    # El municipio San José de Metán se lleva a su localidad cabecera, la que
+    # tiene departamento en Georef (ver test_place_norm_localidad_en_su_provincia.py).
+    ("METAN. SALTA", _ciudad("san_jose_de_metan_est_metan", "metan", "salta")),
+    ("Metán, Salta", _ciudad("san_jose_de_metan_est_metan", "metan", "salta")),
     ("ORAN. SALTA", _ciudad("san_ramon_de_la_nueva_oran", "oran", "salta")),
     ("VILLA GDOR GALVEZ. SANTA FE (Rambla de Saladillo)", _ciudad("villa_gobernador_galvez", "rosario", "santa_fe")),
     ("VILLA GDOR. GALVEZ. SANTA FE", _ciudad("villa_gobernador_galvez", "rosario", "santa_fe")),
@@ -200,7 +207,8 @@ CASOS_SIN_CAMBIOS = [
     ),
     ("ROSARIO. SANTA FE", _ciudad("rosario", "rosario", "santa_fe")),
     ("CIUDAD EVITA. BS. AS.", _ciudad("ciudad_evita", "la_matanza", "buenos_aires")),
-    ("VILLA ELISA. BS. AS.", f"lugar:CIUDAD:villa_elisa|{_prov('buenos_aires')}"),
+    # Ahora con su departamento (ver test_place_norm_localidad_en_su_provincia.py).
+    ("VILLA ELISA. BS. AS.", _ciudad("villa_elisa", "la_plata", "buenos_aires")),
     ("Goya", _ciudad("goya", "goya", "corrientes")),
 ]
 

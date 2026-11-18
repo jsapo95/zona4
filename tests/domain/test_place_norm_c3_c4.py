@@ -149,7 +149,8 @@ def test_9_de_julio_resuelve_a_buenos_aires():
 def test_3_de_febrero_resuelve_a_buenos_aires():
     resultado = resolve_place("3 de Febrero, BsAs")
     assert resultado is not None
-    assert resultado["nombre_canonico"] == "3 DE FEBRERO"
+    # Georef lo escribe con letras: es la localidad "Tres de Febrero".
+    assert resultado["nombre_canonico"] == "TRES DE FEBRERO"
     assert "buenos_aires" in resultado["lugar_key"]
 
 

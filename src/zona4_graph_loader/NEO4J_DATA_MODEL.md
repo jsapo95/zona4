@@ -96,6 +96,50 @@
   `SECUESTRADO_EN` 7.133 → 7.134, el resto sin cambios. No agrega labels ni
   propiedades. Requiere recargar con `--clean-project`: una recarga
   incremental conserva las aristas viejas hacia la capital.
+- Fix 2026-11-18 (sin bump de versión): un texto "LOCALIDAD. PROVINCIA" se
+  busca sólo en la provincia que nombra. `domain/place_norm.py` buscaba la
+  localidad en todo el país y después exigía la provincia: si tenía
+  homónimos en otras provincias, ganaba uno ("SAN NICOLAS. BS. AS." -> el
+  barrio porteño) o empataban ("AVELLANEDA. BS. AS.", "SAN JUSTO. BS. AS.",
+  "CASTELAR. BS. AS.", "GODOY CRUZ. MENDOZA"), y el respaldo por sufijo de
+  `PROVINCE_ABBR` armaba `CIUDAD:<texto>|PROVINCIA:<provincia>` sin
+  consultar Georef: claves sin departamento, separadas del nodo de Georef de
+  la misma ciudad, o ciudades que no existen ("CRUZ ALTA. TUCUMAN" es un
+  departamento). Ahora la localidad se busca en su provincia (con el nombre
+  de `EQUIV_CITIES`, "SAN MARTIN" -> General San Martín en Buenos Aires y
+  abreviaturas como "Gral." o "Cnel." expandidas), también cuando se asume
+  Buenos Aires; un municipio de Georef, que no trae departamento, se lleva a
+  su localidad cabecera ("METAN. SALTA" -> San José de Metán (Est. Metán),
+  departamento Metán) o al departamento homónimo (`domain/place_gazetteer.py`),
+  y el respaldo por sufijo nunca inventa una ciudad que Georef no tiene en
+  esa provincia: afirma la provincia, o el departamento si es lo que el
+  texto nombra. "SAN NICOLAS. BS. AS." pasa a San Nicolás de los Arroyos
+  (en el Parque los barrios porteños se escriben "CAPITAL FEDERAL (San
+  Nicolas (...))"). Un barrio porteño con "Bs As" ("Palermo, Bs As") va al
+  barrio si el nombre es sólo de CABA en Georef, y a la provincia si también
+  existe en Buenos Aires (Saavedra, Abasto, Colegiales, Belgrano), salvo una
+  pista de CABA ("Capital", "CABA", "C.A.B.A.", "CF", código postal C1xxx);
+  hoy ningún texto real lo usa así. Medido sobre los 4.019 textos de lugar
+  reales (Parque de la Memoria y CCDs): cambian 323, revisados uno por uno,
+  y 792 aristas de `detalles_personas` (569 `SECUESTRADO_EN`, 118
+  `ASESINADO_EN`, 105 `NACIO_EN`). De ellas, 579 pasan a una ciudad de Georef
+  con departamento (Avellaneda: 28 → 121 aristas en el nodo del departamento
+  Avellaneda; Campana 0 → 71; General San Martín 1 → 66; San Justo, La
+  Matanza, 0 → 49; Castelar, Morón, 4 → 39; San Nicolás de los Arroyos
+  2 → 36), 21 a un departamento y 192 a la provincia sola, porque el
+  catálogo de Georef del loader no tiene esa ciudad en esa provincia (Don
+  Torcuato 15, Pablo Nogués 10, Clarke 8, Villa Tesei 6...; el texto queda
+  en el `:AliasLugar`). En las aristas a un `:Lugar` CIUDAD fuera de CABA,
+  las que van a una ciudad que no existe en Georef bajan de 225 (105 claves)
+  a 1, y las que van a una ciudad sin departamento de 1.400 (64 claves) a
+  837 (6 claves; 834 son las capitales de `EQUIV_CITIES`: "CORDOBA CAPITAL",
+  "MENDOZA CAPITAL", "SAN MIGUEL DE TUCUMAN"). Las aristas a un `:Lugar`
+  PROVINCIA suben de 274 a 412 (`SECUESTRADO_EN`), de 99 a 125
+  (`ASESINADO_EN`) y de 243 a 271 (`NACIO_EN`); a un DEPARTAMENTO, de 19 a
+  36, de 7 a 8 y de 9 a 12. Los `:Lugar` de las capas de lugares y CCD bajan
+  de 1.161 a 1.055. Hechos por tipo sin cambios. No agrega labels ni
+  propiedades. Requiere recargar con `--clean-project`: una recarga
+  incremental conserva los nodos y aristas viejos.
 
 Este documento define la arquitectura exacta e inmutable del grafo en Neo4j. Cualquier proceso de extracción, estructuración o ingesta automática de datos ejecutado por un LLM debe adherirse estrictamente a las reglas, etiquetas, relaciones y propiedades declaradas a continuación. Está prohibido inventar o inferir entidades intermedias.
 

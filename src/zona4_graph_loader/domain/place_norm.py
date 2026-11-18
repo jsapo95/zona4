@@ -130,6 +130,13 @@ def normalize_place_identity(value: str) -> str:
     text = re.sub(r"\bINMEDIACIONES\s+DE\b.*$", "", text)
     # For strings like "CASTELAR BS AS ...", keep locality + provincial clue.
     text = re.sub(r"^([A-Z\s]{3,}?)\s+BS\s+AS\b.*$", r"\1 BS AS", text)
+    # "SAN NICOLAS. BS. AS." es San Nicolás de los Arroyos, no el barrio
+    # porteño homónimo: en `parque_de_la_memoria.json` los barrios de CABA se
+    # escriben "CAPITAL FEDERAL (San Nicolas (...))", y el campo Domicilios
+    # de víctimas con este lugar dice "San Nicolás, Pcia De Bs As.". Georef
+    # sólo tiene "San Nicolás" como municipio y partido; la localidad se
+    # llama "San Nicolás de los Arroyos".
+    text = re.sub(r"^SAN\s+NICOLAS\s+(BS\s+AS|BSAS)$", r"SAN NICOLAS DE LOS ARROYOS \1", text)
     text = re.sub(r"\bEN\s+LA\b$", "", text)
     text = re.sub(r"\bEN\s+EL\b$", "", text)
     return norm_space(text)
@@ -346,6 +353,71 @@ def _explicit_province_locality_base(alias_norm: str) -> Optional[str]:
     return base_alias
 
 
+# Abreviaturas de títulos con que la fuente escribe nombres de localidades
+# que Georef tiene completos ("Gral. Villegas", "Cnel. Pringles", "Pte.
+# Derqui"). Sólo se expanden para buscar en Georef la parte "LOCALIDAD" de un
+# texto "LOCALIDAD. PROVINCIA".
+_ABREVIATURAS_DE_LOCALIDAD = {
+    "GRAL": "GENERAL",
+    "CNEL": "CORONEL",
+    "ALTE": "ALMIRANTE",
+    "PTE": "PRESIDENTE",
+    "PDTE": "PRESIDENTE",
+    "TTE": "TENIENTE",
+    "CMTE": "COMANDANTE",
+    "ING": "INGENIERO",
+    "DR": "DOCTOR",
+    "VTE": "VICENTE",
+}
+
+
+def _variantes_de_localidad(base_alias: str, provincia: str) -> list[str]:
+    """Nombres con que se busca en Georef la localidad de un texto
+    "LOCALIDAD. PROVINCIA": el texto tal cual, el que le da EQUIV_CITIES si
+    es de esa misma provincia ("JOSE LEON SUAREZ" -> "VILLA JOSE LEON
+    SUAREZ"), "SAN MARTIN" -> "GENERAL SAN MARTIN" en Buenos Aires (como en
+    `_canonicalize_admin_context_name`) y las abreviaturas de títulos
+    expandidas."""
+    variantes = [base_alias]
+    equivalente = EQUIV_CITIES.get(base_alias)
+    if equivalente is not None and equivalente[0] == "CIUDAD" and equivalente[2] == provincia:
+        variantes.append(normalize_place_text(equivalente[1]))
+    variantes.append(_canonicalize_admin_context_name(base_alias, provincia))
+    variantes.append(" ".join(_ABREVIATURAS_DE_LOCALIDAD.get(t, t) for t in base_alias.split()))
+    # Georef escribe con letras "Tres de Febrero" y "Dos de Mayo" (y con
+    # números "25 de Mayo", "9 de Julio").
+    fecha = re.fullmatch(r"([23])( DE [A-Z]+)", base_alias)
+    if fecha:
+        variantes.append({"2": "DOS", "3": "TRES"}[fecha.group(1)] + fecha.group(2))
+    return list(dict.fromkeys(variantes))
+
+
+def _resolve_localidad_en_su_provincia(
+    alias_norm: str, base_alias: str, provincia: str, resolver: PlaceGazetteer, min_score: float, ambiguity_delta: float
+) -> Optional[Dict[str, Any]]:
+    """Busca la localidad de un texto "LOCALIDAD. PROVINCIA" sólo entre los
+    lugares de la provincia que el texto nombra.
+
+    Antes se buscaba en todo el país y después se exigía la provincia: un
+    homónimo de otra provincia ganaba ("SAN NICOLAS" -> el barrio porteño) o
+    empataba ("AVELLANEDA" en Buenos Aires, Córdoba y Santa Fe) y el texto
+    terminaba en una clave sin departamento armada por el respaldo por
+    sufijo, separada del nodo de Georef de la misma ciudad.
+
+    Se acepta sólo un lugar que cubra el nombre entero (no una parte, como
+    "PILAR" en "DERQUI PILAR") y que no sea la provincia misma. La capital
+    homónima ("SANTA FE" en "CLARKE. SANTA FE") no puede aparecer: el nombre
+    de la provincia ya se quitó del texto, así que sólo matchea si el texto
+    la nombra como localidad ("SANTA FE. SANTA FE").
+    """
+    for nombre in _variantes_de_localidad(base_alias, provincia):
+        match = resolver.resolve(nombre, min_score=min_score, ambiguity_delta=ambiguity_delta, provincia=provincia)
+        if match is None or match.level == "PROVINCIA" or match.texto != nombre:
+            continue
+        return _build_place_from_match(alias_norm, match)
+    return None
+
+
 def _resolve_explicit_province_locality(
     alias_norm: str, resolver: PlaceGazetteer, min_score: float, ambiguity_delta: float
 ) -> Optional[Dict[str, Any]]:
@@ -354,9 +426,133 @@ def _resolve_explicit_province_locality(
         return None
 
     preferred_province = _preferred_province_from_alias(alias_norm)
+    en_su_provincia = _resolve_localidad_en_su_provincia(
+        alias_norm, base_alias, preferred_province, resolver, min_score, ambiguity_delta
+    )
+    if en_su_provincia is not None:
+        return en_su_provincia
+
     match = resolver.resolve(base_alias, min_score=min_score, ambiguity_delta=ambiguity_delta)
     if match is None or match.provincia_name != preferred_province:
         return None
+    return _build_place_from_match(alias_norm, match)
+
+
+_CABA_GEOREF = "CIUDAD AUTONOMA DE BUENOS AIRES"
+
+# Barrios porteños que en la provincia de Buenos Aires existen sólo como
+# asentamiento de Georef, un nivel que el catálogo del loader no trae
+# (Colegiales, partido de San Pedro). Sin esta lista se los tomaría como
+# nombres exclusivos de CABA.
+_BARRIOS_CON_HOMONIMO_BONAERENSE_FUERA_DEL_CATALOGO = {"COLEGIALES"}
+
+# Barrios porteños de uso corriente que Georef no tiene como localidad, con
+# el barrio de Georef al que corresponden, o None si se reparten entre varios
+# (Once y el Abasto entre Balvanera y Almagro; Congreso entre Balvanera,
+# Monserrat y San Nicolás): ésos van a la Ciudad, sin barrio, igual que
+# "CAPITAL FEDERAL (Once)".
+_BARRIOS_PORTENOS_FUERA_DE_GEOREF: Dict[str, Optional[str]] = {
+    "ONCE": None,
+    "CONGRESO": None,
+    "ABASTO": None,
+    "PALERMO VIEJO": "PALERMO",
+    "PALERMO CHICO": "PALERMO",
+    "LA BOCA": "BOCA",
+    "LA PATERNAL": "PATERNAL",
+    "POMPEYA": "NUEVA POMPEYA",
+}
+
+
+def _quitar_pistas_de_caba(tokens: list[str]) -> tuple[list[str], bool]:
+    """Quita de `tokens` las pistas de que el texto habla de la Ciudad de
+    Buenos Aires ("CAPITAL", "CABA", "C.A.B.A.", "CF", un código postal
+    C1xxx) y dice si había alguna. "CAPITAL FEDERAL" y "CAP. FED." no llegan
+    acá: `_resolve_caba_contextual` los resuelve antes."""
+    restantes: list[str] = []
+    pista = False
+    i = 0
+    while i < len(tokens):
+        if tokens[i : i + 4] == ["C", "A", "B", "A"]:
+            pista = True
+            i += 4
+            continue
+        token = tokens[i]
+        if token in {"CAPITAL", "CABA", "CF"} or re.fullmatch(r"C1\d{3}[A-Z]{0,3}", token):
+            pista = True
+        else:
+            restantes.append(token)
+        i += 1
+    return restantes, pista
+
+
+def _resolve_barrio_porteno_con_bs_as(
+    alias_norm: str, resolver: PlaceGazetteer, min_score: float, ambiguity_delta: float
+) -> Optional[Dict[str, Any]]:
+    """"Palermo, Bs As": un barrio porteño con "Bs As" o "Buenos Aires".
+
+    Si el nombre existe en Georef sólo como barrio de CABA, y no como lugar
+    de la provincia de Buenos Aires, el texto habla de la Ciudad: va al
+    barrio, con la misma clave que "CAPITAL FEDERAL (Palermo)". Antes el
+    respaldo por sufijo inventaba `CIUDAD:palermo|PROVINCIA:buenos_aires`.
+    Los barrios de uso corriente que Georef no tiene (Once, Congreso,
+    Palermo Viejo) van a `_BARRIOS_PORTENOS_FUERA_DE_GEOREF`.
+
+    Si el nombre existe en los dos lados (San Nicolás, Saavedra, Abasto,
+    Colegiales, Belgrano y General Belgrano), "Bs As" no alcanza para elegir
+    y se afirma sólo la provincia que el texto nombra, salvo que haya una
+    pista de CABA ("Capital", "CABA", "C.A.B.A.", "CF", código postal C1xxx).
+    "SAN NICOLAS. BS. AS." no llega acá: `normalize_place_identity` lo lleva
+    a San Nicolás de los Arroyos.
+    """
+    if not _has_explicit_province_hint(alias_norm) or _preferred_province_from_alias(alias_norm) != "BUENOS AIRES":
+        return None
+    base_alias = _strip_trailing_province_hint(alias_norm)
+    if base_alias == alias_norm:
+        return None
+    tokens, pista_caba = _quitar_pistas_de_caba(base_alias.split())
+    nombre = norm_space(" ".join(tokens))
+    if (
+        not nombre
+        or len(nombre.split()) > 4
+        or _contiene_digito_no_toponimico(nombre)
+        or _es_fragmento_no_toponimico(nombre)
+    ):
+        return None
+
+    match = None
+    if nombre in _BARRIOS_PORTENOS_FUERA_DE_GEOREF:
+        barrio = _BARRIOS_PORTENOS_FUERA_DE_GEOREF[nombre]
+        if barrio is not None:
+            match = resolver.resolve(barrio, min_score=min_score, ambiguity_delta=ambiguity_delta, provincia=_CABA_GEOREF)
+    else:
+        match = resolver.resolve(nombre, min_score=min_score, ambiguity_delta=ambiguity_delta, provincia=_CABA_GEOREF)
+        if match is None or match.level != "LOCALIDAD" or match.texto != nombre:
+            return None
+    homonimo_bonaerense = (
+        resolver.tiene_lugar(nombre, "BUENOS AIRES")
+        or resolver.tiene_lugar(f"GENERAL {nombre}", "BUENOS AIRES")
+        or nombre in _BARRIOS_CON_HOMONIMO_BONAERENSE_FUERA_DEL_CATALOGO
+    )
+    if homonimo_bonaerense and not pista_caba:
+        province_key = make_lugar_key("PROVINCIA", "BUENOS AIRES", "lugar:PAIS:argentina")
+        return {
+            "alias_norm": alias_norm,
+            "tipo": "PROVINCIA",
+            "nombre_canonico": "BUENOS AIRES",
+            "lugar_key": province_key,
+            "parent_key": "lugar:PAIS:argentina",
+            "hierarchy_keys": [province_key, "lugar:PAIS:argentina"],
+        }
+    if match is None:
+        tipo, nombre_caba, provincia_caba = EQUIV_CITIES["CABA"]
+        parent_key = make_lugar_key("PROVINCIA", provincia_caba, "lugar:PAIS:argentina")
+        return {
+            "alias_norm": alias_norm,
+            "tipo": tipo,
+            "nombre_canonico": nombre_caba,
+            "lugar_key": make_lugar_key(tipo, nombre_caba, parent_key),
+            "parent_key": parent_key,
+        }
     return _build_place_from_match(alias_norm, match)
 
 
@@ -904,6 +1100,13 @@ def resolve_place(
             # nombre de la localidad real por tener más palabras. Intentar
             # primero sólo la parte anterior a la pista de provincia, exigida
             # dentro de esa misma provincia, evita esa reubicación.
+            barrio_porteno = _resolve_barrio_porteno_con_bs_as(
+                alias_norm, resolver, georef_min_score, georef_ambiguity_delta
+            )
+            if barrio_porteno is not None:
+                barrio_porteno["alias_raw"] = text
+                return barrio_porteno
+
             explicit_locality = _resolve_explicit_province_locality(
                 alias_norm,
                 resolver,
@@ -987,6 +1190,32 @@ def resolve_place(
             if _contiene_digito_no_toponimico(city_name) or _es_fragmento_no_toponimico(city_name):
                 return None
             parent_key = make_lugar_key("PROVINCIA", prov_name, "lugar:PAIS:argentina")
+            # Una ciudad que Georef no tiene en esa provincia no se inventa
+            # ("DON TORCUATO. BS. AS.", "CLARKE. SANTA FE" -> la capital no):
+            # se afirma sólo la provincia que el texto nombra, o el
+            # departamento si es lo que el texto nombra. El texto crudo queda
+            # en el AliasLugar.
+            if resolver is not None and not resolver.tiene_lugar(city_name, prov_name, ("LOCALIDAD", "MUNICIPIO")):
+                if resolver.tiene_lugar(city_name, prov_name, ("DEPARTAMENTO",)):
+                    department_key = make_lugar_key("DEPARTAMENTO", city_name, parent_key)
+                    return {
+                        "alias_raw": text,
+                        "alias_norm": alias_norm,
+                        "tipo": "DEPARTAMENTO",
+                        "nombre_canonico": city_name,
+                        "lugar_key": department_key,
+                        "parent_key": parent_key,
+                        "hierarchy_keys": [department_key, parent_key, "lugar:PAIS:argentina"],
+                    }
+                return {
+                    "alias_raw": text,
+                    "alias_norm": alias_norm,
+                    "tipo": "PROVINCIA",
+                    "nombre_canonico": prov_name,
+                    "lugar_key": parent_key,
+                    "parent_key": "lugar:PAIS:argentina",
+                    "hierarchy_keys": [parent_key, "lugar:PAIS:argentina"],
+                }
             lugar_key = make_lugar_key("CIUDAD", city_name, parent_key)
             return {
                 "alias_raw": text,
@@ -998,6 +1227,16 @@ def resolve_place(
             }
 
     if _can_assume_buenos_aires(alias_norm):
+        # Si se asume Buenos Aires, la localidad se busca en Buenos Aires
+        # ("Castelar" empataba con Castelar de Santa Fe y quedaba sin
+        # departamento), igual que con "LOCALIDAD. BS. AS.".
+        if resolver is not None:
+            en_buenos_aires = _resolve_localidad_en_su_provincia(
+                alias_norm, alias_norm, "BUENOS AIRES", resolver, georef_min_score, georef_ambiguity_delta
+            )
+            if en_buenos_aires is not None:
+                en_buenos_aires["alias_raw"] = text
+                return en_buenos_aires
         parent_key = make_lugar_key("PROVINCIA", "BUENOS AIRES", "lugar:PAIS:argentina")
         lugar_key = make_lugar_key("CIUDAD", alias_norm, parent_key)
         return {

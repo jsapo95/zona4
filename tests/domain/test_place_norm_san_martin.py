@@ -120,8 +120,11 @@ def test_distribucion_sobre_archivo_real_san_martin():
 
     assert otras_provincias["jujuy"] == 0
     assert otras_provincias["tucuman"] == 0
-    assert bajo_general_san_martin == 124
+    # 124 resueltos vía Georef + los 103 "San Martín": al asumir Buenos Aires,
+    # la localidad se busca en Buenos Aires y es General San Martín
+    # (`lugar:CIUDAD:general_san_martin|lugar:DEPARTAMENTO:general_san_martin|...`).
+    assert bajo_general_san_martin == 124 + 103
     # 119 preexistentes (heurística "asumir Buenos Aires") + 60 recién
     # corregidos que ahora anclan a PROVINCIA:BUENOS AIRES en lugar de
-    # Jujuy/Tucumán.
-    assert bajo_buenos_aires_directo == 119 + 60
+    # Jujuy/Tucumán, menos los 103 "San Martín" de arriba.
+    assert bajo_buenos_aires_directo == 119 + 60 - 103

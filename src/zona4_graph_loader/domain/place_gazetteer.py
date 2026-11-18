@@ -30,6 +30,7 @@ class GeoRecord:
     provincia_name: str
     departamento_id: Optional[str] = None
     departamento_name: Optional[str] = None
+    municipio_id: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -39,6 +40,17 @@ class PlaceMatch:
     name: str
     provincia_name: str
     departamento_name: Optional[str] = None
+    # El n-grama del texto que matcheó (puede diferir de `name` cuando un
+    # municipio se lleva a su localidad cabecera, ver `_con_departamento`).
+    texto: Optional[str] = None
+
+
+def _contiene_en_orden(tokens: List[str], buscados: List[str]) -> bool:
+    """True si `buscados` aparece dentro de `tokens` como subsecuencia, en
+    orden ("SAN JOSE DE METAN" en "SAN JOSE DE METAN EST METAN",
+    "GOBERNADOR VIRASORO" en "GOBERNADOR IGR VALENTIN VIRASORO")."""
+    it = iter(tokens)
+    return all(any(t == b for t in it) for b in buscados)
 
 
 class PlaceGazetteer:
@@ -47,6 +59,7 @@ class PlaceGazetteer:
         self._department_records_by_name: Dict[str, List[GeoRecord]] = {}
         self._municipio_records_by_name: Dict[str, List[GeoRecord]] = {}
         self._localidad_records_by_name: Dict[str, List[GeoRecord]] = {}
+        self._localidades_por_municipio: Dict[str, List[GeoRecord]] = {}
         self._province_name_by_id: Dict[str, str] = {}
         self._department_name_by_id: Dict[str, str] = {}
         self._province_rank: Dict[str, int] = {
@@ -111,18 +124,21 @@ class PlaceGazetteer:
                 dep_id_raw = str(row.get("departamento_id") or "")
                 departamento_id = dep_id_raw or None
                 departamento_name = self._department_name_by_id.get(dep_id_raw) if dep_id_raw else None
-            target.setdefault(name_norm, []).append(
-                GeoRecord(
-                    level=level,
-                    entity_id=entity_id,
-                    name=name_norm,
-                    name_norm=name_norm,
-                    provincia_id=provincia_id,
-                    provincia_name=prov_name_norm,
-                    departamento_id=departamento_id,
-                    departamento_name=departamento_name,
-                )
+            municipio_id = (str(row.get("municipio_id") or "") or None) if level == "LOCALIDAD" else None
+            record = GeoRecord(
+                level=level,
+                entity_id=entity_id,
+                name=name_norm,
+                name_norm=name_norm,
+                provincia_id=provincia_id,
+                provincia_name=prov_name_norm,
+                departamento_id=departamento_id,
+                departamento_name=departamento_name,
+                municipio_id=municipio_id,
             )
+            target.setdefault(name_norm, []).append(record)
+            if municipio_id:
+                self._localidades_por_municipio.setdefault(municipio_id, []).append(record)
 
     def _iter_ngrams(self, tokens: List[str], max_len: int = 6) -> Iterable[Tuple[str, int, int, int]]:
         n_tokens = len(tokens)
@@ -312,10 +328,116 @@ class PlaceGazetteer:
         )
         return ranked[0]
 
-    def resolve(self, alias_norm: str, min_score: float = 0.76, ambiguity_delta: float = 0.08) -> Optional[PlaceMatch]:
+    def tiene_lugar(self, nombre: str, provincia: str, niveles: Iterable[str] = ("LOCALIDAD", "MUNICIPIO", "DEPARTAMENTO")) -> bool:
+        """True si Georef tiene en `provincia` una entidad de alguno de
+        `niveles` que se llama exactamente `nombre`."""
+        nombre_norm = _norm_geo_name(nombre)
+        provincia_norm = _norm_geo_name(provincia)
+        indices = {
+            "LOCALIDAD": self._localidad_records_by_name,
+            "MUNICIPIO": self._municipio_records_by_name,
+            "DEPARTAMENTO": self._department_records_by_name,
+        }
+        return any(
+            rec.provincia_name == provincia_norm
+            for nivel in niveles
+            for rec in indices[nivel].get(nombre_norm, [])
+        )
+
+    def _con_departamento(self, match: PlaceMatch) -> PlaceMatch:
+        """Los municipios del catálogo de Georef no traen departamento, así
+        que un lugar resuelto por municipio quedaba colgado directo de la
+        provincia ("METAN. SALTA" -> `CIUDAD:san_jose_de_metan|PROVINCIA:
+        salta`), separado del nodo con departamento de la misma ciudad.
+
+        Se lleva el municipio a su localidad cabecera: la localidad del
+        municipio que se llama igual, o, si no hay, la única cuyo nombre
+        contiene el del municipio ("San José de Metán (Est. Metán)",
+        "Gobernador Igr. Valentín Virasoro", "San José de Jáchal"). Si no hay
+        una cabecera única pero todas las localidades del municipio son del
+        mismo departamento, o la provincia tiene un único departamento con el
+        nombre del municipio (los partidos de Buenos Aires: Campana), se
+        conserva el municipio con ese departamento. Si no, queda como antes.
+        """
+        if match.level != "MUNICIPIO" or match.departamento_name:
+            return match
+        localidades: List[GeoRecord] = []
+        for municipio in self._municipio_records_by_name.get(match.name, []):
+            if municipio.provincia_name == match.provincia_name:
+                localidades.extend(self._localidades_por_municipio.get(municipio.entity_id, []))
+        localidades = [loc for loc in localidades if loc.departamento_name]
+
+        nombre_tokens = match.name.split()
+        for criterio in (
+            lambda loc: loc.name == match.name,
+            lambda loc: _contiene_en_orden(loc.name.split(), nombre_tokens),
+        ):
+            cabeceras = {(loc.name, loc.departamento_name): loc for loc in localidades if criterio(loc)}
+            if len(cabeceras) == 1:
+                cabecera = next(iter(cabeceras.values()))
+                return PlaceMatch(
+                    score=match.score,
+                    level="LOCALIDAD",
+                    name=cabecera.name,
+                    provincia_name=cabecera.provincia_name,
+                    departamento_name=cabecera.departamento_name,
+                    texto=match.texto,
+                )
+            if cabeceras:
+                break
+
+        departamentos = {loc.departamento_name for loc in localidades}
+        if not departamentos:
+            departamentos = {
+                dep.name
+                for dep in self._department_records_by_name.get(match.name, [])
+                if dep.provincia_name == match.provincia_name
+            }
+        if len(departamentos) == 1:
+            return PlaceMatch(
+                score=match.score,
+                level=match.level,
+                name=match.name,
+                provincia_name=match.provincia_name,
+                departamento_name=next(iter(departamentos)),
+                texto=match.texto,
+            )
+        return match
+
+    def resolve(
+        self,
+        alias_norm: str,
+        min_score: float = 0.76,
+        ambiguity_delta: float = 0.08,
+        *,
+        provincia: Optional[str] = None,
+    ) -> Optional[PlaceMatch]:
+        """Mejor lugar de Georef para `alias_norm`.
+
+        Con `provincia`, sólo se consideran lugares de esa provincia (la que
+        el texto nombra, aunque sea con una abreviatura que Georef no conoce,
+        como "BS. AS."), sin leer las pistas de provincia del propio texto.
+        En ese modo, dos lugares distintos de la provincia con el mismo
+        puntaje y nivel (dos localidades homónimas en distintos
+        departamentos) se consideran ambiguos.
+        """
+        match = self._resolve(alias_norm, min_score=min_score, ambiguity_delta=ambiguity_delta, provincia=provincia)
+        return self._con_departamento(match) if match is not None else None
+
+    def _resolve(
+        self, alias_norm: str, *, min_score: float, ambiguity_delta: float, provincia: Optional[str]
+    ) -> Optional[PlaceMatch]:
         tokens = [tok for tok in alias_norm.split() if tok]
         if not tokens:
             return None
+
+        if provincia is not None:
+            ids = {rec.provincia_id for rec in self._province_records_by_name.get(_norm_geo_name(provincia), [])}
+            if not ids:
+                return None
+            return self._resolve_tokens(
+                tokens, ids, solo_provincia=True, min_score=min_score, ambiguity_delta=ambiguity_delta
+            )
 
         explicit_province_ids, calles = self._collect_explicit_provinces(tokens)
         if not calles:
@@ -352,6 +474,7 @@ class PlaceGazetteer:
         explicit_province_ids: set[str],
         *,
         bloqueados: Optional[set[Tuple[int, int]]] = None,
+        solo_provincia: bool = False,
         min_score: float,
         ambiguity_delta: float,
     ) -> Optional[PlaceMatch]:
@@ -380,6 +503,7 @@ class PlaceGazetteer:
                         name=rec.name,
                         provincia_name=rec.provincia_name,
                         departamento_name=rec.departamento_name,
+                        texto=gram,
                     )
                 )
 
@@ -399,6 +523,7 @@ class PlaceGazetteer:
                         name=rec.name,
                         provincia_name=rec.provincia_name,
                         departamento_name=rec.departamento_name,
+                        texto=gram,
                     )
                 )
 
@@ -418,10 +543,13 @@ class PlaceGazetteer:
                         name=rec.name,
                         provincia_name=rec.provincia_name,
                         departamento_name=rec.name,
+                        texto=gram,
                     )
                 )
 
             for rec in self._province_records_by_name.get(gram, []):
+                if solo_provincia and rec.provincia_id not in explicit_province_ids:
+                    continue
                 score = 0.75 + min(0.10, size * 0.02)
                 matches.append(
                     PlaceMatch(
@@ -430,6 +558,7 @@ class PlaceGazetteer:
                         name=rec.name,
                         provincia_name=rec.provincia_name,
                         departamento_name=None,
+                        texto=gram,
                     )
                 )
 
@@ -461,6 +590,17 @@ class PlaceGazetteer:
             # instead of dropping to unknown; this is common in nested toponyms.
             if best.provincia_name != second.provincia_name:
                 return None
+        if (
+            solo_provincia
+            and second is not None
+            and second.score == best.score
+            and second.level == best.level
+            and len(second.name) == len(best.name)
+        ):
+            # Dos lugares distintos de la provincia empatados (por ejemplo,
+            # dos localidades homónimas en distintos departamentos): elegir
+            # uno sería arbitrario.
+            return None
 
         return best
 
