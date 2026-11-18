@@ -98,14 +98,29 @@ def test_localidades_del_mismo_partido_comparten_nodo(centroides):
     assert ballester[4] == san_martin[4] == ("General San Martín", "Buenos Aires")
 
 
-def test_barrios_de_caba_y_caba_sin_barrio_son_un_solo_nodo(centroides):
+def test_en_caba_cada_barrio_es_un_nodo_y_sin_barrio_es_otro(centroides):
+    # Con toda CABA en un solo nodo, el mapa de flujos mostraba un centro del
+    # que salía todo, cuando 237 de 250 secuestros ahí no dicen el barrio.
     palermo, _ = centroides.ubicar(
         "lugar:CIUDAD:palermo|lugar:DEPARTAMENTO:comuna_14|lugar:PROVINCIA:ciudad_autonoma_de_buenos_aires|lugar:PAIS:argentina"
     )
     generica, _ = centroides.ubicar(
         "lugar:CIUDAD:ciudad_autonoma_de_buenos_aires|lugar:PROVINCIA:ciudad_autonoma_de_buenos_aires|lugar:PAIS:argentina"
     )
-    assert palermo[4][0] == generica[4][0] == cd.NOMBRE_CABA_PARTIDO
+    assert palermo[4][0] == "Palermo"
+    assert generica[4][0] == cd.NOMBRE_CABA_PARTIDO
+    assert centroides.partido(*palermo[4])["nombre"] == "Palermo"
+
+
+def test_errores_conocidos_del_grafo_no_se_dibujan():
+    uruguay = "lugar:DEPARTAMENTO:uruguay|lugar:PROVINCIA:entre_rios|lugar:PAIS:argentina"
+    san_juan = "lugar:CIUDAD:san_juan|lugar:DEPARTAMENTO:capital|lugar:PROVINCIA:san_juan|lugar:PAIS:argentina"
+    cruz_alta = [{"detalle": {"descripcion_lugar_de_secuestro": "CRUZ ALTA. TUCUMAN (Ingenio San Juan)"}}]
+    san_juan_real = [{"detalle": {"descripcion_lugar_de_secuestro": "SAN JUAN"}}]
+    assert cd.error_conocido_del_grafo("ASESINADO_EN", uruguay, [])
+    assert cd.error_conocido_del_grafo("SECUESTRADO_EN", san_juan, cruz_alta)
+    # Un secuestro real en San Juan sigue dibujándose.
+    assert not cd.error_conocido_del_grafo("SECUESTRADO_EN", san_juan, san_juan_real)
 
 
 def test_el_nodo_de_un_partido_esta_en_su_centroide(centroides):

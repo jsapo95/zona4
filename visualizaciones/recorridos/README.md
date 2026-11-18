@@ -113,7 +113,7 @@ Los tests de las reglas de ubicación están en
   punto, sin dispersión: el punto lista quiénes son y, en el hallazgo, la
   dirección que da el texto de cada una ("Dorrego y F. Alcorta (Palermo)").
 - **"Capital Federal" sin barrio** (1.801 secuestros) y lugares que sólo dan el
-  partido: centro de CABA o del partido. Con zoom de ciudad (11 o más) se
+  partido: centro de CABA o del partido. Con zoom de ciudad (10 o más, la vista AMBA) se
   ocultan, porque su punto parecería una dirección.
 - **Nombres que en Georef son otro lugar**: "Guadalupe" (Santa Fe) no se ubica,
   porque el único candidato es Guadalupe Norte, a 300 km; "Fronterita"

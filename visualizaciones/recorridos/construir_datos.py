@@ -63,7 +63,7 @@ ETAPAS = [
 # muestra y la usa para dispersar levemente los puntos que comparten centroide.
 SITIO, LOCALIDAD, CABA_GENERICA, DEPARTAMENTO = "sitio", "localidad", "caba", "departamento"
 NOMBRE_CABA = "Ciudad de Buenos Aires (sin barrio)"
-NOMBRE_CABA_PARTIDO = "Ciudad de Buenos Aires"
+NOMBRE_CABA_PARTIDO = "Ciudad de Buenos Aires (sin barrio)"
 
 
 def norm(texto: Optional[str]) -> str:
@@ -124,11 +124,12 @@ def _partido(row: Dict[str, Any], nivel: str) -> Tuple[str, str]:
     """(partido o departamento, provincia) de una fila de Georef.
 
     Agrupa los lugares para comparar recorridos: Villa Ballester y San Andrés
-    caen los dos en General San Martín.
+    caen los dos en General San Martín. En CABA el grupo es el barrio: la
+    ciudad entera como un solo nodo parecía un centro del que salía todo.
     """
     provincia = row.get("provincia") or ""
     if provincia.startswith("Ciudad Aut"):
-        return NOMBRE_CABA_PARTIDO, provincia
+        return row["nombre"], provincia
     if nivel in ("departamentos", "municipios") or not row.get("departamento"):
         return row["nombre"], provincia
     return row["departamento"], provincia
@@ -190,9 +191,11 @@ class Centroides:
         return lat, lon
 
     def partido(self, nombre: str, provincia: str) -> Dict[str, Any]:
-        """Fila del partido/departamento (centroide); CABA es un único nodo."""
+        """Fila del partido/departamento (centroide); en CABA, del barrio."""
         if provincia.startswith("Ciudad Aut"):
-            return {**self.provincias[CABA], "nombre": NOMBRE_CABA_PARTIDO}
+            if nombre == NOMBRE_CABA_PARTIDO:
+                return {**self.provincias[CABA], "nombre": NOMBRE_CABA_PARTIDO}
+            return self._buscar("localidades", norm(nombre), CABA) or self._buscar("departamentos", norm(nombre), CABA)
         for nivel in ("departamentos", "municipios"):
             row = self._buscar(nivel, norm(nombre), norm(provincia))
             if row:
@@ -666,6 +669,37 @@ def detalle_hallazgo(texto: str, hallazgo: Optional[Dict[str, Any]]) -> Dict[str
 # Estado de cada persona según las fuentes
 # --------------------------------------------------------------------------
 
+# Aristas que el grafo ubica mal y cuyo arreglo todavía no está en `main`.
+# No se dibujan (no se corrigen acá: el arreglo va en el loader). Cuando el
+# arreglo llegue, la entrada se borra. Cada una: lugar del grafo, texto de la
+# ficha del Parque que la delata (o None si toda arista a ese lugar está mal).
+ERRORES_CONOCIDOS_DEL_GRAFO = [
+    # El país Uruguay ("Canelones, Uruguay. Cruce Ruta 9 y Ruta 70") resuelto
+    # como el departamento Uruguay de Entre Ríos: las 6 aristas a ese lugar.
+    # Arreglo: branch fix/uruguay-pais-no-departamento.
+    ("lugar:DEPARTAMENTO:uruguay|lugar:PROVINCIA:entre_rios|lugar:PAIS:argentina", None),
+    # "CRUZ ALTA. TUCUMAN (Ingenio San Juan…)" resuelto como San Juan capital (9).
+    ("lugar:CIUDAD:san_juan|lugar:DEPARTAMENTO:capital|lugar:PROVINCIA:san_juan|lugar:PAIS:argentina", r"CRUZ ALTA"),
+    # "PUENTE SAAVEDRA. BS. AS." resuelto en el partido de Saavedra (Pigüé).
+    ("lugar:CIUDAD:puente|lugar:DEPARTAMENTO:saavedra|lugar:PROVINCIA:buenos_aires|lugar:PAIS:argentina", None),
+]
+PAISES_VECINOS = {"uruguay", "paraguay", "chile", "brasil", "bolivia", "peru"}
+_CAMPO_DE_ARISTA = {"SECUESTRADO_EN": "descripcion_lugar_de_secuestro", "ASESINADO_EN": "Lugar de asesinato"}
+
+
+def error_conocido_del_grafo(arista: Optional[str], lugar_key: str, fichas_parque: List[Dict[str, Any]]) -> bool:
+    for clave, patron in ERRORES_CONOCIDOS_DEL_GRAFO:
+        if lugar_key != clave:
+            continue
+        if patron is None:
+            return True
+        campo = _CAMPO_DE_ARISTA.get(arista or "")
+        textos = [(f.get("detalle") or {}).get(campo) or "" for f in fichas_parque] if campo else []
+        if any(re.search(patron, t, re.I) for t in textos):
+            return True
+    return False
+
+
 SOBREVIVIENTE = {"Persona liberada", "Persona fugado", "Persona restituida"}
 # MinJus escribe el estado distinto que el Parque; se muestra con las
 # palabras del Parque para que la misma situación se lea igual.
@@ -720,9 +754,18 @@ def main() -> None:
         if partido:
             fila = centroides.partido(*partido)
             clave, lat, lon, nombre, tipo = ("partido", *partido), fila["lat"], fila["lon"], fila["nombre"], "partido"
+            if partido[1].startswith("Ciudad Aut"):
+                # Un barrio porteño, o CABA sin barrio: un lugar impreciso que
+                # el mapa de flujos oculta de cerca.
+                tipo = "impreciso" if nombre == NOMBRE_CABA_PARTIDO else "barrio"
+                nombre = nombre if tipo == "impreciso" else f"{nombre} (CABA)"
             # "Capital" se repite en varias provincias: se aclara cuál.
             if norm(nombre) in ("capital", "la capital"):
                 nombre = f"{partido[1]} (capital)"
+            # Un partido que se llama como un país o una provincia ("Uruguay",
+            # en Entre Ríos) lleva la provincia, para que no se lea como el país.
+            elif norm(nombre) in PAISES_VECINOS or norm(nombre) in centroides.provincias:
+                nombre = f"{nombre} ({partido[1]})"
         else:
             clave = (nombre, tipo, round(lat, 4), round(lon, 4))
         if clave not in indice_nodo:
@@ -804,6 +847,9 @@ def main() -> None:
             idx = []
             for lugar_key in eventos[persona["persona_key"]][etapa["id"]]:
                 conocidas[etapa["id"]]["registrado"] += 1
+                if error_conocido_del_grafo(etapa["arista"], lugar_key, fichas_parque):
+                    motivos[etapa["id"]]["error_conocido_del_grafo"] += 1
+                    continue
                 i = lugar_del_grafo(lugar_key, etapa["id"])
                 if i is not None and i not in idx:
                     idx.append(i)

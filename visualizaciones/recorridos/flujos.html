@@ -115,6 +115,8 @@
   }
   .rotulo .grande { font-size: 26px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
   .rotulo .chico { font-size: 13px; color: var(--text-secondary); }
+  .rotulo .faltantes { list-style: none; margin: 8px 0 0; padding: 8px 0 0; border-top: 1px solid var(--border); font-size: 12.5px; color: var(--text-secondary); max-width: 300px; }
+  .rotulo .faltantes li { margin-bottom: 2px; }
   .sin-datos { padding: 40px; }
 </style>
 </head>
@@ -223,6 +225,10 @@
   const escapar = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const sinTildes = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   const ETAPA = ["secuestro", "CCD", "asesinato", "restos"];
+  const ZOOM_SIN_IMPRECISOS = 10;
+  const TIPO_NODO = { partido: "partido o departamento", barrio: "barrio de CABA",
+    impreciso: "lugar impreciso: la fuente sólo dice “Capital Federal”", ccd: "centro clandestino o lugar de detención",
+    cementerio: "cementerio (sitio del EAAF)", enterramiento: "enterramiento (sitio del EAAF)", localidad: "localidad" };
   const HACIA = ["", "hacia el centro clandestino o lugar de detención", "hacia donde las asesinaron", "hacia donde aparecieron sus restos"];
   const HACIA_UNA = ["", "hacia el centro clandestino o lugar de detención", "hacia donde la asesinaron", "hacia donde aparecieron sus restos"];
   const COLOR_DESTINO = ["", "--hacia-ccd", "--hacia-asesinato", "--hacia-restos"];
@@ -279,6 +285,12 @@
   const mapa = L.map("mapa", { minZoom: 3, maxZoom: 13 }).fitBounds([[-55.2, -73.6], [-21.8, -53.6]]);
   mapa.attributionControl.setPrefix(false);
   const ponerTeselas = MapaBase.ponerEn(mapa);
+  // Cruzar el zoom de ciudad cambia qué se dibuja (lo impreciso se oculta).
+  let cercaAntes = null;
+  mapa.on("zoomend", () => {
+    const cerca = mapa.getZoom() >= ZOOM_SIN_IMPRECISOS;
+    if (cerca !== cercaAntes) { cercaAntes = cerca; dibujar(); }
+  });
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { ponerTeselas(); dibujar(); });
   const capaTramos = L.layerGroup().addTo(mapa);
   const capaNodos = L.layerGroup().addTo(mapa);
@@ -300,7 +312,12 @@
   function dibujar() {
     const lista = visibles();
     const todos = tramos(lista);
-    const mostrados = todos.filter((t) => t.personas.length >= estado.minimo).sort((x, y) => x.peso - y.peso);
+    // De cerca no se dibuja lo impreciso ("Capital Federal" sin barrio): su
+    // punto parecería un lugar real. Lo que se oculta se cuenta en el rótulo.
+    const cerca = mapa.getZoom() >= ZOOM_SIN_IMPRECISOS;
+    const impreciso = (k) => D.nodos[k][3] === "impreciso";
+    const mostrados = todos.filter((t) => t.personas.length >= estado.minimo &&
+      !(cerca && (impreciso(t.a) || impreciso(t.b)))).sort((x, y) => x.peso - y.peso);
     capaTramos.clearLayers(); capaNodos.clearLayers();
     const max = Math.max(1, ...mostrados.map((t) => t.peso));
     for (const t of mostrados) {
@@ -325,16 +342,32 @@
     const enTramos = new Set(mostrados.flatMap((t) => [t.a, t.b]));
     const maxNodo = Math.max(1, ...porNodo.values());
     for (const [k, v] of porNodo) {
-      if (!enTramos.has(k) && k !== estado.lugar) continue;
-      const [lat, lon, nombre, tipo] = D.nodos[k], sitio = tipo !== "partido" && tipo !== "localidad";
+      if ((!enTramos.has(k) && k !== estado.lugar) || (cerca && impreciso(k))) continue;
+      const [lat, lon, nombre, tipo] = D.nodos[k], sitio = !["partido", "localidad", "barrio", "impreciso"].includes(tipo);
       L.circleMarker([lat, lon], {
         radius: 3 + 10 * Math.sqrt(v / maxNodo), color: css("--nodo"), weight: 1.5,
         fillColor: sitio ? css("--nodo") : css("--surface-1"), fillOpacity: sitio ? 0.85 : 0.9,
-      }).bindTooltip(`<b>${escapar(nombre)}</b><br>${tipo === "partido" ? "partido o departamento" : tipo} · ${fmt.format(v)} personas en lo que se ve`)
+      }).bindTooltip(`<b>${escapar(nombre)}</b><br>${TIPO_NODO[tipo] || tipo} · ${fmt.format(v)} personas en lo que se ve`)
         .on("click", () => filtrarLugar(k)).addTo(capaNodos);
     }
     $("mapa").classList.toggle("quieto", !$("movimiento").checked);
     actualizarPanel(lista, todos, mostrados);
+    actualizarRotulo(lista, cerca);
+  }
+
+  // Abajo a la izquierda: cuántos recorridos y qué no se sabe de ellos.
+  function actualizarRotulo(lista, cerca) {
+    const sinBarrio = (s) => lista.filter((r) => r.nodos[s].some((k) => D.nodos[k][3] === "impreciso")).length;
+    const sin = (s) => lista.filter((r) => !r.nodos[s].length).length;
+    const filas = [
+      [sinBarrio(0), "sólo dicen “Capital Federal” como lugar de secuestro, sin barrio" + (cerca ? " (ocultos a este zoom)" : "")],
+      [sin(0), "sin lugar de secuestro"],
+      [sin(1), "sin centro clandestino o lugar de detención registrado"],
+      [sin(2), "sin lugar de asesinato registrado"],
+      [sin(3), "sin hallazgo de restos registrado"],
+    ].filter(([n]) => n > 0);
+    $("rotulo").innerHTML = `<div class="grande">${fmt.format(lista.length)}</div><div class="chico">recorridos${estado.año ? ` · secuestros de ${estado.año}` : ""}</div>` +
+      (filas.length ? `<ul class="faltantes">${filas.map(([n, t]) => `<li><b class="num">${fmt.format(n)}</b> ${t}</li>`).join("")}</ul>` : "");
   }
 
   // ------------------------------------------------------------------ panel
@@ -364,7 +397,6 @@
       `${estado.año ? ` de personas secuestradas en <b>${estado.año}</b>` : ""}. ` +
       `Se ven <b class="num">${fmt.format(mostrados.length)}</b> tramos` +
       (ocultos ? `; ${fmt.format(ocultos)} tramos con menos de ${estado.minimo} personas quedan ocultos.` : ".");
-    $("rotulo").innerHTML = `<div class="grande">${fmt.format(lista.length)}</div><div class="chico">recorridos${estado.año ? ` · secuestros de ${estado.año}` : ""}</div>`;
 
     // Recorridos similares: misma firma (mismos lugares en las mismas etapas).
     const grupos = new Map();
