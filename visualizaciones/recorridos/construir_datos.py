@@ -331,7 +331,10 @@ def _candidatos(texto: str) -> List[str]:
         # al último número, si es corto y no es otra calle.
         if re.search(r"\d", n) and not _INTERSECCION.search(n):
             cola = re.split(r"\d+\S*", s)[-1].strip()
-            if 0 < len(norm(cola).split()) <= 4 and not _NO_TOPONIMO.search(norm(cola)):
+            # "km. 35 del Arroyo Morales" no es una dirección: lo que sigue a
+            # "de/del" es un accidente geográfico, no la localidad.
+            if 0 < len(norm(cola).split()) <= 4 and not _NO_TOPONIMO.search(norm(cola)) \
+                    and not re.match(r"(de|del|y)\b", norm(cola)):
                 s, n = cola, norm(cola)
         # "Bº Esperanza": un barrio suelto engancha localidades homónimas
         # ("º" se normaliza como "o").
@@ -469,13 +472,22 @@ def leer_sitios_eaaf() -> List[Dict[str, Any]]:
                 continue
             if not (-90 <= lat <= 90 and -180 <= lon <= 180):
                 continue  # mismo criterio que builders/eaaf_lugares.py
+            def entero(columna: str) -> Optional[int]:
+                valor = (row.get(columna) or "").strip()
+                return int(valor) if valor.isdigit() else None
+
             sitios.append({
                 "nombre": row["LUGAR DE HALLAZGO"].strip(),
                 "localidad": row["LOCALIDAD"].strip(),
                 "provincia": row["PROVINCIA"].strip(),
-                "tipo": {"CEM": "cementerio", "CCD": "ccd", "EP": "espacio público"}.get(row["CEM - CCD - EP"].strip(), "sitio"),
+                # EP = enterramiento, igual que en builders/eaaf_lugares.py.
+                "tipo": {"CEM": "cementerio", "CCD": "ccd", "EP": "enterramiento"}.get(row["CEM - CCD - EP"].strip(), "sitio"),
                 "lat": lat,
                 "lon": lon,
+                # Totales del sitio según el EAAF, no de cada persona.
+                "casos": entero("Suma de CASOS"),
+                "exhumados": entero("Suma de EXHUMADOS"),
+                "identificados": entero("Suma de ID"),
             })
     return sitios
 
@@ -586,7 +598,8 @@ def ubicar_hallazgo(texto: str, sitios: SitiosEAAF, centroides: Centroides) -> O
         if len(partes) > 1 and norm(partes[1]) not in norm(texto):
             nombre = partes[0]
         return {"nombre": f"{nombre} ({sitio['localidad']})", "tipo": sitio["tipo"],
-                "lat": sitio["lat"], "lon": sitio["lon"], "precision": SITIO}
+                "lat": sitio["lat"], "lon": sitio["lon"], "precision": SITIO,
+                "sitio_eaaf": {k: sitio[k] for k in ("casos", "exhumados", "identificados")}}
     for patron in _FRAGMENTO_LUGAR:
         m = patron.search(texto)
         if not m:
@@ -596,8 +609,57 @@ def ubicar_hallazgo(texto: str, sitios: SitiosEAAF, centroides: Centroides) -> O
         if coords:
             return {"nombre": coords[3] if len(coords) > 3 else (nombre or fragmento).title(), "tipo": "localidad del hallazgo",
                     "lat": coords[0], "lon": coords[1], "precision": coords[2],
-                    "partido": coords[4] if len(coords) > 4 else None}
+                    "partido": coords[4] if len(coords) > 4 else None,
+                    "direccion": direccion_del_fragmento(fragmento)}
     return None
+
+
+_FECHA_HALLAZGO = re.compile(
+    r"(?:aparici[oó]n\s*:[^;]*?|(?:apareci[oó]|aparecen?|hallad[oa]s?|encontr[oó]|encontrad[oa]s?)\D{0,25}?)"
+    r"(\d{1,2}/\d{1,2}/\d{2,4}|\d{1,2} de [a-záéíóú]+ de \d{4})",
+    re.I,
+)
+_AÑO_IDENTIFICACION = re.compile(r"identificad[oa]s?\b[^.]{0,120}?\b((?:19[89]|20[0-2])\d)\b", re.I)
+
+
+def direccion_del_fragmento(fragmento: str) -> Optional[str]:
+    """Lo que el texto dice del lugar, más preciso que la localidad.
+
+    "Aparición: Dorrego y F. Alcorta (Palermo), 04/12/76" ->
+    "Dorrego y F. Alcorta (Palermo)". Sin fechas ni "Ente:", hasta el fin de
+    la primera oración.
+    """
+    # Fin de oración: un punto tras una palabra de 4 letras o más ("Av." o
+    # "Bs. As." no cortan). Tampoco van los nombres de quienes aparecieron
+    # junto a la persona: ya tienen su propia ficha.
+    t = re.split(r"(?<=[a-záéíóúñ]{4})\.\s+(?=[A-ZÁÉÍÓÚ])|;|,?\s+junto (?:con|a)\b", fragmento)[0]
+    t = _FECHA.sub(" ", t)
+    # Lo que queda colgando de una fecha que se sacó ("Asesinada el , San Martín").
+    t = re.sub(r"\b(el|del)\s*(?=[,.]|$)|\bel\s+(?=en\b)", "", t)
+    t = re.sub(r"\s+([,.])", r"\1", re.sub(r"\s+", " ", t))
+    t = t.strip(" ,-").lstrip(".").strip()
+    t = re.sub(r"^(?:en|el|la)\s+", "", t, flags=re.I)
+    return (t if len(t) <= 120 else t[:119].rsplit(" ", 1)[0] + "…") or None
+
+
+def detalle_hallazgo(texto: str, hallazgo: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    """Datos del hallazgo que el texto del Parque dice explícitamente."""
+    detalle: Dict[str, Any] = {}
+    m = _FECHA_HALLAZGO.search(texto)
+    if m:
+        detalle["fecha_aparicion"] = m.group(1)
+    m = _AÑO_IDENTIFICACION.search(texto)
+    if m:
+        detalle["año_identificacion"] = int(m.group(1))
+    if hallazgo:
+        detalle["tipo"] = hallazgo["tipo"]
+        if hallazgo.get("sitio_eaaf"):
+            detalle["sitio_eaaf"] = hallazgo["sitio_eaaf"]
+        direccion = hallazgo.get("direccion")
+        # Sólo si dice más que el nombre del lugar ("Caballito" no agrega).
+        if direccion and norm(direccion) not in norm(hallazgo["nombre"]):
+            detalle["direccion"] = direccion
+    return detalle
 
 
 # --------------------------------------------------------------------------
@@ -788,6 +850,7 @@ def main() -> None:
             "e": etapas,
             "u": [f.get("detail_url") for f in fichas_parque] + [f.get("source_url") for f in fichas_minjus],
             "h": textos_hallazgo[0] if textos_hallazgo else None,
+            "hd": detalle_hallazgo(textos_hallazgo[0], hallazgo) if textos_hallazgo else None,
             # Fecha de secuestro: la de la arista del Parque o, si no hay, la
             # de la ficha de MinJus / Archivo San Martín.
             "f": fecha_secuestro.get(persona["persona_key"]) or _fecha_iso(persona.get("fecha_secuestro")),

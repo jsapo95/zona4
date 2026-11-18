@@ -173,6 +173,13 @@
   .persona li.si::before { background: var(--highlight); color: #fff; }
   .persona .prec { color: var(--text-muted); font-size: 12px; }
   .persona blockquote { margin: 6px 0; padding: 6px 10px; background: var(--surface-2); border-radius: 6px; font-size: 12.5px; color: var(--text-secondary); }
+  .persona details.hallazgo { margin: 8px 0; font-size: 13px; }
+  .persona details.hallazgo summary { cursor: pointer; font-weight: 600; color: var(--text-primary); }
+  .persona dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 10px; margin: 8px 0; }
+  .persona dt { color: var(--text-muted); }
+  .persona dd { margin: 0; }
+  .persona .lista-lugar { margin: 8px 0 0; padding-left: 18px; font-size: 13px; max-height: 280px; overflow-y: auto; }
+  .persona .lista-lugar li { margin-bottom: 3px; }
   .persona .cerrar { float: right; border: 0; background: none; color: var(--text-muted); cursor: pointer; font-size: 18px; line-height: 1; }
 
   details { margin-top: 18px; font-size: 13.5px; color: var(--text-secondary); }
@@ -282,7 +289,7 @@
         <li><b>Secuestro</b> y <b>asesinato</b>: aristas <code>SECUESTRADO_EN</code> y <code>ASESINADO_EN</code> del grafo, que vienen de las fichas del Parque de la Memoria. MinJus GBA trae el lugar de secuestro como dirección narrativa y todavía no se procesa: esas personas entran recién en la etapa de centros clandestinos.</li>
         <li><b>Centro clandestino</b>: aristas <code>PRESENTE_EN</code> (MinJus GBA y el campo <code>ccds</code> de 148 fichas del Parque). Incluye unidades penales y comisarías que las fuentes registran como lugar de detención. <b>No se sabe el orden</b> entre centros: quien pasó por tres aparece en los tres a la vez, con un tercio de peso en cada uno. MinJus cubre sólo la provincia de Buenos Aires, así que esta etapa está sesgada hacia allí.</li>
         <li><b>Hallazgo de restos</b>: no está en el grafo. Sale del texto de identificación de la ficha del Parque ("sus restos fueron exhumados en el Cementerio de …") y se cruza con los 91 sitios con coordenadas del EAAF. Si el texto nombra una localidad y no un sitio del EAAF, se usa el centroide de la localidad.</li>
-        <li><b>Ubicación aproximada</b>: los sitios del EAAF y los CCD del catálogo de RUVTE usan sus coordenadas; los CCD de MinJus sin coordenadas (un tercio de los pasos por CCD) se ubican en su localidad o partido, igual que el resto de los puntos, que van al centroide Georef de su localidad o barrio, con una pequeña dispersión para que se vean los puntos superpuestos. "Capital Federal" sin barrio va al centro de CABA. Un lugar que sólo dice la provincia no se dibuja.</li>
+        <li><b>Ubicación aproximada</b>: los sitios del EAAF y los CCD del catálogo de RUVTE usan sus coordenadas; los CCD de MinJus sin coordenadas (un tercio de los pasos por CCD) se ubican en su localidad o partido, igual que el resto de los puntos, que van al centroide Georef de su localidad o barrio. Las personas de un mismo lugar son un mismo punto: al pasar el mouse o hacer clic se ve quiénes son y, en el hallazgo, la dirección que da cada texto. "Capital Federal" sin barrio va al centro de CABA; de cerca (zoom de ciudad) esos puntos imprecisos se ocultan. Un lugar que sólo dice la provincia no se dibuja.</li>
         <li><b>Quiénes están</b>: víctimas del grafo (con las fusiones de identidad entre fuentes ya hechas). En "Restos hallados" están quienes tienen un hallazgo de restos registrado; en "Sin hallazgo de restos registrado" quienes no lo tienen, aunque muchas figuren como asesinadas. Las personas liberadas, fugadas o restituidas según MinJus quedan afuera de las dos.</li>
         <li><b>Lo que falta no es lo que no pasó</b>: un punto apagado indica que la fuente no registra esa etapa, no que la persona no haya pasado por ella.</li>
       </ul>
@@ -391,13 +398,10 @@
     const n = Math.PI - 2 * Math.PI * (y / 256);
     return [180 / Math.PI * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n))), x / 256 * 360 - 180];
   };
-  // Pseudoaleatorio determinístico: la dispersión de un punto no cambia entre recargas.
-  const azar = (a, b) => {
-    let h = (a * 374761393 + b * 668265263) | 0;
-    h = Math.imul(h ^ (h >>> 13), 1274126177); h ^= h >>> 16;
-    return (h >>> 0) / 4294967296;
-  };
-  const RADIO = { sitio: 0.0012, localidad: 0.009, departamento: 0.03, caba: 0.035 };
+  // Lugares que sólo dicen la ciudad o el partido ("Capital Federal" sin
+  // barrio): de lejos sirven, de cerca su punto parecería una dirección.
+  const IMPRECISO = new Set(["caba", "departamento"]);
+  const ZOOM_SIN_IMPRECISOS = 11;
 
   function armarGrupo(g) {
     const personas = [];
@@ -407,8 +411,10 @@
     const G = {
       personas, n,
       x: new Float64Array(n * 4), y: new Float64Array(n * 4), conocido: new Uint8Array(n * 4),
+      impreciso: new Uint8Array(n * 4), lugar: new Int32Array(n * 4).fill(-1),
       duenio: new Int32Array(n), peso: new Float32Array(n),
       px: new Float32Array(n), py: new Float32Array(n), alfa: new Float32Array(n), calor: new Float32Array(n),
+      lugarAhora: new Int32Array(n),
     };
     let q = 0;
     for (const i of personas) {
@@ -421,14 +427,12 @@
           if (!lista.length) continue;
           const li = lista[j % lista.length];
           const [lat, lon, , , prec] = D.lugares[li];
-          // Disco uniforme para sitios y localidades; nube gaussiana para lo
-          // impreciso (CABA sin barrio, partidos), que si no forma un círculo.
-          const u = Math.max(1e-6, azar(i, li));
-          const r = RADIO[prec] * (prec === "caba" || prec === "departamento"
-            ? 0.55 * Math.sqrt(-2 * Math.log(u)) : Math.sqrt(u));
-          const a = azar(li, i + 7) * 2 * Math.PI;
-          const [wx, wy] = mundo(lat + r * Math.sin(a), lon + r * Math.cos(a) / Math.cos(lat * Math.PI / 180));
-          G.x[q * 4 + s] = wx; G.y[q * 4 + s] = wy; G.conocido[q * 4 + s] = 1;
+          // Sin dispersión: las personas del mismo lugar son un mismo punto,
+          // y el punto dice quiénes son.
+          const [wx, wy] = mundo(lat, lon);
+          const k = q * 4 + s;
+          G.x[k] = wx; G.y[k] = wy; G.conocido[k] = 1; G.lugar[k] = li;
+          G.impreciso[k] = IMPRECISO.has(prec) ? 1 : 0;
         }
       }
     }
@@ -489,19 +493,21 @@
     for (let s = Math.ceil(t); s < 4; s++) if (k[base + s]) { b = s; break; }
     const piso = Math.floor(t), techo = Math.min(3, Math.ceil(t)), fr = t - piso;
     const w = (1 - fr) * k[base + piso] + fr * k[base + techo];
-    let alfa;
-    if (a < 0) { out[0] = G.x[base + b]; out[1] = G.y[base + b]; alfa = w; }
-    else if (b < 0) { out[0] = G.x[base + a]; out[1] = G.y[base + a]; alfa = Math.max(w, 0.11); }
-    else if (a === b) { out[0] = G.x[base + a]; out[1] = G.y[base + a]; alfa = 1; }
+    let alfa, etapa;
+    if (a < 0) { out[0] = G.x[base + b]; out[1] = G.y[base + b]; alfa = w; etapa = b; }
+    else if (b < 0) { out[0] = G.x[base + a]; out[1] = G.y[base + a]; alfa = Math.max(w, 0.11); etapa = a; }
+    else if (a === b) { out[0] = G.x[base + a]; out[1] = G.y[base + a]; alfa = 1; etapa = a; }
     else {
-      curva(G.x[base + a], G.y[base + a], G.x[base + b], G.y[base + b], suave((t - a) / (b - a)), out);
-      alfa = 0.35 + 0.65 * w;
+      const f = (t - a) / (b - a);
+      curva(G.x[base + a], G.y[base + a], G.x[base + b], G.y[base + b], suave(f), out);
+      alfa = 0.35 + 0.65 * w; etapa = f < 0.5 ? a : b;
     }
-    out[2] = w; out[3] = alfa;
+    // El lugar que el punto representa ahora (el más cercano en el viaje).
+    out[2] = w; out[3] = alfa; out[4] = base + etapa;
   }
 
   // ------------------------------------------------------------------ dibujo
-  const pos = [0, 0, 0, 0];
+  const pos = [0, 0, 0, 0, 0];
   function dibujar() {
     if (!W) return;
     const G = GRUPOS[estado.grupo], t = estado.t;
@@ -512,13 +518,21 @@
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     ctx.clearRect(0, 0, W, H);
 
-    // Posiciones en pantalla de todas las partículas.
+    // Posiciones en pantalla de todas las partículas. De cerca se ocultan las
+    // que sólo saben la ciudad o el partido: su punto parecería una dirección.
+    const sinImprecisos = z >= ZOOM_SIN_IMPRECISOS;
+    const ocultas = new Set();
     for (let q = 0; q < G.n; q++) {
-      if (!G.visible[q]) { G.alfa[q] = 0; G.calor[q] = 0; continue; }
+      if (!G.visible[q]) { G.alfa[q] = 0; G.calor[q] = 0; G.lugarAhora[q] = -1; continue; }
       ubicar(G, q, t, pos);
       G.px[q] = pos[0] * escala - ox; G.py[q] = pos[1] * escala - oy;
-      G.alfa[q] = pos[3]; G.calor[q] = pos[2] * G.peso[q];
+      G.alfa[q] = pos[3]; G.calor[q] = pos[2] * G.peso[q]; G.lugarAhora[q] = G.lugar[pos[4]];
+      if (sinImprecisos && G.impreciso[pos[4]]) {
+        if (pos[3] > 0.02) ocultas.add(G.duenio[q]);
+        G.alfa[q] = 0; G.calor[q] = 0;
+      }
     }
+    estado.ocultas = ocultas.size;
 
     if (estado.rutas) dibujarRutas(G, escala, ox, oy, t);
 
@@ -665,9 +679,44 @@
       grande = fmt.format(G.vista.conocidas[s]);
       chico = `personas con lugar conocido · ${etapa(s).nombre.toLowerCase()}`;
     }
-    $("rotulo").innerHTML = enParada
+    const ocultas = estado.ocultas
+      ? `<div class="chico" style="margin-top:4px">${fmt.format(estado.ocultas)} ${estado.ocultas === 1 ? "persona oculta" : "personas ocultas"} a este zoom: su lugar es sólo la ciudad o el partido</div>`
+      : "";
+    $("rotulo").innerHTML = (enParada
       ? `<div class="grande">${grande}</div><div class="chico">${chico}</div>`
-      : `<div class="chico">Camino de la etapa ${Math.floor(estado.t)} a la ${Math.floor(estado.t) + 1}…</div>`;
+      : `<div class="chico">Camino de la etapa ${Math.floor(estado.t)} a la ${Math.floor(estado.t) + 1}…</div>`) + ocultas;
+  }
+
+  // Nombre del lugar de una persona en una etapa: en el hallazgo, la dirección
+  // que da el texto ("Dorrego y F. Alcorta (Palermo)") cuando dice más que el barrio.
+  function lugarDe(p, s, li) {
+    const nombre = D.lugares[li][2];
+    return s === 3 && p.hd && p.hd.direccion ? `${p.hd.direccion} · ${nombre}` : nombre;
+  }
+
+  const TIPO_HALLAZGO = {
+    cementerio: "Cementerio (sitio del EAAF)",
+    enterramiento: "Enterramiento clandestino (sitio del EAAF)",
+    ccd: "Centro clandestino (sitio del EAAF)",
+    "localidad del hallazgo": "Lugar donde apareció el cuerpo o fueron hallados los restos",
+  };
+  function detalleHallazgo(p) {
+    const d = p.hd || {}, filas = [];
+    if (d.tipo) filas.push(["Tipo de lugar", TIPO_HALLAZGO[d.tipo] || d.tipo]);
+    if (d.direccion) filas.push(["Dónde, según el texto", d.direccion]);
+    if (d.fecha_aparicion) filas.push(["Fecha de aparición", d.fecha_aparicion]);
+    if (d.año_identificacion) filas.push(["Año de identificación", String(d.año_identificacion)]);
+    if (d.sitio_eaaf && d.sitio_eaaf.casos) {
+      const se = d.sitio_eaaf;
+      filas.push(["En ese sitio, según el EAAF", `${fmt.format(se.casos)} casos, ${fmt.format(se.exhumados || 0)} exhumados, ${fmt.format(se.identificados || 0)} identificados (totales del sitio, no de esta persona)`]);
+    }
+    const parque = p.u.find((u) => u && u.includes("parquedelamemoria"));
+    const docs = [parque && `<a href="${escapar(parque)}" target="_blank" rel="noopener">ficha del Parque de la Memoria</a>`,
+      d.sitio_eaaf && `<a href="https://labusqueda.eaaf.org.ar/" target="_blank" rel="noopener">sitios de hallazgo del EAAF</a>`].filter(Boolean);
+    if (docs.length) filas.push(["Documentos", docs.join(" · ")]);
+    return `<details class="hallazgo"><summary>Detalle del hallazgo</summary><dl>${filas.map(([k, v]) =>
+      `<dt>${k}</dt><dd>${k === "Documentos" ? v : escapar(v)}</dd>`).join("")}</dl>
+      <blockquote>${escapar(p.h)}</blockquote></details>`;
   }
 
   const escapar = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -685,7 +734,7 @@
       }
       const lugares = lista.map((li) => {
         const l = D.lugares[li];
-        return `${escapar(l[2])} <span class="prec">(${PRECISION[l[4]]})</span>`;
+        return `${escapar(lugarDe(p, s, li))} <span class="prec">(${PRECISION[l[4]]})</span>`;
       }).join("<br>");
       const nota = lista.length > 1 ? ` <span class="prec">· sin orden conocido entre estos ${lista.length}</span>` : "";
       return `<li data-n="${s}" class="si"><b>${nombres[s]}</b>${nota}<br>${lugares}</li>`;
@@ -698,7 +747,7 @@
     el.style.display = "block";
     el.innerHTML = `<button class="cerrar" aria-label="Cerrar">×</button><h3>${escapar(p.n)}</h3>
       <div class="muted" style="font-size:12.5px">${escapar(p.s)}</div><ol>${items}</ol>
-      ${p.h ? `<blockquote>${escapar(p.h)}</blockquote>` : ""}<div style="font-size:12.5px">${fuentes}</div>`;
+      ${p.h ? detalleHallazgo(p) : ""}<div style="font-size:12.5px">${fuentes}</div>`;
     el.querySelector(".cerrar").onclick = deseleccionar;
 
     if (capaSel) mapa.removeLayer(capaSel);
@@ -717,7 +766,7 @@
       for (const a of actuales) {
         puntos.push([a[0], a[1]]);
         L.circleMarker([a[0], a[1]], { pane: "seleccion", radius: 6, color: getComputedStyle(document.documentElement).getPropertyValue("--surface-1").trim(), weight: 2, fillColor: color, fillOpacity: 1 })
-          .bindTooltip(`${s} · ${etapa(s).nombre}: ${escapar(D.lugares[a[2]][2])}`, { direction: "top" }).addTo(capaSel);
+          .bindTooltip(`${s} · ${etapa(s).nombre}: ${escapar(lugarDe(p, s, a[2]))}`, { direction: "top" }).addTo(capaSel);
       }
       previos = actuales;
     });
@@ -732,8 +781,9 @@
     if (capaSel) { mapa.removeLayer(capaSel); capaSel = null; }
   }
 
-  // Clic en el mapa: la persona más cercana al cursor (en su posición de ahora).
-  function masCercana(x, y, radio) {
+  // Clic en el mapa: el punto más cercano al cursor y todas las personas que
+  // están en ese mismo lugar ahora (un punto puede ser muchas personas).
+  function enElPunto(x, y, radio) {
     const G = GRUPOS[estado.grupo];
     let mejor = -1, md = radio * radio;
     for (let q = 0; q < G.n; q++) {
@@ -741,19 +791,58 @@
       const dx = G.px[q] - x, dy = G.py[q] - y, d = dx * dx + dy * dy;
       if (d < md) { md = d; mejor = q; }
     }
-    return mejor < 0 ? -1 : G.duenio[mejor];
+    if (mejor < 0) return { personas: [], lugar: -1 };
+    const personas = new Set();
+    for (let q = 0; q < G.n; q++) {
+      if (G.alfa[q] < 0.2) continue;
+      if (Math.abs(G.px[q] - G.px[mejor]) < 1.5 && Math.abs(G.py[q] - G.py[mejor]) < 1.5) personas.add(G.duenio[q]);
+    }
+    return { personas: [...personas], lugar: G.lugarAhora[mejor] };
   }
   mapa.on("click", (ev) => {
-    const i = masCercana(ev.containerPoint.x, ev.containerPoint.y, 10);
-    if (i >= 0) seleccionar(i, false); else deseleccionar();
+    const { personas, lugar } = enElPunto(ev.containerPoint.x, ev.containerPoint.y, 10);
+    if (personas.length === 1) seleccionar(personas[0], false);
+    else if (personas.length > 1) mostrarLugar(personas, lugar);
+    else deseleccionar();
   });
+
+  // Varias personas en un mismo punto: la lista, con lo que dice el texto de
+  // cada una (en el hallazgo, su dirección), para elegir a quién ver.
+  function mostrarLugar(personas, li) {
+    deseleccionar();
+    const s = Math.round(estado.t);
+    const filas = personas.slice().sort((a, b) => D.personas[a].n.localeCompare(D.personas[b].n, "es")).map((i) => {
+      const p = D.personas[i], extra = s === 3 && p.hd && p.hd.direccion ? ` <span class="prec">· ${escapar(p.hd.direccion)}</span>` : "";
+      return `<li><a href="#" data-i="${i}">${escapar(p.n)}</a>${extra}</li>`;
+    }).join("");
+    const el = $("persona");
+    el.style.display = "block";
+    el.innerHTML = `<button class="cerrar" aria-label="Cerrar">×</button>
+      <h3>${fmt.format(personas.length)} personas en ${li >= 0 ? escapar(D.lugares[li][2]) : "este lugar"}</h3>
+      <div class="muted" style="font-size:12.5px">${etapa(s).nombre}. Hacé clic en un nombre para ver su recorrido.</div>
+      <ul class="lista-lugar">${filas}</ul>`;
+    el.querySelector(".cerrar").onclick = deseleccionar;
+    el.querySelectorAll("a[data-i]").forEach((a) => a.onclick = (e) => { e.preventDefault(); seleccionar(+a.dataset.i, false); });
+    el.scrollIntoView({ block: "nearest" });
+  }
+
   const tooltip = $("tooltip");
   mapa.on("mousemove", (ev) => {
     if (estado.reproduciendo) { tooltip.style.display = "none"; return; }
-    const i = masCercana(ev.containerPoint.x, ev.containerPoint.y, 8);
-    if (i < 0) { tooltip.style.display = "none"; mapa.getContainer().style.cursor = ""; return; }
-    const p = D.personas[i], s = Math.round(estado.t), lista = p.e[s];
-    const donde = lista.length ? lista.map((li) => D.lugares[li][2]).join(" · ") : "sin registro en esta etapa";
+    const { personas, lugar } = enElPunto(ev.containerPoint.x, ev.containerPoint.y, 8);
+    if (!personas.length) { tooltip.style.display = "none"; mapa.getContainer().style.cursor = ""; return; }
+    const s = Math.round(estado.t);
+    if (personas.length > 1) {
+      const nombres = personas.slice(0, 4).map((i) => escapar(D.personas[i].n)).join("<br>");
+      tooltip.innerHTML = `<b>${fmt.format(personas.length)} personas</b> · ${lugar >= 0 ? escapar(D.lugares[lugar][2]) : ""}<br>${nombres}${personas.length > 4 ? `<br><span class="muted">y ${fmt.format(personas.length - 4)} más · clic para ver la lista</span>` : ""}`;
+      tooltip.style.display = "block";
+      tooltip.style.left = Math.min(ev.containerPoint.x + 14, W - 270) + "px";
+      tooltip.style.top = (ev.containerPoint.y + 14) + "px";
+      mapa.getContainer().style.cursor = "pointer";
+      return;
+    }
+    const p = D.personas[personas[0]], lista = p.e[s];
+    const donde = lista.length ? lista.map((li) => lugarDe(p, s, li)).join(" · ") : "sin registro en esta etapa";
     tooltip.innerHTML = `<b>${escapar(p.n)}</b><br><span class="muted">${etapa(s).nombre}:</span> ${escapar(donde)}`;
     tooltip.style.display = "block";
     tooltip.style.left = Math.min(ev.containerPoint.x + 14, W - 270) + "px";

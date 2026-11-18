@@ -106,10 +106,12 @@ Los tests de las reglas de ubicación están en
   ella, "SAN NICOLAS" caía en el barrio porteño). Si sólo se encuentra el
   partido, el punto va al partido.
 - **Localidades y barrios**: centroide de Georef (localidad, municipio o
-  asentamiento, en ese orden). Los puntos que comparten centroide se dispersan
-  un poco para que se vean; la dispersión es fija entre recargas.
-- **"Capital Federal" sin barrio** (1.801 secuestros): centro de CABA, con una
-  dispersión mayor.
+  asentamiento, en ese orden). Las personas de un mismo lugar son un mismo
+  punto, sin dispersión: el punto lista quiénes son y, en el hallazgo, la
+  dirección que da el texto de cada una ("Dorrego y F. Alcorta (Palermo)").
+- **"Capital Federal" sin barrio** (1.801 secuestros) y lugares que sólo dan el
+  partido: centro de CABA o del partido. Con zoom de ciudad (11 o más) se
+  ocultan, porque su punto parecería una dirección.
 - **Nombres que en Georef son otro lugar**: "Guadalupe" (Santa Fe) no se ubica,
   porque el único candidato es Guadalupe Norte, a 300 km; "Fronterita"
   (Tucumán) va a Famaillá, donde está el ingenio (`PARTIDO_DE_LOCALIDAD`).
