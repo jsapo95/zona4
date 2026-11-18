@@ -142,6 +142,9 @@ Los tests de las reglas de ubicación están en
 
 ## Lo que el mapa no dice
 
+La lista completa de huecos de datos, con cifras de referencia y fuentes,
+está en [`../HUECOS_DE_DATOS.md`](../HUECOS_DE_DATOS.md).
+
 - **El orden entre CCD no se conoce.** Quien pasó por tres aparece en los tres a
   la vez, con un tercio de peso en cada uno.
 - **La etapa 1 incluye cárceles.** Las fuentes registran como lugar de
