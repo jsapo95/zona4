@@ -35,11 +35,13 @@ CHILE_KEY = "lugar:PAIS:chile"
 
 # Valores reales de `parque_de_la_memoria.json` (lugar de asesinato y de
 # secuestro) que antes de este fix terminaban en
-# `lugar:DEPARTAMENTO:uruguay|lugar:PROVINCIA:entre_rios|lugar:PAIS:argentina`,
-# con la ciudad que la propia fuente nombra antes del país.
+# `lugar:DEPARTAMENTO:uruguay|lugar:PROVINCIA:entre_rios|lugar:PAIS:argentina`.
+# Van a la ciudad que la fuente nombra antes del país, salvo que el detalle sea
+# una ruta: "Canelones, Uruguay. Cruce Ruta 9 y Ruta 70" es el departamento de
+# Canelones, no la ciudad, así que se afirma sólo el país.
 CASOS_PAIS_CON_DETALLE = [
-    ("Canelones - Uruguay. Cruce Ruta N°9 y 70", f"lugar:CIUDAD:canelones|{URUGUAY_KEY}"),
-    ("Canelones, Uruguay. Cruce Ruta 9 y Ruta 70", f"lugar:CIUDAD:canelones|{URUGUAY_KEY}"),
+    ("Canelones - Uruguay. Cruce Ruta N°9 y 70", URUGUAY_KEY),
+    ("Canelones, Uruguay. Cruce Ruta 9 y Ruta 70", URUGUAY_KEY),
     (
         "Montevideo, Uruguay. Aeropuerto Internacional de Carrasco",
         f"lugar:CIUDAD:montevideo|{URUGUAY_KEY}",
@@ -76,7 +78,7 @@ def test_pais_con_detalle_cuelga_del_pais(raw: str, esperada: str, use_georef: b
 
     assert place is not None
     assert place["lugar_key"] == esperada
-    assert place["tipo"] == "CIUDAD"
+    assert place["tipo"] == ("PAIS" if esperada == URUGUAY_KEY else "CIUDAD")
     assert "entre_rios" not in place["lugar_key"]
 
 

@@ -82,7 +82,10 @@
   calles con nombre de país no cambian). Medido sobre el CDM de una carga
   completa: las aristas hacia `lugar:DEPARTAMENTO:uruguay` de Entre Ríos
   pasan de 6 a 0 (5 `ASESINADO_EN` y 1 `SECUESTRADO_EN`, todas de
-  `detalles_personas`) y pasan a Canelones o Montevideo, Uruguay; el mismo
+  `detalles_personas`) y pasan a Montevideo o al país Uruguay (los dos
+  "Canelones, Uruguay. Cruce Ruta 9 y Ruta 70" quedan en el país: con una
+  ruta o un cruce como detalle, el nombre de antes es el departamento por el
+  que pasa la ruta, no su capital homónima); el mismo
   patrón saca 1 `SECUESTRADO_EN` de un `:Lugar` INDETERMINADO y lo cuelga de
   Santiago, Chile. Los hechos por tipo no cambian. No agrega labels ni
   propiedades. Requiere recargar con `--clean-project`: una recarga

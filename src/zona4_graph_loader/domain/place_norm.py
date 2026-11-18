@@ -3,7 +3,7 @@ from __future__ import annotations
 from functools import lru_cache
 from pathlib import Path
 import re
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from zona4_graph_loader.constants import (
     EQUIV_CITIES,
@@ -472,6 +472,23 @@ def _resolve_foreign_place(alias_norm: str) -> Optional[Dict[str, Any]]:
     }
 
 
+def _segmentos_de_lugar(text: str) -> List[str]:
+    segments = [normalize_place_text(s) for s in re.split(r"[^\w\s]+", text)]
+    return [s for s in segments if s]
+
+
+def _ruta_despues_del_pais(segments: List[str], idx: int) -> bool:
+    """Si el detalle después del país es una ruta o un cruce ("Canelones,
+    Uruguay. Cruce Ruta 9 y Ruta 70"), el nombre de antes es el departamento
+    por el que pasa la ruta, no su capital homónima: se afirma sólo el país."""
+    return bool(re.search(r"\b(RUTA|CRUCE|KM|CAMINO)\b", " ".join(segments[idx + 1:])))
+
+
+def _ciudad_extranjera_sobre_una_ruta(text: str) -> bool:
+    segments = _segmentos_de_lugar(text)
+    return any(s in FOREIGN_COUNTRY_EQUIV and _ruta_despues_del_pais(segments, i) for i, s in enumerate(segments))
+
+
 def _resolve_foreign_country_segment(text: str, alias_norm: str) -> Optional[Dict[str, Any]]:
     # `_resolve_foreign_place` sólo reconoce el país cuando la cadena entera
     # ES el país o TERMINA en él. Si la fuente agrega detalle después
@@ -491,8 +508,7 @@ def _resolve_foreign_country_segment(text: str, alias_norm: str) -> Optional[Dic
     if any(f" {hint} " in padded for hint in domestic_hints):
         return None
 
-    segments = [normalize_place_text(s) for s in re.split(r"[^\w\s]+", text)]
-    segments = [s for s in segments if s]
+    segments = _segmentos_de_lugar(text)
     for idx, segment in enumerate(segments):
         if segment not in FOREIGN_COUNTRY_EQUIV:
             continue
@@ -502,8 +518,10 @@ def _resolve_foreign_country_segment(text: str, alias_norm: str) -> Optional[Dic
         # parece un topónimo. Si es una dirección o no hay nada antes, se
         # afirma sólo el país antes que inventar una ciudad.
         city_name = segments[idx - 1] if idx > 0 else ""
+        en_ruta = _ruta_despues_del_pais(segments, idx)
         if (
             not city_name
+            or en_ruta
             or any(ch.isdigit() for ch in city_name)
             or len(city_name.split()) > 4
             or _es_fragmento_no_toponimico(city_name)
@@ -836,6 +854,8 @@ def resolve_place(
             return caba_context
 
     foreign_resolved = _resolve_foreign_place(alias_norm)
+    if foreign_resolved is not None and foreign_resolved["tipo"] == "CIUDAD" and _ciudad_extranjera_sobre_una_ruta(text):
+        foreign_resolved = None
     if foreign_resolved is None:
         foreign_resolved = _resolve_foreign_country_segment(text, alias_norm)
     if foreign_resolved is not None:
