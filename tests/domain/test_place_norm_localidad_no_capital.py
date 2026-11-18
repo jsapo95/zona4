@@ -208,3 +208,31 @@ CASOS_SIN_CAMBIOS = [
 @pytest.mark.parametrize("raw,esperada", CASOS_SIN_CAMBIOS)
 def test_textos_que_nombran_la_capital_no_cambian(raw: str, esperada: str) -> None:
     assert _resolver(raw) == esperada
+
+
+# "Localidad, Departamento, Provincia" con una localidad que el catálogo no
+# tiene: la del medio es el departamento, no su ciudad homónima (revisión
+# adversarial del grafo con #7 a #10 juntos).
+@pytest.mark.parametrize(
+    "raw,esperada",
+    [
+        ("Villa Luján, Goya, Corrientes", "lugar:DEPARTAMENTO:goya|lugar:PROVINCIA:corrientes|lugar:PAIS:argentina"),
+        ("VOLCÁN · TUMBAYA · JUJUY", "lugar:DEPARTAMENTO:tumbaya|lugar:PROVINCIA:jujuy|lugar:PAIS:argentina"),
+    ],
+)
+def test_localidad_departamento_provincia_afirma_el_departamento(raw, esperada):
+    assert _resolver(raw) == esperada
+
+
+@pytest.mark.parametrize(
+    "raw,ciudad",
+    [
+        ("GOYA. CORRIENTES", "lugar:CIUDAD:goya|"),
+        ("Av. SARMIENTO y Av. CAAGUAZÚ · GOYA · CORRIENTES", "lugar:CIUDAD:goya|"),
+        ("SAN PEDRO DE JUJUY · SAN PEDRO · JUJUY", "lugar:CIUDAD:san_pedro|"),
+        ("TOMÁS GUIDO s/nº  ·  PARANÁ · ENTRE RÍOS", "lugar:CIUDAD:parana|"),
+        ("Teatro La Ranchería (Bahía Blanca)", "lugar:CIUDAD:bahia_blanca|"),
+    ],
+)
+def test_otras_formas_siguen_en_la_ciudad(raw, ciudad):
+    assert _resolver(raw).startswith(ciudad)

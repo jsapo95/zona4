@@ -603,6 +603,55 @@ def _strip_trailing_province_hint(alias_norm: str) -> str:
 _PALABRAS_SIN_LUGAR = {"DE", "DEL", "LA", "EL", "PCIA", "PROV", "PROVINCIA"}
 
 
+_CALLE_O_ESQUINA = re.compile(r"\b(?:Y|E|AV|AVDA|CALLE|ESQ|ENTRE|RUTA|KM|S N|SOBRE|COSTANERA)\b")
+
+
+def _departamento_si_es_calificador(raw_text: str, place: Dict[str, Any]) -> Dict[str, Any]:
+    """En "Villa Luján, Goya, Corrientes", Goya es el departamento de Villa
+    Luján (que el catálogo no tiene), no la ciudad de Goya: se afirma el
+    departamento.
+
+    Sólo para el formato "Localidad, Departamento, Provincia": exactamente
+    tres partes separadas por coma, guion o "·", sin paréntesis ni dígitos;
+    la del medio es la localidad elegida, que se llama igual que su
+    departamento; la última es la provincia, y la primera es otro topónimo
+    corto que no es una calle ni empieza con el nombre del departamento
+    ("SAN PEDRO DE JUJUY · SAN PEDRO · JUJUY" es la ciudad). Cualquier otra forma ("GOYA. CORRIENTES", "Teatro La Ranchería
+    (Bahía Blanca)", "25 DE MAYO 268 · SAN PEDRO · BUENOS AIRES") no cambia.
+    """
+    hierarchy = place.get("hierarchy_keys") or []
+    if place.get("tipo") != "CIUDAD" or len(hierarchy) != 4:
+        return place
+    slug = lambda key: key.split("|", 1)[0].split(":", 2)[2]
+    if slug(hierarchy[0]) != slug(hierarchy[1]):
+        return place
+    if re.search(r"[()\d]", raw_text):
+        return place
+    partes = [normalize_place_text(x) for x in re.split(r"[,;·\-]+", raw_text.strip().rstrip("."))]
+    partes = [x for x in partes if x]
+    if len(partes) != 3:
+        return place
+    localidad, departamento, provincia = partes
+    if slugify_name(departamento) != slug(hierarchy[1]):
+        return place
+    if slugify_name(provincia) != slug(hierarchy[2]) and provincia not in PROVINCE_ABBR:
+        return place
+    if (
+        len(localidad.split()) > 4
+        or localidad.startswith(departamento)
+        or _CALLE_O_ESQUINA.search(localidad)
+        or _es_fragmento_no_toponimico(localidad)
+    ):
+        return place
+    return {
+        **place,
+        "tipo": "DEPARTAMENTO",
+        "lugar_key": hierarchy[1],
+        "parent_key": hierarchy[2],
+        "hierarchy_keys": hierarchy[1:],
+    }
+
+
 def _provincia_si_localidad_no_encontrada(raw_text: str, alias_norm: str, place: Dict[str, Any]) -> Dict[str, Any]:
     """Si Georef devolvió la capital homónima de la provincia ("SALTA") para
     un texto "LOCALIDAD. PROVINCIA" cuya localidad no encontró ("PALOMITAS.
@@ -955,6 +1004,7 @@ def resolve_place(
                 )
                 if georef_resolved is not None:
                     georef_resolved = _provincia_si_localidad_no_encontrada(text, alias_norm, georef_resolved)
+                    georef_resolved = _departamento_si_es_calificador(text, georef_resolved)
                     georef_resolved["alias_raw"] = text
                     return georef_resolved
 

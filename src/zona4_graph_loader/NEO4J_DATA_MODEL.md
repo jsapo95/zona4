@@ -95,7 +95,10 @@
   (`ASESINADO_EN`) y de 229 a 243 (`NACIO_EN`). Hechos por tipo:
   `SECUESTRADO_EN` 7.133 → 7.134, el resto sin cambios. No agrega labels ni
   propiedades. Requiere recargar con `--clean-project`: una recarga
-  incremental conserva las aristas viejas hacia la capital.
+  incremental conserva las aristas viejas hacia la capital. En el formato
+  "Localidad, Departamento, Provincia" con una localidad que el catálogo no
+  tiene ("Villa Luján, Goya, Corrientes"), se afirma el departamento y no su
+  ciudad homónima (`_departamento_si_es_calificador`; 7 textos).
 
 Este documento define la arquitectura exacta e inmutable del grafo en Neo4j. Cualquier proceso de extracción, estructuración o ingesta automática de datos ejecutado por un LLM debe adherirse estrictamente a las reglas, etiquetas, relaciones y propiedades declaradas a continuación. Está prohibido inventar o inferir entidades intermedias.
 
