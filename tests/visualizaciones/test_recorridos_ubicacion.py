@@ -160,7 +160,12 @@ def test_coordenadas_ruvte_corregidas_quedan_lejos_de_su_direccion(centroides):
         c = ccds[id_ccd]
         lugar = {"nombre": c["denominacion"], "ubicacion": c["ubicacion"], "zona": c["zona"], "fuente": "ccds_json"}
         localidad = cd.localidad_del_ccd(lugar, centroides)
-        assert cd.km(c["lat"], c["lon"], localidad[0], localidad[1]) > 20, id_ccd
+        lejos = cd.km(c["lat"], c["lon"], localidad[0], localidad[1])
+        # O muy lejos de su dirección, o lejos y con las coordenadas de otro CCD
+        # cercano con otra dirección (Olimpo tiene las de Coordinación Federal).
+        vecino = min(cd.km(c["lat"], c["lon"], o["lat"], o["lon"])
+                     for o in ccds.values() if o is not c and o.get("lat") is not None and o["ubicacion"] != c["ubicacion"])
+        assert lejos > 20 or (lejos > 8 and vecino < 1.5), id_ccd
 
 
 def test_barrio_abreviado_no_engancha_una_localidad_homonima(centroides, sitios):
@@ -187,3 +192,21 @@ def test_fronterita_es_el_ingenio_de_famailla(centroides):
 def test_cementerio_sin_sector_no_inventa_el_sector(sitios, centroides):
     texto = "Identificado por el EAAF en 2010. Sus restos fueron exhumados en el Cementerio de Avellaneda, Bs. As."
     assert cd.ubicar_hallazgo(texto, sitios, centroides)["nombre"] == "Cementerio de Avellaneda (Avellaneda)"
+
+
+def test_la_piedad_de_otra_provincia_no_es_la_de_rosario(sitios, centroides):
+    texto = "Identificada por el EAAF en el 2008. Sus restos exhumados en el Cementerio de la Piedad, Oberá, Misiones."
+    assert sitios.buscar(texto) is None
+    rosario = "Sus restos fueron exhumados en el Cementerio La Piedad, Rosario, Santa Fe."
+    assert sitios.buscar(rosario)["nombre"] == "Cementerio La Piedad"
+
+
+def test_provincia_de_otro_dato_no_descarta_el_sitio(sitios):
+    # Lo que va después del punto y coma es otro dato, no el lugar del sitio.
+    texto = "Restos hallados en el Cementerio de la Chacarita; secuestrada en Rosario, Santa Fe."
+    assert sitios.buscar(texto)["nombre"] == "Cementerio de la Chacarita"
+
+
+def test_rio_lujan_no_es_la_ciudad_de_lujan(centroides):
+    coords, _ = cd.ubicar_fragmento("Río Luján", centroides)
+    assert coords is None

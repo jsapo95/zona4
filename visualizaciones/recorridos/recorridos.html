@@ -290,6 +290,7 @@
     rosario: [[-33.10, -60.85], [-32.80, -60.55]],
   };
   const fmt = new Intl.NumberFormat("es-AR");
+  const cuantas = (n, uno, varios) => `${fmt.format(n)} ${n === 1 ? uno : varios}`;
   const $ = (id) => document.getElementById(id);
 
   // ------------------------------------------------------------------ mapa
@@ -423,8 +424,8 @@
       for (let q = 0; q < G.n; q++) G.visible[q] = pasaFiltro(G.duenio[q]) ? 1 : 0;
       G.vista = contar(G.personas.filter(pasaFiltro));
       $("cnt-" + g).textContent = estado.ccd === null
-        ? `${fmt.format(G.personas.length)} personas`
-        : `${fmt.format(G.vista.personas.length)} de ${fmt.format(G.personas.length)} personas`;
+        ? cuantas(G.personas.length, "persona", "personas")
+        : `${fmt.format(G.vista.personas.length)} de ${cuantas(G.personas.length, "persona", "personas")}`;
     }
   }
   aplicarFiltro();
@@ -452,8 +453,12 @@
     if (a < 0) { out[0] = G.x[base + b]; out[1] = G.y[base + b]; alfa = w; etapa = b; }
     else if (b < 0) { out[0] = G.x[base + a]; out[1] = G.y[base + a]; alfa = Math.max(w, 0.11); etapa = a; }
     else if (a === b) { out[0] = G.x[base + a]; out[1] = G.y[base + a]; alfa = 1; etapa = a; }
-    else {
-      const f = (t - a) / (b - a);
+    else if (t <= b - 1) {
+      // Etapa sin registro entre dos conocidas: queda apagado en el último
+      // lugar conocido, como dice la leyenda, y viaja en el último tramo.
+      out[0] = G.x[base + a]; out[1] = G.y[base + a]; alfa = Math.max(w, 0.11); etapa = a;
+    } else {
+      const f = t - (b - 1);
       curva(G.x[base + a], G.y[base + a], G.x[base + b], G.y[base + b], suave(f), out);
       alfa = 0.35 + 0.65 * w; etapa = f < 0.5 ? a : b;
     }
@@ -483,7 +488,7 @@
       G.px[q] = pos[0] * escala - ox; G.py[q] = pos[1] * escala - oy;
       G.alfa[q] = pos[3]; G.calor[q] = pos[2] * G.peso[q]; G.lugarAhora[q] = G.lugar[pos[4]];
       if (sinImprecisos && G.impreciso[pos[4]]) {
-        if (pos[3] > 0.02) ocultas.add(G.duenio[q]);
+        if (pos[3] > 0.02 && G.px[q] >= 0 && G.px[q] <= W && G.py[q] >= 0 && G.py[q] <= H) ocultas.add(G.duenio[q]);
         G.alfa[q] = 0; G.calor[q] = 0;
       }
     }
@@ -594,7 +599,7 @@
     const max = Math.max(...V.conocidas, 1);
     $("barras").innerHTML = [0, 1, 2, 3].map((i) => {
       const v = estado.grupo === "B" && i === 3 ? 0 : V.conocidas[i];
-      return `<div class="barra" data-s="${i}" aria-current="${i === s}" title="${etapa(i).nombre}: ${fmt.format(v)} personas con lugar conocido">
+      return `<div class="barra" data-s="${i}" aria-current="${i === s}" title="${etapa(i).nombre}: ${cuantas(v, "persona", "personas")} con lugar conocido">
         <span>${i} · ${etapa(i).nombre}</span><span class="pista"><span class="relleno" style="width:${100 * v / max}%"></span></span>
         <span class="num">${fmt.format(v)}</span></div>`;
     }).join("");
@@ -629,13 +634,13 @@
     let grande, chico;
     if (estado.grupo === "B" && s === 3) {
       grande = fmt.format(G.vista.personas.length);
-      chico = "personas sin hallazgo de restos registrado";
+      chico = `${G.vista.personas.length === 1 ? "persona" : "personas"} sin hallazgo de restos registrado`;
     } else {
       grande = fmt.format(G.vista.conocidas[s]);
-      chico = `personas con lugar conocido · ${etapa(s).nombre.toLowerCase()}`;
+      chico = `${G.vista.conocidas[s] === 1 ? "persona" : "personas"} con lugar conocido · ${etapa(s).nombre.toLowerCase()}`;
     }
     const ocultas = estado.ocultas
-      ? `<div class="chico" style="margin-top:4px">${fmt.format(estado.ocultas)} ${estado.ocultas === 1 ? "persona oculta" : "personas ocultas"} a este zoom: su lugar es sólo la ciudad o el partido</div>`
+      ? `<div class="chico" style="margin-top:4px">${cuantas(estado.ocultas, "persona oculta", "personas ocultas")} en esta zona a este zoom: su lugar es sólo la ciudad o el partido</div>`
       : "";
     $("rotulo").innerHTML = (enParada
       ? `<div class="grande">${grande}</div><div class="chico">${chico}</div>`
@@ -746,34 +751,39 @@
       const dx = G.px[q] - x, dy = G.py[q] - y, d = dx * dx + dy * dy;
       if (d < md) { md = d; mejor = q; }
     }
-    if (mejor < 0) return { personas: [], lugar: -1 };
-    const personas = new Set();
+    if (mejor < 0) return { personas: [], lugar: -1, lugares: [], lugarDePersona: new Map() };
+    const lugarDePersona = new Map();
     for (let q = 0; q < G.n; q++) {
       if (G.alfa[q] < 0.2) continue;
-      if (Math.abs(G.px[q] - G.px[mejor]) < 1.5 && Math.abs(G.py[q] - G.py[mejor]) < 1.5) personas.add(G.duenio[q]);
+      if (Math.abs(G.px[q] - G.px[mejor]) < 1.5 && Math.abs(G.py[q] - G.py[mejor]) < 1.5) lugarDePersona.set(G.duenio[q], G.lugarAhora[q]);
     }
-    return { personas: [...personas], lugar: G.lugarAhora[mejor] };
+    const lugares = [...new Set(lugarDePersona.values())].filter((li) => li >= 0);
+    return { personas: [...lugarDePersona.keys()], lugar: G.lugarAhora[mejor], lugares, lugarDePersona };
   }
   mapa.on("click", (ev) => {
-    const { personas, lugar } = enElPunto(ev.containerPoint.x, ev.containerPoint.y, 10);
-    if (personas.length === 1) seleccionar(personas[0], false);
-    else if (personas.length > 1) mostrarLugar(personas, lugar);
+    const punto = enElPunto(ev.containerPoint.x, ev.containerPoint.y, 10);
+    if (punto.personas.length === 1) seleccionar(punto.personas[0], false);
+    else if (punto.personas.length > 1) mostrarLugar(punto);
     else deseleccionar();
   });
 
   // Varias personas en un mismo punto: la lista, con lo que dice el texto de
   // cada una (en el hallazgo, su dirección), para elegir a quién ver.
-  function mostrarLugar(personas, li) {
+  function mostrarLugar({ personas, lugar: li, lugares, lugarDePersona }) {
     deseleccionar();
-    const s = Math.round(estado.t);
+    const s = Math.round(estado.t), varios = lugares.length > 1;
     const filas = personas.slice().sort((a, b) => D.personas[a].n.localeCompare(D.personas[b].n, "es")).map((i) => {
-      const p = D.personas[i], extra = s === 3 && p.hd && p.hd.direccion ? ` <span class="prec">· ${escapar(p.hd.direccion)}</span>` : "";
+      const p = D.personas[i], lp = lugarDePersona.get(i);
+      const extra = s === 3 && p.hd && p.hd.direccion ? ` <span class="prec">· ${escapar(p.hd.direccion)}</span>`
+        : varios && lp >= 0 ? ` <span class="prec">· ${escapar(D.lugares[lp][2])}</span>` : "";
       return `<li><a href="#" data-i="${i}">${escapar(p.n)}</a>${extra}</li>`;
     }).join("");
+    const donde = varios ? `${cuantas(lugares.length, "lugar", "lugares")} en el mismo punto`
+      : li >= 0 ? escapar(D.lugares[li][2]) : "este lugar";
     const el = $("persona");
     el.style.display = "block";
     el.innerHTML = `<button class="cerrar" aria-label="Cerrar">×</button>
-      <h3>${fmt.format(personas.length)} personas en ${li >= 0 ? escapar(D.lugares[li][2]) : "este lugar"}</h3>
+      <h3>${fmt.format(personas.length)} personas en ${donde}</h3>
       <div class="muted" style="font-size:12.5px">${etapa(s).nombre}. Hacé clic en un nombre para ver su recorrido.</div>
       <ul class="lista-lugar">${filas}</ul>`;
     el.querySelector(".cerrar").onclick = deseleccionar;
@@ -784,12 +794,12 @@
   const tooltip = $("tooltip");
   mapa.on("mousemove", (ev) => {
     if (estado.reproduciendo) { tooltip.style.display = "none"; return; }
-    const { personas, lugar } = enElPunto(ev.containerPoint.x, ev.containerPoint.y, 8);
+    const { personas, lugar, lugares } = enElPunto(ev.containerPoint.x, ev.containerPoint.y, 8);
     if (!personas.length) { tooltip.style.display = "none"; mapa.getContainer().style.cursor = ""; return; }
     const s = Math.round(estado.t);
     if (personas.length > 1) {
       const nombres = personas.slice(0, 4).map((i) => escapar(D.personas[i].n)).join("<br>");
-      tooltip.innerHTML = `<b>${fmt.format(personas.length)} personas</b> · ${lugar >= 0 ? escapar(D.lugares[lugar][2]) : ""}<br>${nombres}${personas.length > 4 ? `<br><span class="muted">y ${fmt.format(personas.length - 4)} más · clic para ver la lista</span>` : ""}`;
+      tooltip.innerHTML = `<b>${fmt.format(personas.length)} personas</b> · ${lugares.length > 1 ? `${fmt.format(lugares.length)} lugares en el mismo punto` : lugar >= 0 ? escapar(D.lugares[lugar][2]) : ""}<br>${nombres}${personas.length > 4 ? `<br><span class="muted">y ${fmt.format(personas.length - 4)} más · clic para ver la lista</span>` : ""}`;
       tooltip.style.display = "block";
       tooltip.style.left = Math.min(ev.containerPoint.x + 14, W - 270) + "px";
       tooltip.style.top = (ev.containerPoint.y + 14) + "px";
@@ -846,7 +856,7 @@
       .slice(0, 12);
     res.innerHTML = hallados.length ? hallados.map((li) => {
       const c = pasoPorCcd.get(li);
-      return `<button data-li="${li}">${escapar(D.lugares[li][2])} <span class="muted">· ${fmt.format(c.A + c.B)} personas</span></button>`;
+      return `<button data-li="${li}">${escapar(D.lugares[li][2])} <span class="muted">· ${cuantas(c.A + c.B, "persona", "personas")}</span></button>`;
     }).join("") : `<div class="muted" style="padding:8px 10px;font-size:13px">Ningún CCD del mapa coincide.</div>`;
     res.style.display = "block";
     res.querySelectorAll("button").forEach((b) => b.onclick = () => {
@@ -959,8 +969,9 @@
 
   const r = D.resumen.personas;
   $("meta").textContent = `Datos generados el ${D.generado} por construir_datos.py. ` +
-    `Quedan fuera del mapa ${fmt.format((r.sin_ningun_punto_A || 0) + (r.sin_ningun_punto_B || 0))} víctimas sin ningún lugar ubicable ` +
-    `y ${fmt.format(r.excluidas_sobrevivientes || 0)} personas liberadas, fugadas o restituidas.`;
+    `Quedan fuera del mapa ${fmt.format((r.sin_ningun_punto_A || 0) + (r.sin_ningun_punto_B || 0))} víctimas sin ningún lugar ubicable, ` +
+    `${fmt.format(r.excluidas_sobrevivientes || 0)} personas liberadas, fugadas o restituidas ` +
+    `y ${fmt.format(r.excluidas_estado_incierto || 0)} de MinJus sin estado o "fallecidas" que no se sabe si siguen desaparecidas.`;
 
   redimensionar();
   cambiarGrupo("A");

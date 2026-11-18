@@ -12,15 +12,17 @@ cuatro etapas abstractas (no son fechas):
 
 Hay dos versiones, que se eligen arriba del panel:
 
-- **Restos hallados** (740 personas): tienen registrado el hallazgo de sus
-  restos. En 690 se pudo ubicar el lugar.
-- **Sin hallazgo de restos registrado** (8.155 personas): desaparecidas o
-  asesinadas sin hallazgo de restos registrado (1.574 figuran como asesinadas).
+- **Restos hallados** (739 personas): tienen registrado el hallazgo de sus
+  restos. En 688 se pudo ubicar el lugar.
+- **Sin hallazgo de restos registrado** (8.137 personas): desaparecidas o
+  asesinadas sin hallazgo de restos registrado (1.573 figuran como asesinadas).
   En la etapa final cada punto se apaga en el último lugar donde las fuentes
   ubican a esa persona.
 
 Las personas liberadas, fugadas o restituidas según MinJus (1.662) quedan
-afuera de las dos versiones.
+afuera de las dos versiones. También las 29 que sólo están en MinJus como
+"Persona fallecido" o sin estado: varios relatos cuentan que fueron liberadas y
+murieron después, así que no se sabe si siguen desaparecidas.
 
 ## Cómo abrirla
 
@@ -69,11 +71,11 @@ asesinato o hallazgo de restos).
   secuestros, pasos por CCD, asesinatos y hallazgos sin dirección exacta tiene
   cada una. Las etapas sin registro (sin CCD, sin asesinato, etc.) se cuentan
   en el panel.
-- Sólo entran las 1.207 personas con dos etapas o más ubicadas. Las más
+- Sólo entran las 1.198 personas con dos etapas o más ubicadas. Las más
   repetidas: Tucumán (capital) → Pozo de Vargas (44), CABA → El Vesubio (33),
   General Pueyrredón → Base Naval Mar del Plata (23).
 - El año es el del secuestro (arista del Parque o ficha de MinJus); 80 de esas
-  1.207 no lo tienen y sólo aparecen con "Todos los años".
+  1.198 no lo tienen y sólo aparecen con "Todos los años".
 
 `mapa_base.js` tiene el mapa base (Argenmap con respaldo en OpenStreetMap) que
 usan las dos páginas.
@@ -99,23 +101,30 @@ hace que la carga tarde más de media hora) y corre en un directorio temporal
 para no reescribir `data/processed/identity_merges.json`.
 
 Al final imprime un resumen con cuántos lugares se ubicaron en cada etapa y por
-qué no se ubicaron los demás. Medido el 2026-11-16:
+qué no se ubicaron los demás. Medido el 2026-11-18:
 
 | Etapa | Registrados | Ubicados | No ubicados |
 | ----- | ----------- | -------- | ----------- |
-| Secuestro | 7.133 | 6.748 | 262 sólo provincia, 89 sin centroide, 34 en el exterior |
-| Centro clandestino o lugar de detención | 3.472 | 3.428 (1.255 por la localidad de su dirección, 14 con coordenadas de RUVTE corregidas) | 44 sin coordenadas ni dirección |
-| Asesinato | 1.667 | 1.549 | 90 sólo provincia, 15 sin centroide, 13 en el exterior |
-| Hallazgo de restos | 745 | 690 | 55 que no se pudieron ubicar: algunos textos no nombran un lugar ("Identificado por el EAAF en 2009"), otros nombran uno que el lector no reconoce |
+| Secuestro | 7.133 | 6.737 | 262 sólo provincia, 89 sin centroide, 34 en el exterior, 11 errores conocidos del grafo |
+| Centro clandestino o lugar de detención | 3.472 | 3.428 (1.255 por la localidad de su dirección, 51 con coordenadas de RUVTE corregidas) | 44 sin coordenadas ni dirección |
+| Asesinato | 1.667 | 1.544 | 90 sólo provincia, 15 sin centroide, 13 en el exterior, 5 errores conocidos del grafo |
+| Hallazgo de restos | 745 | 688 | 57 que no se pudieron ubicar: algunos textos no nombran un lugar ("Identificado por el EAAF en 2009"), otros nombran uno que el lector no reconoce o un río |
+
+13 fichas del Parque traen en el lugar de secuestro el del asesinato
+("asesinado 29/09/76 ROSARIO. SANTA FE"): ese lugar se dibuja en la etapa de
+asesinato y la fecha no se usa como fecha de secuestro.
 
 Los tests de las reglas de ubicación están en
 `tests/visualizaciones/test_recorridos_ubicacion.py`.
 
 ## Cómo se ubica cada lugar
 
-- **Sitios del EAAF y CCD de RUVTE**: coordenadas propias de la fuente, salvo 4
-  CCD de RUVTE cuyas coordenadas contradicen su propia dirección
-  (`COORDENADAS_RUVTE_ERRONEAS`, revisados uno por uno).
+- **Sitios del EAAF y CCD de RUVTE**: coordenadas propias de la fuente, salvo 7
+  CCD de RUVTE cuyas coordenadas contradicen su propia dirección o son las de
+  otro CCD cercano (el Olimpo tiene las de Coordinación Federal;
+  `COORDENADAS_RUVTE_ERRONEAS`, revisados uno por uno). Un sitio del EAAF
+  nombrado con otra provincia no se usa: "Cementerio de la Piedad, Oberá,
+  Misiones" no es La Piedad de Rosario.
 - **CCD de MinJus sin coordenadas** (un tercio de los pasos por CCD): la
   localidad de su dirección o de su nombre, con la provincia como pista (sin
   ella, "SAN NICOLAS" caía en el barrio porteño). Si sólo se encuentra el

@@ -195,7 +195,7 @@
       <label class="fila"><input type="checkbox" data-destino="1" checked><span class="linea-ley" style="background:var(--hacia-ccd)"></span>hacia el centro clandestino o lugar de detención donde estuvieron detenidas</label>
       <label class="fila"><input type="checkbox" data-destino="2" checked><span class="linea-ley" style="background:var(--hacia-asesinato)"></span>hacia donde las asesinaron</label>
       <label class="fila"><input type="checkbox" data-destino="3" checked><span class="linea-ley" style="background:var(--hacia-restos)"></span>hacia donde aparecieron sus restos (cementerio, fosa o el lugar donde dejaron los cuerpos)</label>
-      <p class="muted" style="font-size:12.5px;margin:2px 0 0">Son dos datos distintos: dónde las mataron (ficha del Parque) y dónde se encontraron sus restos, muchas veces enterrados como NN (identificación del EAAF). Sólo 90 personas tienen los dos registrados; por ejemplo, asesinadas en Rosario y halladas en el Cementerio La Piedad.</p>
+      <p class="muted" style="font-size:12.5px;margin:2px 0 0">Son dos datos distintos: dónde las mataron (ficha del Parque) y dónde se encontraron sus restos, muchas veces enterrados como NN (identificación del EAAF). Sólo 89 personas tienen los dos registrados; por ejemplo, asesinadas en Rosario y halladas en el Cementerio La Piedad.</p>
       <div class="fila"><svg width="28" height="8" aria-hidden="true"><line x1="2" y1="4" x2="26" y2="4" stroke="var(--text-secondary)" stroke-width="3" stroke-linecap="round" stroke-dasharray="1 6"/></svg>punteado y tenue: salta etapas sin registro (no se sabe por dónde pasó en el medio)</div>
       <div class="fila"><span class="nodo-ley zona"></span>zona: la fuente sólo dice el partido, la localidad o el barrio (o sólo "Capital Federal"); el punto es su centro, no una dirección</div>
       <div class="fila"><span class="nodo-ley"></span>sitio específico: centro clandestino o sitio del EAAF con coordenadas propias</div>
@@ -230,6 +230,7 @@
   }
   const $ = (id) => document.getElementById(id);
   const fmt = new Intl.NumberFormat("es-AR");
+  const cuantas = (n, uno, varios) => `${fmt.format(n)} ${n === 1 ? uno : varios}`;
   const escapar = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const sinTildes = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   const ETAPA = ["secuestro", "CCD", "asesinato", "restos"];
@@ -330,7 +331,9 @@
     const lista = visibles();
     const todos = tramos(lista);
     const elegidos = todos.filter((t) => estado.destinos.has(t.destino));
-    const mostrados = elegidos.filter((t) => t.personas.length >= estado.minimo).sort((x, y) => x.peso - y.peso);
+    const mismoPunto = (t) => D.nodos[t.a][0] === D.nodos[t.b][0] && D.nodos[t.a][1] === D.nodos[t.b][1];
+    const conPeso = elegidos.filter((t) => t.personas.length >= estado.minimo);
+    const mostrados = conPeso.filter((t) => !mismoPunto(t)).sort((x, y) => x.peso - y.peso);
     capaTramos.clearLayers(); capaNodos.clearLayers();
     const max = Math.max(1, ...mostrados.map((t) => t.peso));
     for (const t of mostrados) {
@@ -353,7 +356,7 @@
     // Las zonas van con borde punteado y relleno tenue; los sitios, rellenos.
     const porNodo = new Map();
     for (const r of lista) for (const k of new Set(r.nodos.flat())) porNodo.set(k, (porNodo.get(k) || 0) + 1);
-    const enTramos = new Set(mostrados.flatMap((t) => [t.a, t.b]));
+    const enTramos = new Set(conPeso.flatMap((t) => [t.a, t.b]));
     const maxNodo = Math.max(1, ...porNodo.values());
     for (const [k, v] of porNodo) {
       if (!enTramos.has(k) && k !== estado.lugar) continue;
@@ -368,7 +371,7 @@
     }
     $("mapa").classList.toggle("quieto", !$("movimiento").checked);
     ultimaLista = lista;
-    actualizarPanel(lista, elegidos, mostrados);
+    actualizarPanel(lista, elegidos, conPeso, mostrados);
     actualizarRotulo();
   }
 
@@ -402,7 +405,7 @@
       .filter(Boolean).join('<span class="flecha">→</span>');
   }
 
-  function actualizarPanel(lista, elegidos, mostrados) {
+  function actualizarPanel(lista, elegidos, conPeso, mostrados) {
     const base = recorridos.filter((r) => estado.grupo === "todas" || r.g === estado.grupo);
     // Barras por año (sin el filtro de año, para poder compararlos).
     const porAño = new Map(AÑOS.map((a) => [a, 0]));
@@ -410,14 +413,14 @@
       if ((estado.lugar === null || r.nodos.some((x) => x.includes(estado.lugar))) && porAño.has(r.año)) porAño.set(r.año, porAño.get(r.año) + 1);
     }
     const maxA = Math.max(1, ...porAño.values());
-    $("años").innerHTML = AÑOS.map((a) => `<button class="año" data-año="${a}" aria-pressed="${estado.año === a}" title="${a}: ${fmt.format(porAño.get(a))} recorridos">
+    $("años").innerHTML = AÑOS.map((a) => `<button class="año" data-año="${a}" aria-pressed="${estado.año === a}" title="${a}: ${cuantas(porAño.get(a), "recorrido", "recorridos")}">
       <span class="barra" style="height:${Math.max(2, 52 * porAño.get(a) / maxA)}px"></span><span class="et">${String(a).slice(2)}</span></button>`).join("");
     $("años").querySelectorAll(".año").forEach((b) => b.onclick = () => { pausar(); elegirAño(+b.dataset.año === estado.año ? null : +b.dataset.año); });
     $("todos-años").setAttribute("aria-pressed", String(estado.año === null));
     const sinFecha = base.filter((r) => r.año === null).length;
     $("sin-fecha").textContent = sinFecha ? `${fmt.format(sinFecha)} sin fecha de secuestro (sólo en "Todos")` : "";
 
-    const ocultos = elegidos.length - mostrados.length;
+    const ocultos = elegidos.length - conPeso.length, enUnPunto = conPeso.length - mostrados.length;
     const sin = (s) => lista.filter((r) => !r.nodos[s].length).length;
     const faltan = [
       [sin(0), "sin lugar de secuestro"],
@@ -425,10 +428,11 @@
       [sin(2), "sin lugar de asesinato registrado"],
       [sin(3), "sin hallazgo de restos registrado"],
     ].filter(([n]) => n > 0);
-    $("resumen").innerHTML = `<b class="num">${fmt.format(lista.length)}</b> recorridos con dos etapas o más` +
+    $("resumen").innerHTML = `<b class="num">${fmt.format(lista.length)}</b> ${lista.length === 1 ? "recorrido" : "recorridos"} con dos etapas o más` +
       `${estado.año ? ` de personas secuestradas en <b>${estado.año}</b>` : ""}. ` +
-      `Se ven <b class="num">${fmt.format(mostrados.length)}</b> tramos` +
-      (ocultos ? `; ${fmt.format(ocultos)} tramos con menos de ${estado.minimo} personas quedan ocultos.` : ".") +
+      `Se ${mostrados.length === 1 ? "ve" : "ven"} <b class="num">${fmt.format(mostrados.length)}</b> ${mostrados.length === 1 ? "tramo" : "tramos"}` +
+      (ocultos ? `; ${cuantas(ocultos, "tramo", "tramos")} con menos de ${estado.minimo} personas ${ocultos === 1 ? "queda oculto" : "quedan ocultos"}` : "") +
+      (enUnPunto ? `; ${cuantas(enUnPunto, "tramo une", "tramos unen")} lugares que están en el mismo punto y no se ${enUnPunto === 1 ? "ve" : "ven"}.` : ".") +
       (faltan.length ? `<ul class="faltantes-panel">${faltan.map(([n, t]) => `<li><b class="num">${fmt.format(n)}</b> ${t}</li>`).join("")}</ul>` : "");
 
     // Recorridos similares: misma firma (mismos lugares en las mismas etapas).
@@ -527,7 +531,7 @@
     const palabras = q.split(/\s+/);
     const hallados = indice.filter(([n]) => palabras.every((w) => n.includes(w))).map(([, k]) => [k, cuenta(k)])
       .sort((a, b) => b[1] - a[1]).slice(0, 12);
-    res.innerHTML = hallados.length ? hallados.map(([k, n]) => `<button data-k="${k}">${escapar(D.nodos[k][2])} <span class="muted">· ${fmt.format(n)} recorridos</span></button>`).join("")
+    res.innerHTML = hallados.length ? hallados.map(([k, n]) => `<button data-k="${k}">${escapar(D.nodos[k][2])} <span class="muted">· ${cuantas(n, "recorrido", "recorridos")}</span></button>`).join("")
       : `<div class="muted" style="padding:8px 10px;font-size:13px">Ningún lugar de los recorridos coincide.</div>`;
     res.style.display = "block";
     res.querySelectorAll("button").forEach((b) => b.onclick = () => { res.style.display = "none"; $("buscar").value = ""; filtrarLugar(+b.dataset.k); });

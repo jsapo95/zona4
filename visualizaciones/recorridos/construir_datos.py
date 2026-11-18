@@ -293,6 +293,8 @@ PISTAS_PROVINCIA = {
     "capital federal": "CAPITAL FEDERAL", "cap fed": "CAPITAL FEDERAL",
     "ciudad de buenos aires": "CAPITAL FEDERAL", "caba": "CAPITAL FEDERAL",
 }
+# Nombre de la provincia (como en el EAAF) de las pistas que no lo dicen igual.
+PROVINCIA_DE_PISTA = {"BS. AS.": "buenos aires", "CAPITAL FEDERAL": "ciudad autonoma de buenos aires"}
 # Una calle, una intersección o un número no son un topónimo: el resolver
 # los engancha con ciudades homónimas ("Perito Moreno y Dellepiane" -> Moreno).
 _NO_TOPONIMO = re.compile(r"\d|\b(y|e|entre|esq|esquina|av|avenida|calle|ruta|km|camino|altura|frente|s n)\b")
@@ -305,7 +307,7 @@ _ABREVIATURAS = [
     (r"\bPza\b\.?", "Plaza"), (r"\bL\.\s*Olmos\b", "Lisandro Olmos"), (r"\bCem\b\.?", "Cementerio"), (r"\bMdP\b", "Mar del Plata"),
 ]
 # Cuerpos de agua: "Río de la Plata" no es La Plata; no hay un punto honesto.
-_AGUA = re.compile(r"\b(rio de la plata|riachuelo|aguas del|costa uruguaya)\b")
+_AGUA = re.compile(r"\b(rio de la plata|rio lujan|riachuelo|aguas del|costa uruguaya)\b")
 _FECHA = re.compile(
     r"\b\d{1,2}/\d{1,2}/\d{2,4}\b|\b\d{1,2} de [a-z]+ de \d{4}\b|\b(en )?(el )?(año )?(19|20)\d{2}\b", re.I
 )
@@ -399,13 +401,17 @@ def km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
 
 # CCD de `ccds.json` (RUVTE) cuyas coordenadas contradicen su propia
 # dirección. Se encontraron comparando cada coordenada con la localidad de su
-# `ubicacion` (más de 20 km) y se revisaron a mano: la comparación sola da
+# `ubicacion` (más de 20 km) o buscando coordenadas copiadas de otro CCD
+# cercano con otra dirección, y se revisaron a mano: la comparación sola da
 # falsos positivos (la Comisaría 4ª de San Isidro está en la calle Balcarce).
 COORDENADAS_RUVTE_ERRONEAS = {
     "86": "Comisaría 1ª de San Martín: cae en la ciudad de 9 de Julio, que es el nombre de la calle",
     "291": "Regimiento de Infantería 6 (Mercedes): cae en CABA",
     "670": "Brigada Güemes (Ciudad Evita): cae cerca de Quilmes",
     "268": "Escuelita de Neuquén (Neuquén capital): cae cerca de Zapala",
+    "1": "Olimpo (Ramón Falcón 4151, Vélez Sarsfield): tiene las de Coordinación Federal (id 226), a 150 m",
+    "201": "Planta Transmisora de Plátanos (Berazategui): cae a 1 km del Pozo de Quilmes (id 44)",
+    "82": "Unidad Penal 8 de Olmos (Lisandro Olmos): tiene las de la Brigada de Investigaciones de La Plata (id 147), a 300 m",
 }
 
 
@@ -574,13 +580,30 @@ class SitiosEAAF:
         self.alias = sorted(alias.items(), key=lambda kv: -len(kv[0]))
 
     def buscar(self, texto: str) -> Optional[Dict[str, Any]]:
-        t = f" {norm(expandir_abreviaturas(texto))} ".replace(" cementario ", " cementerio ")
-        t = re.sub(r" cementerio (municipal|parque) de ", " cementerio de ", t)
+        # Cada frase por separado: la provincia de un sitio va en su misma
+        # frase, y otra frase puede nombrar otra (la del secuestro).
+        frases = [_normalizar_sitio(f) for f in re.split(r";|\.\s+(?=[A-ZÁÉÍÓÚÑ])", expandir_abreviaturas(texto))]
         for frase, sitio in self.alias:
-            # Los alias manuales valen como prefijo ("arsenal miguel de az").
-            if f" {frase} " in t or (frase in ALIAS_SITIOS and f" {frase}" in t):
-                return sitio
+            for t in frases:
+                # Los alias manuales valen como prefijo ("arsenal miguel de az").
+                if f" {frase} " in t or (frase in ALIAS_SITIOS and f" {frase}" in t):
+                    if _misma_provincia(t[t.index(f" {frase}") + len(frase) + 1:], sitio):
+                        return sitio
         return None
+
+
+def _normalizar_sitio(texto: str) -> str:
+    t = f" {norm(texto)} ".replace(" cementario ", " cementerio ")
+    return re.sub(r" cementerio (municipal|parque) de ", " cementerio de ", t)
+
+
+def _misma_provincia(cola: str, sitio: Dict[str, Any]) -> bool:
+    """False si lo que sigue al nombre del sitio, en su frase, nombra otra
+    provincia: "Cementerio de la Piedad, Oberá, Misiones" no es La Piedad de
+    Rosario."""
+    nombradas = {PROVINCIA_DE_PISTA.get(p, norm(p)) for frase, p in PISTAS_PROVINCIA.items()
+                 if re.search(rf"\b{re.escape(frase)}\b", cola)}
+    return not nombradas or norm(sitio["provincia"]) in nombradas
 
 
 _FRAGMENTO_LUGAR = [
@@ -701,6 +724,11 @@ def error_conocido_del_grafo(arista: Optional[str], lugar_key: str, fichas_parqu
 
 
 SOBREVIVIENTE = {"Persona liberada", "Persona fugado", "Persona restituida"}
+# Estado de MinJus que no dice si la persona sigue desaparecida: varias fichas
+# "Persona fallecido" cuentan en el relato que fue liberada y murió después.
+# Sin una ficha del Parque, esas personas (y las de MinJus sin estado) no
+# entran en el grupo B.
+ESTADO_INCIERTO_MINJUS = {"Persona fallecido"}
 # MinJus escribe el estado distinto que el Parque; se muestra con las
 # palabras del Parque para que la misma situación se lea igual.
 ESTADOS_MINJUS = {
@@ -841,6 +869,12 @@ def main() -> None:
         estados = [e for e in estados if e]
         textos_hallazgo = [f["detalle"].get("descripcion_datos_de_identificacion") for f in fichas_parque]
         textos_hallazgo = [t for t in textos_hallazgo if t]
+        # 13 fichas del Parque traen en el lugar de secuestro el asesinato
+        # ("asesinado 29/09/76 ROSARIO. SANTA FE"): el lugar va a la etapa 2 y
+        # la fecha no es la del secuestro.
+        secuestro_es_asesinato = any(
+            re.match(r"\s*asesinad[oa]\b", f["detalle"].get("descripcion_lugar_de_secuestro") or "", re.I)
+            for f in fichas_parque)
 
         etapas: List[List[int]] = []
         for etapa in ETAPAS[:3]:
@@ -854,6 +888,9 @@ def main() -> None:
                 if i is not None and i not in idx:
                     idx.append(i)
             etapas.append(idx)
+        if secuestro_es_asesinato:
+            etapas[2] += [i for i in etapas[0] if i not in etapas[2]]
+            etapas[0] = []
 
         final: List[int] = []
         hallazgo = None
@@ -873,6 +910,9 @@ def main() -> None:
             grupo = "A"
         elif any(e in SOBREVIVIENTE for e in estados):
             resumen["excluidas_sobrevivientes"] += 1
+            continue
+        elif fichas_minjus and not fichas_parque and all(e in ESTADO_INCIERTO_MINJUS for e in estados):
+            resumen["excluidas_estado_incierto"] += 1
             continue
         else:
             grupo = "B"
@@ -899,7 +939,8 @@ def main() -> None:
             "hd": detalle_hallazgo(textos_hallazgo[0], hallazgo) if textos_hallazgo else None,
             # Fecha de secuestro: la de la arista del Parque o, si no hay, la
             # de la ficha de MinJus / Archivo San Martín.
-            "f": fecha_secuestro.get(persona["persona_key"]) or _fecha_iso(persona.get("fecha_secuestro")),
+            "f": None if secuestro_es_asesinato else
+                 fecha_secuestro.get(persona["persona_key"]) or _fecha_iso(persona.get("fecha_secuestro")),
         })
 
     # Un partido se dibuja en su lugar más usado (casi siempre la ciudad), no
