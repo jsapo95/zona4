@@ -81,11 +81,11 @@ def test_sitios_del_eaaf_por_alias(sitios, texto, sitio):
     assert sitios.buscar(texto)["nombre"] == sitio
 
 
-def test_general_villegas_no_es_el_cementerio_de_villegas_de_la_matanza(sitios, centroides):
+def test_cementerio_de_general_villegas_es_el_de_villegas_en_la_matanza(sitios):
+    # El Parque también lo llama así ("Cementerio de General Villegas, La
+    # Matanza, Bs As") y el EAAF no tiene sitios en General Villegas.
     texto = "Sus restos fueron exhumados en el Cementerio de Gral. Villegas, Bs. As."
-    assert sitios.buscar(texto) is None
-    hallazgo = cd.ubicar_hallazgo(texto, sitios, centroides)
-    assert _cerca(hallazgo and (hallazgo["lat"], hallazgo["lon"]), -35.03, -63.01, tolerancia=0.2)
+    assert sitios.buscar(texto)["nombre"] == "Cementerio de Villegas"
 
 
 # --- Agrupación por partido (vista de recorridos frecuentes) ---------------
@@ -100,7 +100,7 @@ def test_localidades_del_mismo_partido_comparten_nodo(centroides):
 
 def test_en_caba_cada_barrio_es_un_nodo_y_sin_barrio_es_otro(centroides):
     # Con toda CABA en un solo nodo, el mapa de flujos mostraba un centro del
-    # que salía todo, cuando 237 de 250 secuestros ahí no dicen el barrio.
+    # que salía todo, cuando 233 de 246 secuestros ahí no dicen el barrio.
     palermo, _ = centroides.ubicar(
         "lugar:CIUDAD:palermo|lugar:DEPARTAMENTO:comuna_14|lugar:PROVINCIA:ciudad_autonoma_de_buenos_aires|lugar:PAIS:argentina"
     )
@@ -133,7 +133,7 @@ def test_el_nodo_de_un_partido_esta_en_su_centroide(centroides):
 @pytest.mark.parametrize("lugar, esperado", [
     # Sin la provincia, "SAN NICOLAS" caía en el barrio porteño (Obelisco).
     ({"nombre": "BRIGADA DE INVESTIGACIONES DE SAN NICOLAS", "ubicacion": "Alem 114", "fuente": "minjus_ccds"},
-     "San Nicolás"),
+     "San Nicolás de los Arroyos (San Nicolás)"),
     # La calle "José Hernández" es también una localidad de La Plata.
     ({"nombre": "CEMENTERIO DE GRAND BOURG", "ubicacion": "José Hernández s/n (esquina Pasco) | Malvinas Argentinas",
       "fuente": "minjus_ccds"}, "Grand Bourg (Malvinas Argentinas)"),
@@ -215,3 +215,60 @@ def test_rio_lujan_no_es_la_ciudad_de_lujan(centroides):
 def test_bs_as_tambien_vale_para_un_sitio_de_caba(sitios):
     texto = "Identificada en el 2010 por el EAAF. Cementerio de Chacarita, Bs As."
     assert sitios.buscar(texto)["nombre"] == "Cementerio de la Chacarita"
+
+
+# --- "Bs. As." también se usa para CABA (tercera revisión adversarial) -----
+
+@pytest.mark.parametrize("texto, barrio", [
+    ("Palermo, Bs. As.", "Palermo (CABA)"),
+    ("Retiro, Bs As", "Retiro (CABA)"),
+    ("Belgrano, Bs. As.", "Belgrano (CABA)"),
+])
+def test_barrio_porteno_con_bs_as_es_caba(centroides, texto, barrio):
+    coords, _ = cd.ubicar_fragmento(texto, centroides)
+    assert coords[3] == barrio
+
+
+def test_barrio_con_homonimo_en_la_provincia(centroides):
+    # Saavedra es barrio porteño y partido bonaerense. En un texto que dice
+    # "Bs. As." vale la provincia; una clave del grafo sin departamento no
+    # dice cuál de los dos es, así que no se dibuja.
+    coords, _ = cd.ubicar_fragmento("Saavedra, Bs. As.", centroides)
+    assert coords is None or "CABA" not in coords[3]
+    coords, motivo = centroides.ubicar("lugar:CIUDAD:saavedra|lugar:PROVINCIA:buenos_aires|lugar:PAIS:argentina")
+    assert coords is None and motivo == "ambiguo_caba_provincia"
+
+
+def test_clave_de_barrio_porteno_en_la_provincia_va_al_barrio(centroides):
+    coords, _ = centroides.ubicar("lugar:CIUDAD:palermo|lugar:PROVINCIA:buenos_aires|lugar:PAIS:argentina")
+    assert coords[3] == "Palermo (CABA)"
+
+
+def test_san_nicolas_bs_as_es_san_nicolas_de_los_arroyos(centroides):
+    coords, _ = centroides.ubicar("lugar:CIUDAD:san_nicolas|lugar:PROVINCIA:buenos_aires|lugar:PAIS:argentina")
+    assert coords[3].startswith("San Nicolás de los Arroyos")
+
+
+@pytest.mark.parametrize("ubicacion", [
+    "Paseo Colón 1200, Retiro, C.A.B.A.",
+    "Av. Cabildo 1234, Belgrano, Ciudad Autónoma de Buenos Aires",
+    "Rivadavia 5000, Ciudad de Buenos Aires",
+])
+def test_pista_de_provincia_reconoce_las_formas_de_caba(ubicacion):
+    assert cd.pista_de_provincia({"zona": "", "ubicacion": ubicacion}) == "Capital Federal"
+
+
+def test_un_barrio_con_nombre_de_sitio_no_es_el_sitio(sitios):
+    assert sitios.buscar("Sus restos aparecieron en el barrio La Perla, Mar del Plata") is None
+
+
+def test_rio_parana_no_es_la_ciudad_de_parana(centroides):
+    assert cd.ubicar_fragmento("Río Paraná, frente a Rosario", centroides) == (None, None)
+
+
+def test_texto_que_el_grafo_manda_a_la_capital_no_se_dibuja():
+    salta = "lugar:CIUDAD:salta|lugar:DEPARTAMENTO:capital|lugar:PROVINCIA:salta|lugar:PAIS:argentina"
+    palomitas = [{"detalle": {"Lugar de asesinato": "PALOMITAS. SALTA"}}]
+    salta_real = [{"detalle": {"Lugar de asesinato": "SALTA CAPITAL"}}]
+    assert cd.error_conocido_del_grafo("ASESINADO_EN", salta, palomitas)
+    assert not cd.error_conocido_del_grafo("ASESINADO_EN", salta, salta_real)

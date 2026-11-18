@@ -970,7 +970,7 @@
   const r = D.resumen.personas;
   $("meta").textContent = `Datos generados el ${D.generado} por construir_datos.py. ` +
     `Quedan fuera del mapa ${fmt.format((r.sin_ningun_punto_A || 0) + (r.sin_ningun_punto_B || 0))} víctimas sin ningún lugar ubicable, ` +
-    `${fmt.format(r.excluidas_sobrevivientes || 0)} personas liberadas, fugadas o restituidas ` +
+    `${fmt.format((r.excluidas_sobrevivientes || 0) + (r.excluidas_conflicto_de_estado || 0))} personas liberadas, fugadas o restituidas ` +
     `y ${fmt.format(r.excluidas_estado_incierto || 0)} de MinJus sin estado o "fallecidas" que no se sabe si siguen desaparecidas.`;
 
   redimensionar();

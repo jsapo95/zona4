@@ -111,6 +111,14 @@ PARTIDO_DE_LOCALIDAD = {
     ("fronterita", "tucuman"): "famailla",
 }
 
+# Claves CIUDAD sin departamento que en Georef son otra localidad de la misma
+# provincia. "SAN NICOLAS. BS. AS." es San Nicolás de los Arroyos: el Parque
+# escribe el barrio porteño como "CAPITAL FEDERAL (San Nicolas (...))" y los
+# domicilios de esas fichas dicen "San Nicolás, Pcia De Bs As".
+LOCALIDAD_DE_GEOREF = {
+    ("san nicolas", "buenos aires"): "san nicolas de los arroyos",
+}
+
 
 def _nombre(row: Dict[str, Any]) -> str:
     """Nombre de Georef con tildes, con su partido si no es el mismo nombre."""
@@ -221,6 +229,11 @@ class Centroides:
             return None
         return _tupla(filas[0], LOCALIDAD, "localidades")
 
+    def existe_en_provincia(self, nombre: str, provincia: str) -> bool:
+        """Si hay una localidad, municipio, partido o asentamiento con ese nombre exacto."""
+        return any(self.indices[nivel].get((nombre, self._provincia(provincia)))
+                   for nivel in ("localidades", "municipios", "departamentos", "asentamientos"))
+
     def ubicar(self, lugar_key: str) -> Tuple[Optional[Tuple[Any, ...]], str]:
         """Devuelve ((lat, lon, precision, nombre, partido), motivo). Si no ubica, la tupla es None."""
         seg = segmentos(lugar_key)
@@ -241,6 +254,16 @@ class Centroides:
             # "JOSE LEON SUAREZ" es Villa José León Suárez. Se prueban esas
             # variantes en localidades y municipios antes que los
             # asentamientos, donde "San Martín" es un paraje de Magdalena.
+            de_georef = LOCALIDAD_DE_GEOREF.get((ciudad, self._provincia(provincia)))
+            if de_georef:
+                row = self._buscar("localidades", de_georef, provincia)
+                return _tupla(row, LOCALIDAD, "localidades"), "ok"
+            # "Bs. As." también se usa para CABA: un barrio porteño sin
+            # homónimo en la provincia es ese barrio; con homónimo, no se sabe.
+            if self._provincia(provincia) == "buenos aires" and not departamento:
+                barrio = self.por_nombre(ciudad, CABA)
+                if barrio:
+                    return (barrio, "ok") if not self.existe_en_provincia(ciudad, "buenos aires") else (None, "ambiguo_caba_provincia")
             variantes = (ciudad, f"general {ciudad}", f"villa {ciudad}", f"el {ciudad}",
                          f"ingeniero {ciudad}", ALIAS_LOCALIDADES.get(ciudad, ciudad))
             for nivel in ("localidades", "municipios"):
@@ -307,7 +330,7 @@ _ABREVIATURAS = [
     (r"\bPza\b\.?", "Plaza"), (r"\bL\.\s*Olmos\b", "Lisandro Olmos"), (r"\bCem\b\.?", "Cementerio"), (r"\bMdP\b", "Mar del Plata"),
 ]
 # Cuerpos de agua: "Río de la Plata" no es La Plata; no hay un punto honesto.
-_AGUA = re.compile(r"\b(rio de la plata|rio lujan|riachuelo|aguas del|costa uruguaya)\b")
+_AGUA = re.compile(r"\b(rio de la plata|rio lujan|rio parana|riachuelo|aguas del|costa uruguaya)\b")
 _FECHA = re.compile(
     r"\b\d{1,2}/\d{1,2}/\d{2,4}\b|\b\d{1,2} de [a-z]+ de \d{4}\b|\b(en )?(el )?(año )?(19|20)\d{2}\b", re.I
 )
@@ -380,6 +403,14 @@ def ubicar_fragmento(texto: str, centroides: Centroides) -> Tuple[Optional[Tuple
     pista = next((PISTAS_PROVINCIA[norm(s)] for s in reversed(segmentos_) if norm(s) in PISTAS_PROVINCIA), None)
     provincia_pista = norm(pista) if pista else None
     for s in _candidatos(principal) + _candidatos(entre_parentesis):
+        if pista == "BS. AS.":
+            # "Bs. As." también se usa para CABA ("Cementerio de Chacarita, Bs
+            # As."): un barrio porteño sin homónimo en la provincia es ese
+            # barrio. Si el nombre existe en la provincia, vale lo que dice el
+            # texto: la provincia (la Brigada de San Nicolás).
+            barrio = centroides.por_nombre(norm(s), CABA)
+            if barrio and not centroides.existe_en_provincia(norm(s), "buenos aires"):
+                return barrio, s.upper()
         coords = centroides.por_nombre(norm(s), provincia_pista)
         if coords:
             return coords, s.upper()
@@ -424,7 +455,8 @@ def pista_de_provincia(lugar: Dict[str, Any]) -> str:
     Arroyos.
     """
     zona, ubicacion = norm(lugar.get("zona")), norm(lugar.get("ubicacion"))
-    if "capital federal" in zona or re.search(r"\b(caba|capital federal)\b", ubicacion):
+    if "capital federal" in zona or re.search(
+            r"\b(caba|c a b a|capital federal|ciudad autonoma de buenos aires|ciudad de buenos aires)\b", ubicacion):
         return "Capital Federal"
     m = re.search(r"provincia de (.+)$", zona)
     if m:
@@ -514,6 +546,9 @@ ALIAS_SITIOS = {
     "puesto vasco": "Subcomisaría de Don Bosco- Puesto Vasco",
     "hospital posadas": "El Chalet- Hospital Nacional Profesor Alejandro Posadas",
     "chacarita": "Cementerio de la Chacarita",
+    # El Parque también lo llama así: "Cementerio de General Villegas, La
+    # Matanza, Bs As" (Insausti). El EAAF no tiene sitios en General Villegas.
+    "cementerio de general villegas": "Cementerio de Villegas",
     "la piedad": "Cementerio La Piedad",
     "cementerio de rosario": "Cementerio La Piedad",
     "cementerio de avellaneda": "Cementerio de Avellaneda- Sector 134",
@@ -587,7 +622,11 @@ class SitiosEAAF:
             for t in frases:
                 # Los alias manuales valen como prefijo ("arsenal miguel de az").
                 if f" {frase} " in t or (frase in ALIAS_SITIOS and f" {frase}" in t):
-                    if _misma_provincia(t[t.index(f" {frase}") + len(frase) + 1:], sitio):
+                    i = t.index(f" {frase}")
+                    # "barrio La Perla, Mar del Plata" no es el Ex CCD La Perla.
+                    if re.search(r"\b(barrio|bo|villa)\s*$", t[:i]):
+                        continue
+                    if _misma_provincia(t[i + len(frase) + 1:], sitio):
                         return sitio
         return None
 
@@ -711,7 +750,104 @@ ERRORES_CONOCIDOS_DEL_GRAFO = [
     ("lugar:CIUDAD:san_juan|lugar:DEPARTAMENTO:capital|lugar:PROVINCIA:san_juan|lugar:PAIS:argentina", r"CRUZ ALTA"),
     # "PUENTE SAAVEDRA. BS. AS." resuelto en el partido de Saavedra (Pigüé).
     ("lugar:CIUDAD:puente|lugar:DEPARTAMENTO:saavedra|lugar:PROVINCIA:buenos_aires|lugar:PAIS:argentina", None),
+    # Encontrados en la tercera revisión adversarial; pendientes en el loader.
+    # "BUENOS AIRES (Pasteur entre Samiento y Cangallo.)": Buenos Aires es CABA.
+    ("lugar:CIUDAD:pasteur|lugar:DEPARTAMENTO:lincoln|lugar:PROVINCIA:buenos_aires|lugar:PAIS:argentina", r"Pasteur entre"),
+    # "BUENOS AIRES (Camino General Belgrano, Bs As.)": es un camino, no el partido.
+    ("lugar:CIUDAD:general_belgrano|lugar:DEPARTAMENTO:general_belgrano|lugar:PROVINCIA:buenos_aires|lugar:PAIS:argentina", r"Camino General Belgrano"),
+    # "V. Crespo (Lambaré 1152…). CAPITAL FEDERAL": Villa Crespo, no Crespo (Entre Ríos).
+    ("lugar:CIUDAD:crespo|lugar:DEPARTAMENTO:parana|lugar:PROVINCIA:entre_rios|lugar:PAIS:argentina", r"CAPITAL FEDERAL"),
+    # "San Luis y Pellegrini … (Salta - Capital)": una esquina de Salta.
+    ("lugar:CIUDAD:san_luis|lugar:DEPARTAMENTO:juan_martin_de_pueyrredon|lugar:PROVINCIA:san_luis|lugar:PAIS:argentina", r"Salta - Capital"),
+    # "Barrio Santa Paula (José C. Paz, Buenos Aires)": no es el barrio de Mar del Plata.
+    ("lugar:CIUDAD:barrio_santa_paula|lugar:DEPARTAMENTO:general_pueyrredon|lugar:PROVINCIA:buenos_aires|lugar:PAIS:argentina", r"Jos[eé] C\. Paz"),
+    # "CRUZ ALTA. TUCUMAN (Ingenio Concepción…)": Cruz Alta, no Concepción (Chicligasta).
+    ("lugar:CIUDAD:concepcion|lugar:DEPARTAMENTO:chicligasta|lugar:PROVINCIA:tucuman|lugar:PAIS:argentina", r"CRUZ ALTA"),
+    # "Villa Maipú, Gral. San Martín … Olavarría e/Boulogne Sur Mer y …": es una calle.
+    ("lugar:CIUDAD:boulogne_sur_mer|lugar:DEPARTAMENTO:san_isidro|lugar:PROVINCIA:buenos_aires|lugar:PAIS:argentina", r"Villa Maip[uú]"),
+    # "ENTRE SAN JUAN Y CORDOBA": una esquina sin ciudad.
+    ("lugar:CIUDAD:san_juan|lugar:DEPARTAMENTO:capital|lugar:PROVINCIA:san_juan|lugar:PAIS:argentina", r"^\s*ENTRE SAN JUAN Y CORDOBA\s*$"),
 ]
+
+# Textos "LOCALIDAD. PROVINCIA" que el grafo manda a la capital de la provincia
+# (o a otra ciudad) porque no encuentra la localidad: "METAN. SALTA" en Salta
+# capital, "PALOMITAS. SALTA" en Salta capital. Arreglo: PR #9
+# (fix/localidad-no-es-capital-provincial); la lista sale de su tabla de
+# cambios, sólo secuestro y asesinato. Se borra cuando el arreglo llegue a main.
+TEXTOS_EN_LA_CAPITAL_POR_ERROR = {
+    'lugar:CIUDAD:corrientes|lugar:DEPARTAMENTO:capital|lugar:PROVINCIA:corrientes|lugar:PAIS:argentina': [
+        'ALVEAR. CORRIENTES',
+        'GOBERNADOR VIRASORO. CORRIENTES',
+        'GOYA. CORRIENTES',
+        'Ituzaingó, Corrientes. "Zanjón"',
+        'MERCEDES. CORRIENTES',
+        'PARAJE PALMITOS. CORRIENTES',
+        'VIRASORO. CORRIENTES',
+    ],
+    'lugar:CIUDAD:santa_fe|lugar:DEPARTAMENTO:la_capital|lugar:PROVINCIA:santa_fe|lugar:PAIS:argentina': [
+        'Carreras, Gral. López, Santa Fe. Ruta Prov. Nº 90',
+        'Centeno 1078, Rosario. ROSARIO. SANTA FE',
+        'Domicilio (ROSARIO. SANTA FE)',
+        'ROSARIO. SANTA FE (Domicilio de la ciudad de Rosario)',
+        'ROSARIO. SANTA FE (Necochea 2050, Rosario, Pcia de Santa Fé.)',
+        'ROSARIO. SANTA FE (Rosario, Pcia de Santa Fé)',
+        'ROSARIO. SANTA FE (Secuestrado de su domicilio en la ciudad de Rosario)',
+        'Rosario - Santa Fe. Hospital provincial',
+        'VILLA GDOR GALVEZ. SANTA FE (Rambla de Saladillo)',
+        'asesinada 05/07/78 ROSARIO. SANTA FE',
+        'asesinado 15/12/76. ROSARIO. SANTA FE',
+        'asesinado 29/09/76 ROSARIO. SANTA FE',
+        'según denuncia la familia Ana fue secuestrada el día 22 y el dia 26 avisan de que deben pasar a buscar el cadaver a la morgue.. ROSARIO. SANTA FE',
+    ],
+    'lugar:CIUDAD:salta|lugar:DEPARTAMENTO:capital|lugar:PROVINCIA:salta|lugar:PAIS:argentina': [
+        'BANDA SUR. SALTA',
+        'HORCONES. SALTA',
+        'LERMA. SALTA',
+        'METAN. SALTA',
+        'ORAN. SALTA',
+        'PALOMITAS. SALTA',
+        'Paso fronterizo (Provincia de Salta)',
+    ],
+    'lugar:CIUDAD:la_rioja|lugar:DEPARTAMENTO:capital|lugar:PROVINCIA:la_rioja|lugar:PAIS:argentina': [
+        'CHAMICAL. LA RIOJA',
+        'EL CHAMICAL. LA RIOJA',
+        'Entre Ríos y La Rioja (Quilmes)',
+        'Parroquia El Salvador (Chamical, La Rioja)',
+    ],
+    'lugar:CIUDAD:san_juan|lugar:DEPARTAMENTO:capital|lugar:PROVINCIA:san_juan|lugar:PAIS:argentina': [
+        'CHIMBAS. SAN JUAN',
+        'RAWSON. SAN JUAN',
+        'RIVADAVIA. SAN JUAN',
+        'VILLA DEL CARRIL. SAN JUAN',
+    ],
+    'lugar:CIUDAD:san_luis|lugar:DEPARTAMENTO:juan_martin_de_pueyrredon|lugar:PROVINCIA:san_luis|lugar:PAIS:argentina': [
+        'Domicilio de sus padres (San Luis 2535) (Gral. Pueyrredón. Mar Del PLata. Bs. As.)',
+        'LA TOMA. SAN LUIS',
+        'LUJAN. SAN LUIS',
+        'Vialidad nacional (San Luis)',
+    ],
+    'lugar:CIUDAD:formosa|lugar:DEPARTAMENTO:formosa|lugar:PROVINCIA:formosa|lugar:PAIS:argentina': [
+        'El ROCILLO. FORMOSA',
+        'PIRANE. FORMOSA',
+    ],
+    'lugar:CIUDAD:santiago_del_estero|lugar:DEPARTAMENTO:capital|lugar:PROVINCIA:santiago_del_estero|lugar:PAIS:argentina': [
+        'LA BANDA. SANTIAGO DEL ESTERO',
+        'LOS JURIES. SANTIAGO DEL ESTERO',
+        'Los Tunales, Jimenez, Santiago del Estero',
+        'TORO POZO. SANTIAGO DEL ESTERO',
+    ],
+    'lugar:CIUDAD:neuquen|lugar:DEPARTAMENTO:confluencia|lugar:PROVINCIA:neuquen|lugar:PAIS:argentina': [
+        'PASO PAIMIN. NEUQUEN',
+    ],
+    'lugar:CIUDAD:cordoba|lugar:DEPARTAMENTO:capital|lugar:PROVINCIA:cordoba|lugar:PAIS:argentina': [
+        'TERCERO ARRIBA. CORDOBA (Secuestrado de la vía pública. En Barrio Velez Sarsfield)',
+    ],
+    'lugar:CIUDAD:galvez|lugar:DEPARTAMENTO:san_jeronimo|lugar:PROVINCIA:santa_fe|lugar:PAIS:argentina': [
+        'VILLA GDOR. GALVEZ. SANTA FE',
+    ],
+}
+# CCD sin coordenadas cuyo nombre no alcanza para encontrar su sitio del EAAF.
+CCD_EN_SITIO_EAAF = {"el banco": "Ex Centro Clandestino de Detención El Banco"}
 PAISES_VECINOS = {"uruguay", "paraguay", "chile", "brasil", "bolivia", "peru"}
 _CAMPO_DE_ARISTA = {"SECUESTRADO_EN": "descripcion_lugar_de_secuestro", "ASESINADO_EN": "Lugar de asesinato"}
 
@@ -726,6 +862,11 @@ def error_conocido_del_grafo(arista: Optional[str], lugar_key: str, fichas_parqu
         textos = [(f.get("detalle") or {}).get(campo) or "" for f in fichas_parque] if campo else []
         if any(re.search(patron, t, re.I) for t in textos):
             return True
+    mal = TEXTOS_EN_LA_CAPITAL_POR_ERROR.get(lugar_key)
+    campo = _CAMPO_DE_ARISTA.get(arista or "")
+    if mal and campo:
+        mal_norm = {" ".join(m.split()) for m in mal}
+        return any(" ".join(((f.get("detalle") or {}).get(campo) or "").split()) in mal_norm for f in fichas_parque)
     return False
 
 
@@ -835,7 +976,7 @@ def main() -> None:
                 if lugar.get("id_ccd") in COORDENADAS_RUVTE_ERRONEAS and localidad:
                     return agregar_lugar(lugar_key, localidad[0], localidad[1], nombre, "ccd", localidad[2]), "ccd_coordenadas_corregidas"
                 return agregar_lugar(lugar_key, lugar["lat"], lugar["lon"], nombre, "ccd", SITIO), "ok"
-            sitio = sitios.buscar(lugar.get("nombre", ""))
+            sitio = sitios.buscar(CCD_EN_SITIO_EAAF.get(norm(lugar.get("nombre")), lugar.get("nombre", "")))
             if sitio:
                 return agregar_lugar(lugar_key, sitio["lat"], sitio["lon"], nombre, "ccd", SITIO), "ok"
             if localidad:
@@ -917,7 +1058,12 @@ def main() -> None:
         if textos_hallazgo:
             grupo = "A"
         elif any(e in SOBREVIVIENTE for e in estados):
-            resumen["excluidas_sobrevivientes"] += 1
+            # Si el Parque la registra como desaparecida o asesinada, las
+            # fuentes se contradicen (o la fusión de identidades está mal): se
+            # excluye igual, pero se cuenta aparte para revisarlas.
+            parque_dice = [f["detalle"].get("descripcion_estado") or "" for f in fichas_parque]
+            conflicto = any(re.search(r"desaparec|asesinad", e, re.I) for e in parque_dice)
+            resumen["excluidas_conflicto_de_estado" if conflicto else "excluidas_sobrevivientes"] += 1
             continue
         elif fichas_minjus and not fichas_parque and all(e in ESTADO_INCIERTO_MINJUS for e in estados):
             resumen["excluidas_estado_incierto"] += 1

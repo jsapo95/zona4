@@ -13,13 +13,14 @@ cuatro etapas abstractas (no son fechas):
 Hay dos versiones, que se eligen arriba del panel:
 
 - **Restos hallados** (739 personas): tienen registrado el hallazgo de sus
-  restos. En 689 se pudo ubicar el lugar.
-- **Sin hallazgo de restos registrado** (8.137 personas): desaparecidas o
-  asesinadas sin hallazgo de restos registrado (1.573 figuran como asesinadas).
+  restos. En 691 se pudo ubicar el lugar.
+- **Sin hallazgo de restos registrado** (8.066 personas): desaparecidas o
+  asesinadas sin hallazgo de restos registrado (1.554 figuran como asesinadas).
   En la etapa final cada punto se apaga en el último lugar donde las fuentes
   ubican a esa persona.
 
-Las personas liberadas, fugadas o restituidas según MinJus (1.662) quedan
+Las personas liberadas, fugadas o restituidas según MinJus (1.662; en 3 el
+Parque dice desaparecida, así que las fuentes se contradicen) quedan
 afuera de las dos versiones. También las 29 que sólo están en MinJus como
 "Persona fallecido" o sin estado: varios relatos cuentan que fueron liberadas y
 murieron después, así que no se sabe si siguen desaparecidas.
@@ -71,11 +72,11 @@ asesinato o hallazgo de restos).
   secuestros, pasos por CCD, asesinatos y hallazgos sin dirección exacta tiene
   cada una. Las etapas sin registro (sin CCD, sin asesinato, etc.) se cuentan
   en el panel.
-- Sólo entran las 1.199 personas con dos etapas o más ubicadas. Las más
+- Sólo entran las 1.188 personas con dos etapas o más ubicadas. Las más
   repetidas: Tucumán (capital) → Pozo de Vargas (44), CABA → El Vesubio (33),
   General Pueyrredón → Base Naval Mar del Plata (23).
 - El año es el del secuestro (arista del Parque o ficha de MinJus); 80 de esas
-  1.199 no lo tienen y sólo aparecen con "Todos los años".
+  1.188 no lo tienen y sólo aparecen con "Todos los años".
 
 `mapa_base.js` tiene el mapa base (Argenmap con respaldo en OpenStreetMap) que
 usan las dos páginas.
@@ -109,10 +110,20 @@ qué no se ubicaron los demás. Medido el 2026-11-18:
 
 | Etapa | Registrados | Ubicados | No ubicados |
 | ----- | ----------- | -------- | ----------- |
-| Secuestro | 7.133 | 6.737 | 262 sólo provincia, 89 sin centroide, 34 en el exterior, 11 errores conocidos del grafo |
-| Centro clandestino o lugar de detención | 3.472 | 3.428 (1.255 por la localidad de su dirección, 51 con coordenadas de RUVTE corregidas) | 44 sin coordenadas ni dirección |
-| Asesinato | 1.667 | 1.544 | 90 sólo provincia, 15 sin centroide, 13 en el exterior, 5 errores conocidos del grafo |
-| Hallazgo de restos | 745 | 689 | 56 que no se pudieron ubicar: algunos textos no nombran un lugar ("Identificado por el EAAF en 2009"), otros nombran uno que el lector no reconoce o un río |
+| Secuestro | 7.133 | 6.674 | 262 sólo provincia, 89 sin centroide, 34 en el exterior, 74 errores conocidos del grafo |
+| Centro clandestino o lugar de detención | 3.472 | 3.428 (1.191 por la localidad de su dirección, 51 con coordenadas de RUVTE corregidas) | 44 sin coordenadas ni dirección |
+| Asesinato | 1.667 | 1.522 | 90 sólo provincia, 15 sin centroide, 13 en el exterior, 27 errores conocidos del grafo |
+| Hallazgo de restos | 745 | 691 | 54 que no se pudieron ubicar: algunos textos no nombran un lugar ("Identificado por el EAAF en 2009"), otros nombran uno que el lector no reconoce o un río |
+
+**Errores conocidos del grafo**: aristas que el loader ubica mal y cuyo arreglo
+todavía no está en `main` no se dibujan (`ERRORES_CONOCIDOS_DEL_GRAFO` y
+`TEXTOS_EN_LA_CAPITAL_POR_ERROR`). Son 101: el país Uruguay resuelto en Entre
+Ríos (PR #7), textos "LOCALIDAD. PROVINCIA" mandados a la capital ("METAN.
+SALTA" y "PALOMITAS. SALTA" en Salta capital, "ROSARIO. SANTA FE (…)" en la
+ciudad de Santa Fe; PR #9), Cruz Alta (Tucumán) en San Juan, Puente Saavedra en
+el partido de Saavedra, y ocho casos sueltos ("BUENOS AIRES (Pasteur…)" que es
+CABA, "V. Crespo … CAPITAL FEDERAL" en Crespo, Entre Ríos, etc.). Cuando cada
+arreglo llegue a `main`, su entrada se borra y los datos se regeneran.
 
 13 fichas del Parque traen en el lugar de secuestro el del asesinato
 ("asesinado 29/09/76 ROSARIO. SANTA FE"): ese lugar se dibuja en la etapa de
@@ -132,7 +143,15 @@ Los tests de las reglas de ubicación están en
 - **CCD de MinJus sin coordenadas** (un tercio de los pasos por CCD): la
   localidad de su dirección o de su nombre, con la provincia como pista (sin
   ella, "SAN NICOLAS" caía en el barrio porteño). Si sólo se encuentra el
-  partido, el punto va al partido.
+  partido, el punto va al partido. El Banco usa las coordenadas del sitio del
+  EAAF.
+- **"Bs. As." puede ser CABA**: un barrio porteño con "Bs. As." o "Buenos
+  Aires" ("Palermo, Bs. As.") es ese barrio si no hay un lugar bonaerense con
+  el mismo nombre. Si lo hay, vale la provincia en el texto libre; en una clave
+  del grafo sin partido ("Saavedra" en la provincia) no se dibuja, porque no se
+  sabe cuál de los dos es. "SAN NICOLAS. BS. AS." es San Nicolás de los Arroyos:
+  el Parque escribe el barrio porteño como "CAPITAL FEDERAL (San Nicolas (…))"
+  (`LOCALIDAD_DE_GEOREF`).
 - **Localidades y barrios**: centroide de Georef (localidad, municipio o
   asentamiento, en ese orden). Las personas de un mismo lugar son un mismo
   punto, sin dispersión: el punto lista quiénes son y, en el hallazgo, la
@@ -151,7 +170,10 @@ Los tests de las reglas de ubicación están en
   ("Cementerio de Avellaneda", "Pozo de Vargas"). Si no hay, se lee el texto por
   segmentos, descartando calles, números, intersecciones y cuerpos de agua, y se
   usa el resolver de lugares del grafo. Ante la duda no se ubica: "Río de la
-  Plata" no es La Plata y "Perito Moreno y Dellepiane" no es Moreno.
+  Plata" no es La Plata y "Perito Moreno y Dellepiane" no es Moreno. "Cementerio
+  de General Villegas" es el de Villegas, en La Matanza: el Parque lo llama así
+  ("Cementerio de General Villegas, La Matanza, Bs As") y el EAAF no tiene
+  sitios en General Villegas.
 
 ## Lo que el mapa no dice
 
