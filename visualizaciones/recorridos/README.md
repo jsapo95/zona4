@@ -61,7 +61,10 @@ asesinato o hallazgo de restos).
   CCD, hacia el lugar de asesinato y hacia el hallazgo de restos.
 - **Con zoom se ocultan los puntos genéricos**: "Capital Federal" sin barrio
   desde el zoom 10, partidos y localidades desde el 11 y barrios desde el 13
-  (`ZOOM_OCULTA`), porque su punto parecería una dirección. Abajo a la izquierda
+  (`ZOOM_OCULTA`), porque su punto parecería una dirección. Los CCD sin
+  coordenadas propias se ocultan como su localidad o partido. Los CCD y sitios
+  del EAAF con coordenadas quedan siempre a la vista, aunque sus tramos vengan
+  de un punto oculto. Abajo a la izquierda
   se listan los lugares ocultos de la zona que se ve, con cuántos secuestros,
   asesinatos y hallazgos tiene cada uno. Las etapas sin registro (sin CCD, sin
   asesinato, etc.) se cuentan en el panel.

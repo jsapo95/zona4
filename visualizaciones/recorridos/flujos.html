@@ -234,12 +234,22 @@
   // Un punto genérico (el centro de un partido, una localidad o un barrio) se
   // oculta cuando el zoom lo haría pasar por una dirección. "Capital Federal"
   // sin barrio cubre toda la ciudad y se oculta antes.
+  // Un CCD sin coordenadas propias está en el centro de su localidad o partido:
+  // se oculta igual que ellos. Los sitios con coordenadas no se ocultan nunca.
   const ZOOM_OCULTA = { impreciso: 10, partido: 11, localidad: 11, barrio: 13 };
-  const oculto = (k, z) => z >= (ZOOM_OCULTA[D.nodos[k][3]] ?? Infinity);
+  const precisionDe = new Map(D.lugares.map((l) => [l[5], l[4]]));
+  const nivelDeNodo = (k) => {
+    const tipo = D.nodos[k][3];
+    if (tipo !== "ccd") return tipo;
+    return precisionDe.get(k) === "sitio" ? "ccd" : precisionDe.get(k) === "departamento" ? "partido" : "localidad";
+  };
+  const NIVEL = D.nodos.map((_, k) => nivelDeNodo(k));
+  const oculto = (k, z) => z >= (ZOOM_OCULTA[NIVEL[k]] ?? Infinity);
+  const exacto = (k) => !(NIVEL[k] in ZOOM_OCULTA);
   const nivelDeZoom = (z) => Object.values(ZOOM_OCULTA).filter((u) => z >= u).length;
   const PRIMER_OCULTO = Math.min(...Object.values(ZOOM_OCULTA));
-  const DE_ETAPA = ["secuestro", "", "asesinato", "hallazgo"];
-  const DE_ETAPA_PL = ["secuestros", "", "asesinatos", "hallazgos"];
+  const DE_ETAPA = ["secuestro", "paso por CCD", "asesinato", "hallazgo"];
+  const DE_ETAPA_PL = ["secuestros", "pasos por CCD", "asesinatos", "hallazgos"];
   const TIPO_NODO = { partido: "partido o departamento", barrio: "barrio de CABA",
     impreciso: "lugar impreciso: la fuente sólo dice “Capital Federal”", ccd: "centro clandestino o lugar de detención",
     cementerio: "cementerio (sitio del EAAF)", enterramiento: "enterramiento (sitio del EAAF)", localidad: "localidad" };
@@ -351,17 +361,24 @@
       linea.addTo(capaTramos);
     }
     // Nodos: tamaño según las personas que pasan por ellos en lo que se ve.
-    const porNodo = new Map();
-    for (const r of lista) for (const k of new Set(r.nodos.flat())) porNodo.set(k, (porNodo.get(k) || 0) + 1);
+    // Con zoom, un sitio con coordenadas propias sigue a la vista aunque sus
+    // tramos vengan de puntos genéricos ocultos (secuestro "en Tucumán").
+    const porNodo = new Map(), conEtapaElegida = new Set();
+    for (const r of lista) {
+      for (const k of new Set(r.nodos.flat())) porNodo.set(k, (porNodo.get(k) || 0) + 1);
+      r.nodos.forEach((x, s) => { if (s > 0 && estado.destinos.has(s)) x.forEach((k) => conEtapaElegida.add(k)); });
+    }
     const enTramos = new Set(mostrados.flatMap((t) => [t.a, t.b]));
+    const sitioSuelto = (k) => z >= PRIMER_OCULTO && exacto(k) && conEtapaElegida.has(k);
     const maxNodo = Math.max(1, ...porNodo.values());
     for (const [k, v] of porNodo) {
-      if ((!enTramos.has(k) && k !== estado.lugar) || oculto(k, z)) continue;
+      if ((!enTramos.has(k) && k !== estado.lugar && !sitioSuelto(k)) || oculto(k, z)) continue;
       const [lat, lon, nombre, tipo] = D.nodos[k], sitio = !["partido", "localidad", "barrio", "impreciso"].includes(tipo);
+      const aproximado = tipo === "ccd" && !exacto(k) ? "<br><i>Sin coordenadas propias: está en el centro de su localidad.</i>" : "";
       L.circleMarker([lat, lon], {
         radius: 3 + 10 * Math.sqrt(v / maxNodo), color: css("--nodo"), weight: 1.5,
         fillColor: sitio ? css("--nodo") : css("--surface-1"), fillOpacity: sitio ? 0.85 : 0.9,
-      }).bindTooltip(`<b>${escapar(nombre)}</b><br>${TIPO_NODO[tipo] || tipo} · ${fmt.format(v)} personas en lo que se ve`)
+      }).bindTooltip(`<b>${escapar(nombre)}</b><br>${TIPO_NODO[tipo] || tipo} · ${fmt.format(v)} ${v === 1 ? "persona" : "personas"} en lo que se ve${aproximado}`)
         .on("click", () => filtrarLugar(k)).addTo(capaNodos);
     }
     $("mapa").classList.toggle("quieto", !$("movimiento").checked);
@@ -388,9 +405,9 @@
       const filas = orden.slice(0, 6).map(([k, c]) => `<li><b>${escapar(D.nodos[k][2])}</b>: ` +
         c.map((n, s) => (n ? `${fmt.format(n)} ${n === 1 ? DE_ETAPA[s] : DE_ETAPA_PL[s]}` : "")).filter(Boolean).join(" · ") + "</li>");
       if (orden.length > 6) filas.push(`<li>y ${fmt.format(orden.length - 6)} lugares más</li>`);
-      detalle = `<ul class="faltantes"><li>Ocultos a este zoom: sólo se sabe el partido o el barrio, no la dirección.</li>${filas.join("")}</ul>`;
+      detalle = `<ul class="faltantes"><li>Ocultos a este zoom: sólo se sabe el partido, la localidad o el barrio, no la dirección.</li>${filas.join("")}</ul>`;
     } else if (z < PRIMER_OCULTO) {
-      detalle = `<ul class="faltantes"><li>Con zoom se ocultan los puntos que sólo dicen el partido o el barrio, y acá se cuenta cuántas personas tienen.</li></ul>`;
+      detalle = `<ul class="faltantes"><li>Con zoom se ocultan los puntos que sólo dicen el partido, la localidad o el barrio, y acá se cuenta cuántas personas tienen.</li></ul>`;
     }
     $("rotulo").innerHTML = `<div class="grande">${fmt.format(lista.length)}</div><div class="chico">recorridos${estado.año ? ` · secuestros de ${estado.año}` : ""}</div>` + detalle;
   }
