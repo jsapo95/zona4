@@ -65,6 +65,9 @@ asesinato o hallazgo de restos).
 
 `mapa_base.js` tiene el mapa base (Argenmap con respaldo en OpenStreetMap) que
 usan las dos páginas.
+`estilo.css` tiene el estilo común de la interfaz, inspirado en la web de
+Abuelas de Plaza de Mayo (Inter, violeta y naranja), sin su logo ni su nombre.
+Los colores de los datos siguen siendo la paleta validada para daltonismo.
 
 ## Cómo regenerar los datos
 
@@ -150,3 +153,26 @@ Los tests de las reglas de ubicación están en
   grafo no las une y el mapa muestra dos recorridos incompletos.
 - **Un punto apagado indica que la fuente no registra esa etapa**, no que la
   persona no haya pasado por ella.
+- **Los trayectos son arcos, no rutas.** Un arco dice "de acá a allá", que es lo
+  que registran las fuentes; no dice por dónde. Ver la nota de abajo.
+
+## Nota: ¿se puede dibujar la ruta más probable entre etapas?
+
+Se discutió y por ahora no. Lo que habría que resolver antes:
+
+- **No hay una red vial digital de 1976–1983.** El ruteo disponible
+  (OpenStreetMap, con OSRM o similares) usa las rutas de hoy: la autopista
+  Buenos Aires–La Plata, por ejemplo, es de los años noventa. Hay mapas
+  históricos escaneados (del IGN, del Automóvil Club Argentino), pero pasarlos a
+  una red vial utilizable es un proyecto en sí mismo.
+- **Muchos traslados no fueron por tierra**, como los vuelos de la muerte desde
+  la ESMA o Campo de Mayo, y las fuentes casi nunca dicen cómo se hizo un
+  traslado: sólo que la persona estuvo en un lugar y después en otro.
+- **Una "ruta más probable" sería una suposición dibujada como si fuera un
+  dato**, lo contrario del criterio del grafo de afirmar menos antes que
+  inventar.
+
+Lo que sí se podría hacer sin ese problema: mostrar como dato aparte la
+distancia por ruta entre etapas, aclarando que es una estimación con la red de
+hoy; o averiguar qué cartografía vial de la época existe digitalizada antes de
+decidir.

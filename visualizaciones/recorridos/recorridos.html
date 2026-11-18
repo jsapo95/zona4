@@ -5,62 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Recorridos de la represión</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="estilo.css">
 <style>
-  :root {
-    color-scheme: light;
-    --surface-0: #f4f3f0;
-    --surface-1: #fcfcfb;
-    --surface-2: #efeee9;
-    --border: #dcdad3;
-    --text-primary: #0b0b0b;
-    --text-secondary: #52514e;
-    --text-muted: #77756f;
-    --accent: #2a78d6;
-    --accent-soft: #cde2fb;
-    --highlight: #eb6834;
-    --dot: 11, 11, 11;
-    --shadow: 0 1px 2px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.06);
-  }
+  /* Tokens comunes (colores de la interfaz, tipografía) en estilo.css; acá
+     sólo los de esta página. */
+  :root { --accent-soft: #cde2fb; --dot: 11, 11, 11; }
   @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      color-scheme: dark;
-      --surface-0: #121211;
-      --surface-1: #1a1a19;
-      --surface-2: #242422;
-      --border: #383835;
-      --text-primary: #f0efec;
-      --text-secondary: #c3c2b7;
-      --text-muted: #8f8e86;
-      --accent: #3987e5;
-      --accent-soft: #184f95;
-      --highlight: #d95926;
-      --dot: 240, 239, 236;
-      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 16px rgba(0,0,0,.35);
-    }
+    :root:not([data-theme="light"]) { --accent-soft: #184f95; --dot: 240, 239, 236; }
   }
-  :root[data-theme="dark"] {
-    color-scheme: dark;
-    --surface-0: #121211;
-    --surface-1: #1a1a19;
-    --surface-2: #242422;
-    --border: #383835;
-    --text-primary: #f0efec;
-    --text-secondary: #c3c2b7;
-    --text-muted: #8f8e86;
-    --accent: #3987e5;
-    --accent-soft: #184f95;
-    --highlight: #d95926;
-    --dot: 240, 239, 236;
-    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 16px rgba(0,0,0,.35);
-  }
+  :root[data-theme="dark"] { --accent-soft: #184f95; --dot: 240, 239, 236; }
 
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; }
-  body {
-    background: var(--surface-0);
-    color: var(--text-primary);
-    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  }
   .app { display: grid; grid-template-columns: minmax(0, 1fr) 400px; height: 100vh; }
   .mapa-wrap { position: relative; min-height: 0; }
   #mapa { position: absolute; inset: 0; background: var(--surface-2); }
@@ -76,13 +32,10 @@
     .panel { border-left: 0; border-top: 1px solid var(--border); padding: 16px; overflow: visible; }
   }
 
-  h1 { font-size: 21px; line-height: 1.25; margin: 0 0 6px; letter-spacing: -.01em; }
-  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); margin: 22px 0 8px; font-weight: 600; }
   p { margin: 0 0 10px; }
   .bajada { color: var(--text-secondary); font-size: 14px; }
   .muted { color: var(--text-muted); }
   .num { font-variant-numeric: tabular-nums; }
-  a { color: var(--accent); }
 
   /* Selector de versión */
   .segmentado { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; background: var(--surface-2); padding: 4px; border-radius: 10px; }
@@ -98,7 +51,7 @@
   .reproductor { display: flex; align-items: center; gap: 12px; margin-top: 16px; }
   .btn-play {
     flex: none; width: 44px; height: 44px; border-radius: 50%; border: 0; cursor: pointer;
-    background: var(--accent); color: #fff; display: grid; place-items: center;
+    background: var(--accent); color: var(--sobre-accent); display: grid; place-items: center;
   }
   .btn-play svg { width: 18px; height: 18px; fill: currentColor; }
   .linea { flex: 1; position: relative; padding-top: 2px; }
@@ -216,10 +169,12 @@
   </div>
 
   <aside class="panel">
+    <div class="cabecera">
     <a href="flujos.html" style="font-size:13px;display:inline-block;margin-bottom:10px">Ver recorridos frecuentes →</a>
     <h1>Del secuestro al hallazgo</h1>
     <p class="bajada">Cada punto es una persona víctima de la represión. Al reproducir, el mapa sigue a cada una por las etapas que registran las fuentes: dónde la secuestraron, por qué centros clandestinos pasó, dónde la asesinaron y dónde se encontraron sus restos.</p>
     <p class="bajada muted" style="font-size:13px">Las etapas no son fechas: son pasos de un recorrido. Las fuentes casi nunca dicen cuándo ocurrió cada uno.</p>
+    </div>
 
     <div class="segmentado" role="group" aria-label="Versión">
       <button id="btn-A" aria-pressed="true"><b>Restos hallados</b><span class="num" id="cnt-A"></span></button>
