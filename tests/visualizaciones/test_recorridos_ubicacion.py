@@ -272,3 +272,9 @@ def test_texto_que_el_grafo_manda_a_la_capital_no_se_dibuja():
     salta_real = [{"detalle": {"Lugar de asesinato": "SALTA CAPITAL"}}]
     assert cd.error_conocido_del_grafo("ASESINADO_EN", salta, palomitas)
     assert not cd.error_conocido_del_grafo("ASESINADO_EN", salta, salta_real)
+
+
+def test_provincia_a_secas_en_secuestro_no_se_dibuja_en_la_capital():
+    cordoba = "lugar:CIUDAD:cordoba|lugar:DEPARTAMENTO:capital|lugar:PROVINCIA:cordoba|lugar:PAIS:argentina"
+    assert cd.provincia_a_secas("SECUESTRADO_EN", cordoba, [{"detalle": {"descripcion_lugar_de_secuestro": "Córdoba"}}])
+    assert not cd.provincia_a_secas("SECUESTRADO_EN", cordoba, [{"detalle": {"descripcion_lugar_de_secuestro": "CORDOBA CAPITAL"}}])

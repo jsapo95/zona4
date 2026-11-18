@@ -870,6 +870,17 @@ def error_conocido_del_grafo(arista: Optional[str], lugar_key: str, fichas_parqu
     return False
 
 
+def provincia_a_secas(arista: Optional[str], lugar_key: str, fichas_parque: List[Dict[str, Any]]) -> bool:
+    """Un nombre de provincia a secas ("CORDOBA") en secuestro o asesinato es la
+    provincia, no su capital: no se dibuja. Decisión del equipo; el grafo la
+    aplica con el PR #10 (fix/provincia-a-secas-es-provincia)."""
+    seg = segmentos(lugar_key)
+    campo = _CAMPO_DE_ARISTA.get(arista or "")
+    if not campo or "CIUDAD" not in seg or "PROVINCIA" not in seg:
+        return False
+    return any(norm((f.get("detalle") or {}).get(campo)) == seg["PROVINCIA"] for f in fichas_parque)
+
+
 SOBREVIVIENTE = {"Persona liberada", "Persona fugado", "Persona restituida"}
 # Estado de MinJus que no dice si la persona sigue desaparecida: varias fichas
 # "Persona fallecido" cuentan en el relato que fue liberada y murió después.
@@ -1032,6 +1043,9 @@ def main() -> None:
                 conocidas[etapa["id"]]["registrado"] += 1
                 if error_conocido_del_grafo(etapa["arista"], lugar_key, fichas_parque):
                     motivos[etapa["id"]]["error_conocido_del_grafo"] += 1
+                    continue
+                if provincia_a_secas(etapa["arista"], lugar_key, fichas_parque):
+                    motivos[etapa["id"]]["solo_provincia"] += 1
                     continue
                 i = lugar_del_grafo(lugar_key, etapa["id"])
                 if i is not None and i not in idx:

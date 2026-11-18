@@ -12,10 +12,10 @@ cuatro etapas abstractas (no son fechas):
 
 Hay dos versiones, que se eligen arriba del panel:
 
-- **Restos hallados** (739 personas): tienen registrado el hallazgo de sus
+- **Restos hallados** (738 personas): tienen registrado el hallazgo de sus
   restos. En 691 se pudo ubicar el lugar.
-- **Sin hallazgo de restos registrado** (8.066 personas): desaparecidas o
-  asesinadas sin hallazgo de restos registrado (1.554 figuran como asesinadas).
+- **Sin hallazgo de restos registrado** (7.738 personas): desaparecidas o
+  asesinadas sin hallazgo de restos registrado (1.435 figuran como asesinadas).
   En la etapa final cada punto se apaga en el último lugar donde las fuentes
   ubican a esa persona.
 
@@ -72,11 +72,11 @@ asesinato o hallazgo de restos).
   secuestros, pasos por CCD, asesinatos y hallazgos sin dirección exacta tiene
   cada una. Las etapas sin registro (sin CCD, sin asesinato, etc.) se cuentan
   en el panel.
-- Sólo entran las 1.188 personas con dos etapas o más ubicadas. Las más
+- Sólo entran las 1.178 personas con dos etapas o más ubicadas. Las más
   repetidas: Tucumán (capital) → Pozo de Vargas (44), CABA → El Vesubio (33),
   General Pueyrredón → Base Naval Mar del Plata (23).
-- El año es el del secuestro (arista del Parque o ficha de MinJus); 80 de esas
-  1.188 no lo tienen y sólo aparecen con "Todos los años".
+- El año es el del secuestro (arista del Parque o ficha de MinJus); 78 de esas
+  1.178 no lo tienen y sólo aparecen con "Todos los años".
 
 `mapa_base.js` tiene el mapa base (Argenmap con respaldo en OpenStreetMap) que
 usan las dos páginas.
@@ -110,9 +110,9 @@ qué no se ubicaron los demás. Medido el 2026-11-18:
 
 | Etapa | Registrados | Ubicados | No ubicados |
 | ----- | ----------- | -------- | ----------- |
-| Secuestro | 7.133 | 6.674 | 262 sólo provincia, 89 sin centroide, 34 en el exterior, 74 errores conocidos del grafo |
+| Secuestro | 7.133 | 6.457 | 479 sólo provincia, 89 sin centroide, 34 en el exterior, 74 errores conocidos del grafo |
 | Centro clandestino o lugar de detención | 3.472 | 3.428 (1.191 por la localidad de su dirección, 51 con coordenadas de RUVTE corregidas) | 44 sin coordenadas ni dirección |
-| Asesinato | 1.667 | 1.522 | 90 sólo provincia, 15 sin centroide, 13 en el exterior, 27 errores conocidos del grafo |
+| Asesinato | 1.667 | 1.400 | 212 sólo provincia, 15 sin centroide, 13 en el exterior, 27 errores conocidos del grafo |
 | Hallazgo de restos | 745 | 691 | 54 que no se pudieron ubicar: algunos textos no nombran un lugar ("Identificado por el EAAF en 2009"), otros nombran uno que el lector no reconoce o un río |
 
 **Errores conocidos del grafo**: aristas que el loader ubica mal y cuyo arreglo
@@ -156,7 +156,7 @@ Los tests de las reglas de ubicación están en
   asentamiento, en ese orden). Las personas de un mismo lugar son un mismo
   punto, sin dispersión: el punto lista quiénes son y, en el hallazgo, la
   dirección que da el texto de cada una ("Dorrego y F. Alcorta (Palermo)").
-- **"Capital Federal" sin barrio** (1.801 secuestros) y lugares que sólo dan el
+- **"Capital Federal" sin barrio** (1.799 secuestros) y lugares que sólo dan el
   partido: centro de CABA o del partido. Con zoom de ciudad (10 o más, la vista AMBA) se
   ocultan, porque su punto parecería una dirección.
 - **Nombres que en Georef son otro lugar**: "Guadalupe" (Santa Fe) no se ubica,
@@ -165,7 +165,10 @@ Los tests de las reglas de ubicación están en
 - **Cementerios con sectores**: si el texto dice "Cementerio de Avellaneda" sin
   sector, se nombra así, sin inventar el "Sector 134" del EAAF.
 - **Sólo la provincia**: no se dibuja. El centroide de Buenos Aires cae en medio
-  de la pampa, lejos de cualquier hecho.
+  de la pampa, lejos de cualquier hecho. Un nombre de provincia a secas en
+  secuestro o asesinato ("CORDOBA", "San Juan") es la provincia, no su capital:
+  la fuente escribe la ciudad como "CORDOBA CAPITAL" (decisión del equipo; el
+  grafo la aplica con el PR #10).
 - **Hallazgo de restos**: primero se busca en el texto un sitio del EAAF
   ("Cementerio de Avellaneda", "Pozo de Vargas"). Si no hay, se lee el texto por
   segmentos, descartando calles, números, intersecciones y cuerpos de agua, y se
