@@ -383,7 +383,8 @@ def _variantes_de_localidad(base_alias: str, provincia: str) -> list[str]:
     if equivalente is not None and equivalente[0] == "CIUDAD" and equivalente[2] == provincia:
         variantes.append(normalize_place_text(equivalente[1]))
     variantes.append(_canonicalize_admin_context_name(base_alias, provincia))
-    variantes.append(" ".join(_ABREVIATURAS_DE_LOCALIDAD.get(t, t) for t in base_alias.split()))
+    expandida = " ".join(_ABREVIATURAS_DE_LOCALIDAD.get(t, t) for t in base_alias.split())
+    variantes.append(re.sub(r"\bJ B\b", "JUAN BAUTISTA", expandida))
     # Georef escribe con letras "Tres de Febrero" y "Dos de Mayo" (y con
     # números "25 de Mayo", "9 de Julio").
     fecha = re.fullmatch(r"([23])( DE [A-Z]+)", base_alias)
@@ -1025,6 +1026,92 @@ def _extract_repeated_trailing_toponym(alias_norm: str) -> str:
     return alias_norm
 
 
+def _resolve_localidad_en_segmentos(
+    raw_text: str, alias_norm: str, provincia: str, resolver: PlaceGazetteer, min_score: float, ambiguity_delta: float
+) -> Optional[Dict[str, Any]]:
+    """Primer segmento del texto crudo (separado por puntuación) que es un
+    lugar de Georef de `provincia`: "Miramar - Gral. Alvarado - Bs As" ->
+    Miramar, "Junín, Provincia de Buenos Aires" -> Junín, "Su estudio
+    jurídico (San Miguel de Tucumán)" -> San Miguel de Tucumán. Sólo cuentan
+    los segmentos que siguen en `alias_norm` después de normalizar (no la
+    narración que la normalización descarta: "VILLA TESEI. BS. AS. (...,
+    Villa Tesei, Morón, Bs. As.)" no va a Morón). Se saltean los segmentos
+    que son la provincia misma (para que "CLARKE. SANTA FE" no caiga en la
+    capital) y los que tienen dígitos."""
+    pistas = set(PROVINCE_ABBR) | {provincia}
+    for segmento in re.split(r"[^\w\s]+", raw_text):
+        segmento = normalize_place_identity(normalize_place_text(segmento))
+        if not segmento or segmento in pistas or len(segmento.split()) > 5 or re.search(r"\d", segmento):
+            continue
+        if f" {segmento} " not in f" {alias_norm} ":
+            continue
+        for nombre in dict.fromkeys([segmento, _strip_trailing_province_hint(segmento)]):
+            if not nombre or nombre in pistas:
+                continue
+            place = _resolve_localidad_en_su_provincia(alias_norm, nombre, provincia, resolver, min_score, ambiguity_delta)
+            if place is not None:
+                return place
+    return None
+
+
+# Palabras que no aparecen en el nombre de una localidad y sí en el de una
+# institución, una calle o un resto de prosa que el respaldo por sufijo
+# convertía en ciudad ("HOSPITAL MILITAR", "SU ESTUDIO JURIDICO SAN MIGUEL
+# DE", "PROVINCIA DE", "CIUDAD DE").
+_PALABRAS_NO_TOPONIMICAS = {
+    "HOSPITAL",
+    "MUNICIPALIDAD",
+    "CUARTEL",
+    "BOMBEROS",
+    "LOGISTICA",
+    "POLICIA",
+    "TIRO",
+    "MILITAR",
+    "NAVAL",
+    "PILOTO",
+    "CENTRAL",
+    "ESTUDIO",
+    "JURIDICO",
+    "SU",
+    "PROVINCIA",
+    "PCIA",
+    "CIUDAD",
+    "CALLE",
+    "AV",
+    "AVENIDA",
+    "RUTA",
+    "KM",
+    "COMISARIA",
+    "BRIGADA",
+    "REGIMIENTO",
+    "UNIDAD",
+    "PENAL",
+}
+
+
+def _es_toponimo_limpio(nombre: str, raw_text: str) -> bool:
+    """True si `nombre` parece el nombre de un lugar y no una institución,
+    una calle o una esquina: pocas palabras, sin dígitos, sin palabras de
+    `_PALABRAS_NO_TOPONIMICAS`, sin terminar en artículo o preposición, sin
+    país extranjero, y con letras sueltas sólo si en el texto crudo son
+    iniciales ("Nicanor E. Molinas" sí; "Alberdi e Ituzaingó", "Calle s/n"
+    no)."""
+    tokens = nombre.split()
+    if not 1 <= len(tokens) <= 4 or re.search(r"\d", nombre):
+        return False
+    if any(t in _PALABRAS_NO_TOPONIMICAS for t in tokens):
+        return False
+    if tokens[-1] in {"DE", "DEL", "LA", "LAS", "LOS", "EL", "Y", "E"}:
+        return False
+    if any(f" {pais} " in f" {nombre} " for pais in FOREIGN_COUNTRY_EQUIV):
+        return False
+    crudo = strip_accents(raw_text.upper())
+    for t in tokens:
+        if len(t) == 1 and not re.search(rf"\b{t}\s*\.", crudo):
+            return False
+    return True
+
+
 def resolve_place(
     raw: Optional[str],
     *,
@@ -1190,12 +1277,28 @@ def resolve_place(
             if _contiene_digito_no_toponimico(city_name) or _es_fragmento_no_toponimico(city_name):
                 return None
             parent_key = make_lugar_key("PROVINCIA", prov_name, "lugar:PAIS:argentina")
-            # Una ciudad que Georef no tiene en esa provincia no se inventa
-            # ("DON TORCUATO. BS. AS.", "CLARKE. SANTA FE" -> la capital no):
-            # se afirma sólo la provincia que el texto nombra, o el
-            # departamento si es lo que el texto nombra. El texto crudo queda
-            # en el AliasLugar.
+            # Antes de armar la clave a partir del texto:
+            # - si un segmento del texto es un lugar de Georef de esa
+            #   provincia, gana ése ("Miramar - Gral. Alvarado - Bs As",
+            #   "Junín, Provincia de Buenos Aires", "RECONQUISTA · GRAL.
+            #   OBLIGADO · SANTA FE");
+            # - si el nombre es un departamento de Georef y no una ciudad, se
+            #   afirma el departamento;
+            # - si no es un topónimo limpio sino una institución, una calle o
+            #   un resto de prosa ("HOSPITAL MILITAR", "Su estudio jurídico",
+            #   "Provincia de Tucumán"), se afirma sólo la provincia.
+            # Un topónimo limpio que el catálogo del loader no tiene ("DON
+            # TORCUATO", "VILLA TESEI", "CLARKE") conserva su clave
+            # `CIUDAD:<nombre>|PROVINCIA:<provincia>`: son lugares reales
+            # (asentamientos o barrios de Georef, o con otra grafía) y la
+            # provincia sola perdería el nombre.
             if resolver is not None and not resolver.tiene_lugar(city_name, prov_name, ("LOCALIDAD", "MUNICIPIO")):
+                en_segmento = _resolve_localidad_en_segmentos(
+                    text, alias_norm, prov_name, resolver, georef_min_score, georef_ambiguity_delta
+                )
+                if en_segmento is not None:
+                    en_segmento["alias_raw"] = text
+                    return en_segmento
                 if resolver.tiene_lugar(city_name, prov_name, ("DEPARTAMENTO",)):
                     department_key = make_lugar_key("DEPARTAMENTO", city_name, parent_key)
                     return {
@@ -1207,15 +1310,16 @@ def resolve_place(
                         "parent_key": parent_key,
                         "hierarchy_keys": [department_key, parent_key, "lugar:PAIS:argentina"],
                     }
-                return {
-                    "alias_raw": text,
-                    "alias_norm": alias_norm,
-                    "tipo": "PROVINCIA",
-                    "nombre_canonico": prov_name,
-                    "lugar_key": parent_key,
-                    "parent_key": "lugar:PAIS:argentina",
-                    "hierarchy_keys": [parent_key, "lugar:PAIS:argentina"],
-                }
+                if not _es_toponimo_limpio(city_name, text):
+                    return {
+                        "alias_raw": text,
+                        "alias_norm": alias_norm,
+                        "tipo": "PROVINCIA",
+                        "nombre_canonico": prov_name,
+                        "lugar_key": parent_key,
+                        "parent_key": "lugar:PAIS:argentina",
+                        "hierarchy_keys": [parent_key, "lugar:PAIS:argentina"],
+                    }
             lugar_key = make_lugar_key("CIUDAD", city_name, parent_key)
             return {
                 "alias_raw": text,

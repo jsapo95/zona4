@@ -18,9 +18,10 @@ colgada de la provincia ("METAN. SALTA", "CAMPANA. BS. AS.").
 Este archivo fija que:
 - la localidad se busca sólo en la provincia nombrada;
 - un municipio se lleva a su localidad cabecera, con departamento;
-- el respaldo por sufijo no inventa ciudades que Georef no tiene en esa
-  provincia: se afirma sólo la provincia (el texto crudo queda en el
-  AliasLugar);
+- en el respaldo por sufijo gana un segmento del texto que sea lugar de
+  Georef; un topónimo limpio que el catálogo no tiene conserva su clave
+  `CIUDAD:X|PROVINCIA:Y`, y lo que no es topónimo (instituciones, calles,
+  "Provincia de X") afirma sólo la provincia;
 - "SAN NICOLAS. BS. AS." es San Nicolás de los Arroyos;
 - un barrio porteño con "Bs As" va al barrio si el nombre es sólo de CABA, y
   a la provincia si también existe en Buenos Aires, salvo pista de CABA;
@@ -157,18 +158,59 @@ def test_municipio_va_a_su_localidad_cabecera(raw: str, esperada: str) -> None:
     assert _resolver(raw) == esperada
 
 
-# Georef no tiene la ciudad en esa provincia: se afirma sólo la provincia en
-# vez de inventarla. La capital homónima no gana ("CLARKE. SANTA FE").
+# Un topónimo limpio que el catálogo del loader no tiene (asentamientos o
+# barrios de Georef, o con otra grafía) conserva su clave de antes, sin
+# departamento: la provincia sola perdería el nombre. La capital homónima no
+# gana ("CLARKE. SANTA FE").
+CASOS_TOPONIMO_FUERA_DEL_CATALOGO = [
+    ("CLARKE. SANTA FE", f"lugar:CIUDAD:clarke|{_prov('santa_fe')}"),
+    ("DON TORCUATO. BS. AS.", f"lugar:CIUDAD:don_torcuato|{_prov('buenos_aires')}"),
+    ("VILLA LUJAN. TUCUMAN", f"lugar:CIUDAD:villa_lujan|{_prov('tucuman')}"),
+    ("FERREYRA. CORDOBA", f"lugar:CIUDAD:ferreyra|{_prov('cordoba')}"),
+    ("Nicanor E. Molinas, Santa Fé", f"lugar:CIUDAD:nicanor_e_molinas|{_prov('santa_fe')}"),
+    # La narración que la normalización descarta no cuenta como segmento: no
+    # va a Morón.
+    (
+        "VILLA TESEI. BS. AS. (Vivienda allanada en Luna 540, Villa Tesei, Morón, Bs. As.)",
+        f"lugar:CIUDAD:villa_tesei|{_prov('buenos_aires')}",
+    ),
+]
+
+
+@pytest.mark.parametrize("raw,esperada", CASOS_TOPONIMO_FUERA_DEL_CATALOGO)
+def test_toponimo_fuera_del_catalogo_conserva_su_clave(raw: str, esperada: str) -> None:
+    assert _resolver(raw) == esperada
+
+
+# Si un segmento del texto es un lugar de Georef de la provincia, gana ése en
+# vez de una clave armada con el texto entero.
+CASOS_SEGMENTO = [
+    ("Miramar - Gral. Alvarado - Bs As", _ciudad("miramar", "general_alvarado", "buenos_aires")),
+    ("Junín, Provincia de Buenos Aires", _ciudad("junin", "junin", "buenos_aires")),
+    ("Santa Lucia, Pcia de Tucuman", _ciudad("santa_lucia", "monteros", "tucuman")),
+    ("Su estudio jurídico (San Miguel de Tucumán)", _ciudad("san_miguel_de_tucuman", "capital", "tucuman")),
+    ("RECONQUISTA · GRAL. OBLIGADO · SANTA FE", _ciudad("reconquista", "general_obligado", "santa_fe")),
+    ("J. B. ALBERDI. TUCUMAN", _ciudad("juan_bautista_alberdi", "juan_bautista_alberdi", "tucuman")),
+]
+
+
+@pytest.mark.parametrize("raw,esperada", CASOS_SEGMENTO)
+def test_segmento_que_es_lugar_de_georef_gana(raw: str, esperada: str) -> None:
+    assert _resolver(raw) == esperada
+
+
+# Instituciones, calles y restos de prosa no son ciudades: se afirma sólo la
+# provincia.
 CASOS_SOLO_PROVINCIA = [
-    ("CLARKE. SANTA FE", _prov("santa_fe")),
-    ("DON TORCUATO. BS. AS.", _prov("buenos_aires")),
-    ("VILLA LUJAN. TUCUMAN", _prov("tucuman")),
-    ("FERREYRA. CORDOBA", _prov("cordoba")),
+    ("Provincia de Córdoba", _prov("cordoba")),
+    ('HOSPITAL MILITAR "TUCUMÁN"', _prov("tucuman")),
+    ("MUNICIPALIDAD DE CÓRDOBA", _prov("cordoba")),
+    ("SAN PABLO BRASIL a BUENOS AIRES", _prov("buenos_aires")),
 ]
 
 
 @pytest.mark.parametrize("raw,esperada", CASOS_SOLO_PROVINCIA)
-def test_ciudad_que_georef_no_tiene_no_se_inventa(raw: str, esperada: str) -> None:
+def test_lo_que_no_es_toponimo_afirma_solo_la_provincia(raw: str, esperada: str) -> None:
     assert _resolver(raw) == esperada
 
 
