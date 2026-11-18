@@ -57,6 +57,14 @@ asesinato o hallazgo de restos).
 - Se filtra por versión, por **año de secuestro** (con un botón que recorre los
   años) y por un lugar escrito (partido, CCD o cementerio). La lista de
   recorridos más repetidos deja ver a las personas de cada uno.
+- Tres casillas en la leyenda prenden o apagan cada tipo de tramo: hacia el
+  CCD, hacia el lugar de asesinato y hacia el hallazgo de restos.
+- **Con zoom se ocultan los puntos genéricos**: "Capital Federal" sin barrio
+  desde el zoom 10, partidos y localidades desde el 11 y barrios desde el 13
+  (`ZOOM_OCULTA`), porque su punto parecería una dirección. Abajo a la izquierda
+  se listan los lugares ocultos de la zona que se ve, con cuántos secuestros,
+  asesinatos y hallazgos tiene cada uno. Las etapas sin registro (sin CCD, sin
+  asesinato, etc.) se cuentan en el panel.
 - Sólo entran las 1.207 personas con dos etapas o más ubicadas. Las más
   repetidas: Tucumán (capital) → Pozo de Vargas (44), CABA → El Vesubio (33),
   General Pueyrredón → Base Naval Mar del Plata (23).

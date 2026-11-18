@@ -85,7 +85,12 @@
 
   .leyenda { display: grid; gap: 6px; font-size: 12.5px; color: var(--text-secondary); }
   .leyenda .fila { display: flex; align-items: center; gap: 8px; }
-  .linea-ley { width: 28px; height: 4px; border-radius: 2px; }
+  .linea-ley { width: 28px; height: 4px; border-radius: 2px; flex: none; }
+  .leyenda label.fila { cursor: pointer; }
+  .leyenda label.fila input { margin: 0; flex: none; }
+  .leyenda label.fila:has(input:not(:checked)) { opacity: .45; }
+  .faltantes-panel { list-style: none; margin: 8px 0 0; padding: 0; font-size: 12.5px; }
+  .faltantes-panel li { margin-bottom: 2px; }
   .nodo-ley { width: 11px; height: 11px; border-radius: 50%; border: 2px solid var(--nodo); background: var(--surface-1); }
   .nodo-ley.sitio { background: var(--nodo); }
   .capas { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13.5px; align-items: center; }
@@ -185,9 +190,10 @@
       <button class="chip" data-zoom="rosario">Rosario</button>
     </div>
     <div class="leyenda" style="margin-top:12px">
-      <div class="fila"><span class="linea-ley" style="background:var(--hacia-ccd)"></span>hacia el centro clandestino o lugar de detención donde estuvieron detenidas</div>
-      <div class="fila"><span class="linea-ley" style="background:var(--hacia-asesinato)"></span>hacia donde las asesinaron</div>
-      <div class="fila"><span class="linea-ley" style="background:var(--hacia-restos)"></span>hacia donde aparecieron sus restos (cementerio, fosa o el lugar donde dejaron los cuerpos)</div>
+      <p class="muted" style="font-size:12.5px;margin:0">Elegí qué tramos ver:</p>
+      <label class="fila"><input type="checkbox" data-destino="1" checked><span class="linea-ley" style="background:var(--hacia-ccd)"></span>hacia el centro clandestino o lugar de detención donde estuvieron detenidas</label>
+      <label class="fila"><input type="checkbox" data-destino="2" checked><span class="linea-ley" style="background:var(--hacia-asesinato)"></span>hacia donde las asesinaron</label>
+      <label class="fila"><input type="checkbox" data-destino="3" checked><span class="linea-ley" style="background:var(--hacia-restos)"></span>hacia donde aparecieron sus restos (cementerio, fosa o el lugar donde dejaron los cuerpos)</label>
       <p class="muted" style="font-size:12.5px;margin:2px 0 0">Son dos datos distintos: dónde las mataron (ficha del Parque) y dónde se encontraron sus restos, muchas veces enterrados como NN (identificación del EAAF). Sólo 90 personas tienen los dos registrados; por ejemplo, asesinadas en Rosario y halladas en el Cementerio La Piedad.</p>
       <div class="fila"><svg width="28" height="8" aria-hidden="true"><line x1="2" y1="4" x2="26" y2="4" stroke="var(--text-secondary)" stroke-width="3" stroke-linecap="round" stroke-dasharray="1 6"/></svg>punteado y tenue: salta etapas sin registro (no se sabe por dónde pasó en el medio)</div>
       <div class="fila"><span class="nodo-ley"></span>partido o departamento</div>
@@ -225,7 +231,15 @@
   const escapar = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const sinTildes = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   const ETAPA = ["secuestro", "CCD", "asesinato", "restos"];
-  const ZOOM_SIN_IMPRECISOS = 10;
+  // Un punto genérico (el centro de un partido, una localidad o un barrio) se
+  // oculta cuando el zoom lo haría pasar por una dirección. "Capital Federal"
+  // sin barrio cubre toda la ciudad y se oculta antes.
+  const ZOOM_OCULTA = { impreciso: 10, partido: 11, localidad: 11, barrio: 13 };
+  const oculto = (k, z) => z >= (ZOOM_OCULTA[D.nodos[k][3]] ?? Infinity);
+  const nivelDeZoom = (z) => Object.values(ZOOM_OCULTA).filter((u) => z >= u).length;
+  const PRIMER_OCULTO = Math.min(...Object.values(ZOOM_OCULTA));
+  const DE_ETAPA = ["secuestro", "", "asesinato", "hallazgo"];
+  const DE_ETAPA_PL = ["secuestros", "", "asesinatos", "hallazgos"];
   const TIPO_NODO = { partido: "partido o departamento", barrio: "barrio de CABA",
     impreciso: "lugar impreciso: la fuente sólo dice “Capital Federal”", ccd: "centro clandestino o lugar de detención",
     cementerio: "cementerio (sitio del EAAF)", enterramiento: "enterramiento (sitio del EAAF)", localidad: "localidad" };
@@ -249,7 +263,7 @@
   for (let a = Math.min(...conFecha); a <= Math.max(...conFecha); a++) AÑOS.push(a);
 
   // ------------------------------------------------------------------ estado
-  const estado = { grupo: "todas", año: null, lugar: null, firma: null, minimo: 2, reproduciendo: false };
+  const estado = { grupo: "todas", año: null, lugar: null, firma: null, minimo: 2, destinos: new Set([1, 2, 3]), reproduciendo: false };
 
   const visibles = () => recorridos.filter((r) =>
     (estado.grupo === "todas" || r.g === estado.grupo) &&
@@ -285,12 +299,13 @@
   const mapa = L.map("mapa", { minZoom: 3, maxZoom: 13 }).fitBounds([[-55.2, -73.6], [-21.8, -53.6]]);
   mapa.attributionControl.setPrefix(false);
   const ponerTeselas = MapaBase.ponerEn(mapa);
-  // Cruzar el zoom de ciudad cambia qué se dibuja (lo impreciso se oculta).
-  let cercaAntes = null;
+  // Cruzar un umbral de zoom cambia qué se dibuja; moverse, qué cuenta el rótulo.
+  let nivelAntes = null;
   mapa.on("zoomend", () => {
-    const cerca = mapa.getZoom() >= ZOOM_SIN_IMPRECISOS;
-    if (cerca !== cercaAntes) { cercaAntes = cerca; dibujar(); }
+    const nivel = nivelDeZoom(mapa.getZoom());
+    if (nivel !== nivelAntes) { nivelAntes = nivel; dibujar(); }
   });
+  mapa.on("moveend", () => actualizarRotulo());
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { ponerTeselas(); dibujar(); });
   const capaTramos = L.layerGroup().addTo(mapa);
   const capaNodos = L.layerGroup().addTo(mapa);
@@ -312,12 +327,11 @@
   function dibujar() {
     const lista = visibles();
     const todos = tramos(lista);
-    // De cerca no se dibuja lo impreciso ("Capital Federal" sin barrio): su
-    // punto parecería un lugar real. Lo que se oculta se cuenta en el rótulo.
-    const cerca = mapa.getZoom() >= ZOOM_SIN_IMPRECISOS;
-    const impreciso = (k) => D.nodos[k][3] === "impreciso";
-    const mostrados = todos.filter((t) => t.personas.length >= estado.minimo &&
-      !(cerca && (impreciso(t.a) || impreciso(t.b)))).sort((x, y) => x.peso - y.peso);
+    // De cerca no se dibujan los puntos genéricos: parecerían una dirección.
+    // Lo que se oculta se cuenta en el rótulo.
+    const z = mapa.getZoom();
+    const elegidos = todos.filter((t) => estado.destinos.has(t.destino) && !oculto(t.a, z) && !oculto(t.b, z));
+    const mostrados = elegidos.filter((t) => t.personas.length >= estado.minimo).sort((x, y) => x.peso - y.peso);
     capaTramos.clearLayers(); capaNodos.clearLayers();
     const max = Math.max(1, ...mostrados.map((t) => t.peso));
     for (const t of mostrados) {
@@ -342,7 +356,7 @@
     const enTramos = new Set(mostrados.flatMap((t) => [t.a, t.b]));
     const maxNodo = Math.max(1, ...porNodo.values());
     for (const [k, v] of porNodo) {
-      if ((!enTramos.has(k) && k !== estado.lugar) || (cerca && impreciso(k))) continue;
+      if ((!enTramos.has(k) && k !== estado.lugar) || oculto(k, z)) continue;
       const [lat, lon, nombre, tipo] = D.nodos[k], sitio = !["partido", "localidad", "barrio", "impreciso"].includes(tipo);
       L.circleMarker([lat, lon], {
         radius: 3 + 10 * Math.sqrt(v / maxNodo), color: css("--nodo"), weight: 1.5,
@@ -351,23 +365,34 @@
         .on("click", () => filtrarLugar(k)).addTo(capaNodos);
     }
     $("mapa").classList.toggle("quieto", !$("movimiento").checked);
-    actualizarPanel(lista, todos, mostrados);
-    actualizarRotulo(lista, cerca);
+    ultimaLista = lista;
+    actualizarPanel(lista, elegidos, mostrados);
+    actualizarRotulo();
   }
 
-  // Abajo a la izquierda: cuántos recorridos y qué no se sabe de ellos.
-  function actualizarRotulo(lista, cerca) {
-    const sinBarrio = (s) => lista.filter((r) => r.nodos[s].some((k) => D.nodos[k][3] === "impreciso")).length;
-    const sin = (s) => lista.filter((r) => !r.nodos[s].length).length;
-    const filas = [
-      [sinBarrio(0), "sólo dicen “Capital Federal” como lugar de secuestro, sin barrio" + (cerca ? " (ocultos a este zoom)" : "")],
-      [sin(0), "sin lugar de secuestro"],
-      [sin(1), "sin centro clandestino o lugar de detención registrado"],
-      [sin(2), "sin lugar de asesinato registrado"],
-      [sin(3), "sin hallazgo de restos registrado"],
-    ].filter(([n]) => n > 0);
-    $("rotulo").innerHTML = `<div class="grande">${fmt.format(lista.length)}</div><div class="chico">recorridos${estado.año ? ` · secuestros de ${estado.año}` : ""}</div>` +
-      (filas.length ? `<ul class="faltantes">${filas.map(([n, t]) => `<li><b class="num">${fmt.format(n)}</b> ${t}</li>`).join("")}</ul>` : "");
+  // Abajo a la izquierda: cuántos recorridos y, con zoom, qué puntos genéricos
+  // de la zona que se ve quedaron ocultos y cuántas personas tienen.
+  let ultimaLista = [];
+  function actualizarRotulo() {
+    const lista = ultimaLista, z = mapa.getZoom(), vista = mapa.getBounds();
+    const ocultos = new Map();
+    for (const r of lista) for (let s = 0; s < 4; s++) for (const k of r.nodos[s]) {
+      if (!oculto(k, z) || !vista.contains([D.nodos[k][0], D.nodos[k][1]])) continue;
+      const c = ocultos.get(k) || [0, 0, 0, 0];
+      c[s]++; ocultos.set(k, c);
+    }
+    const total = (c) => c.reduce((a, b) => a + b);
+    let detalle = "";
+    if (ocultos.size) {
+      const orden = [...ocultos].sort((x, y) => total(y[1]) - total(x[1]));
+      const filas = orden.slice(0, 6).map(([k, c]) => `<li><b>${escapar(D.nodos[k][2])}</b>: ` +
+        c.map((n, s) => (n ? `${fmt.format(n)} ${n === 1 ? DE_ETAPA[s] : DE_ETAPA_PL[s]}` : "")).filter(Boolean).join(" · ") + "</li>");
+      if (orden.length > 6) filas.push(`<li>y ${fmt.format(orden.length - 6)} lugares más</li>`);
+      detalle = `<ul class="faltantes"><li>Ocultos a este zoom: sólo se sabe el partido o el barrio, no la dirección.</li>${filas.join("")}</ul>`;
+    } else if (z < PRIMER_OCULTO) {
+      detalle = `<ul class="faltantes"><li>Con zoom se ocultan los puntos que sólo dicen el partido o el barrio, y acá se cuenta cuántas personas tienen.</li></ul>`;
+    }
+    $("rotulo").innerHTML = `<div class="grande">${fmt.format(lista.length)}</div><div class="chico">recorridos${estado.año ? ` · secuestros de ${estado.año}` : ""}</div>` + detalle;
   }
 
   // ------------------------------------------------------------------ panel
@@ -377,7 +402,7 @@
       .filter(Boolean).join('<span class="flecha">→</span>');
   }
 
-  function actualizarPanel(lista, todos, mostrados) {
+  function actualizarPanel(lista, elegidos, mostrados) {
     const base = recorridos.filter((r) => estado.grupo === "todas" || r.g === estado.grupo);
     // Barras por año (sin el filtro de año, para poder compararlos).
     const porAño = new Map(AÑOS.map((a) => [a, 0]));
@@ -392,11 +417,19 @@
     const sinFecha = base.filter((r) => r.año === null).length;
     $("sin-fecha").textContent = sinFecha ? `${fmt.format(sinFecha)} sin fecha de secuestro (sólo en "Todos")` : "";
 
-    const ocultos = todos.length - mostrados.length;
+    const ocultos = elegidos.length - mostrados.length;
+    const sin = (s) => lista.filter((r) => !r.nodos[s].length).length;
+    const faltan = [
+      [sin(0), "sin lugar de secuestro"],
+      [sin(1), "sin centro clandestino o lugar de detención registrado"],
+      [sin(2), "sin lugar de asesinato registrado"],
+      [sin(3), "sin hallazgo de restos registrado"],
+    ].filter(([n]) => n > 0);
     $("resumen").innerHTML = `<b class="num">${fmt.format(lista.length)}</b> recorridos con dos etapas o más` +
       `${estado.año ? ` de personas secuestradas en <b>${estado.año}</b>` : ""}. ` +
       `Se ven <b class="num">${fmt.format(mostrados.length)}</b> tramos` +
-      (ocultos ? `; ${fmt.format(ocultos)} tramos con menos de ${estado.minimo} personas quedan ocultos.` : ".");
+      (ocultos ? `; ${fmt.format(ocultos)} tramos con menos de ${estado.minimo} personas quedan ocultos.` : ".") +
+      (faltan.length ? `<ul class="faltantes-panel">${faltan.map(([n, t]) => `<li><b class="num">${fmt.format(n)}</b> ${t}</li>`).join("")}</ul>` : "");
 
     // Recorridos similares: misma firma (mismos lugares en las mismas etapas).
     const grupos = new Map();
@@ -451,6 +484,10 @@
   $("todos-años").onclick = () => { pausar(); elegirAño(null); };
   $("minimo").onchange = (e) => { estado.minimo = +e.target.value; dibujar(); };
   $("movimiento").onchange = () => $("mapa").classList.toggle("quieto", !$("movimiento").checked);
+  document.querySelectorAll("[data-destino]").forEach((c) => c.onchange = () => {
+    estado.destinos[c.checked ? "add" : "delete"](+c.dataset.destino);
+    dibujar();
+  });
   const ZOOMS = {
     pais: [[-55.2, -73.6], [-21.8, -53.6]],
     amba: [[-35.0, -58.95], [-34.3, -58.1]],
