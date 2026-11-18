@@ -85,12 +85,16 @@ Los colores de los datos siguen siendo la paleta validada para daltonismo.
 
 ## Cómo regenerar los datos
 
-```bash
-# 1. Una sola vez: centroides de Georef (el catálogo del loader no trae coordenadas)
-.venv/Scripts/python visualizaciones/recorridos/descargar_centroides.py
+Los datos ya generados están en el repo (`datos/recorridos.js`): para ver los
+mapas no hace falta regenerarlos. Hay que hacerlo cuando cambian las fuentes,
+el loader o las reglas de ubicación:
 
-# 2. Datos de la visualización (≈1,5 min)
+```bash
+# Datos de la visualización (≈1,5 min; necesita el venv del loader)
 .venv/Scripts/python visualizaciones/recorridos/construir_datos.py
+
+# Sólo para actualizar los centroides de Georef (ya están en datos/centroides_georef.json)
+.venv/Scripts/python visualizaciones/recorridos/descargar_centroides.py
 ```
 
 `construir_datos.py` corre el pipeline del loader en memoria hasta el CDM

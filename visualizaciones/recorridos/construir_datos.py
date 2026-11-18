@@ -760,6 +760,8 @@ def leer_fuentes() -> Tuple[Dict[str, Dict[str, Any]], Dict[str, Dict[str, Any]]
 # --------------------------------------------------------------------------
 
 def main() -> None:
+    # La consola de Windows usa cp1252 y no puede imprimir "≈" ni algunos nombres.
+    sys.stdout.reconfigure(encoding="utf-8")
     print("corriendo el pipeline hasta el CDM (≈1 min)...", flush=True)
     cdm = construir_cdm()
     centroides = Centroides(CENTROIDES)
