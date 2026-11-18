@@ -71,6 +71,14 @@
   propiedades. Requiere recargar con `--clean-project`: el loader sólo hace
   MERGE, y una recarga incremental conserva los nodos de MinJus que ahora se
   absorben.
+- Puente 12 es un solo `:Lugar` CCD (`lugar:CCD:670`, RUVTE). MinJus lo
+  nombra "División Cuatrerismo (Brigada “Güemes”) Puente 12" y el apodo final
+  impedía reconocerlo, así que el mismo centro quedaba en dos nodos (134 y 9
+  personas). `builders/minjus_ccds.py` agrega `EQUIVALENCIAS_RUVTE`, una
+  tabla revisada a mano de slug de MinJus a `id_ccd` de RUVTE. Medido sobre el
+  CDM de una carga completa: los nodos CCD pasan de 125 a 124 y el 670 queda
+  con 141 personas (2 estaban en los dos). No agrega labels ni propiedades.
+  Requiere recargar con `--clean-project`.
 
 Este documento define la arquitectura exacta e inmutable del grafo en Neo4j. Cualquier proceso de extracción, estructuración o ingesta automática de datos ejecutado por un LLM debe adherirse estrictamente a las reglas, etiquetas, relaciones y propiedades declaradas a continuación. Está prohibido inventar o inferir entidades intermedias.
 
