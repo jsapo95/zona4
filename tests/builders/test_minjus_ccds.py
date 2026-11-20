@@ -105,3 +105,33 @@ def test_numeros_distintos_en_el_nombre_no_se_dedupean():
               if l["tipo_entidad"] == "Lugar" and l["fuente"] == "minjus_ccds"]
     assert len(nuevos) == 1
     assert nuevos[0]["nombre"] == "COMISARÍA 8ª DE LA PLATA"
+
+
+PUENTE_12 = {
+    "source_url": "https://derechoshumanos.mjus.gba.gob.ar/centrodedetencion/100-division-cuatrerismo-brigada-guemes-puente-12",
+    "titulo": "División Cuatrerismo (Brigada “Güemes”) Puente 12",
+    "metadatos": {"Dependencia": "PBA", "Domicilio": "Camino de la Virgen María 150 | La Matanza"},
+    "secciones": {},
+    "victimas": [],
+}
+
+
+def test_puente_12_es_el_ccd_670_de_ruvte():
+    """El apodo "Puente 12" al final del nombre de MinJus hace que el score
+    contra "DIVISIÓN CUATRERISMO (BRIGADA "GÜEMES")" (RUVTE 670) dé 0, y el
+    mismo centro quedaba en dos nodos (84 y 9 personas)."""
+    existentes = {'DIVISIÓN CUATRERISMO (BRIGADA "GÜEMES")': "lugar:CCD:670"}
+    dataset, key_by_slug = build_minjus_ccds_rows([PUENTE_12], existing_ccds=existentes)
+    assert key_by_slug["100-division-cuatrerismo-brigada-guemes-puente-12"] == "lugar:CCD:670"
+    nuevos = [l for l in dataset["lugares"]
+              if l["tipo_entidad"] == "Lugar" and l["fuente"] == "minjus_ccds"]
+    assert nuevos == []
+
+
+def test_equivalencia_sin_el_ccd_de_ruvte_cargado_crea_el_nodo_de_minjus():
+    # Si el CCD de RUVTE no se cargó, no se cuelgan aristas de un nodo que no existe.
+    dataset, key_by_slug = build_minjus_ccds_rows([PUENTE_12], existing_ccds={})
+    assert key_by_slug["100-division-cuatrerismo-brigada-guemes-puente-12"] == (
+        "lugar:CCD:100_division_cuatrerismo_brigada_guemes_puente_12"
+    )
+    assert len([l for l in dataset["lugares"] if l.get("tipoGeopolitico") == "CCD"]) == 1
