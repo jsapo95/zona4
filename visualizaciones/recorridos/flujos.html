@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Recorridos frecuentes</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="estilo.css">
+<style>
+  /* Tokens comunes (colores de la interfaz, tipografía) en estilo.css; acá
+     sólo los de los datos. Una tonalidad por etapa de destino: los tres
+     primeros colores de la paleta categórica validada (pasan todos los pares,
+     CVD incluido). */
+  :root {
+    --hacia-ccd: #2a78d6;
+    --hacia-asesinato: #eb6834;
+    --hacia-restos: #1baf7a;
+    --nodo: #52514e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --hacia-ccd: #3987e5; --hacia-asesinato: #d95926; --hacia-restos: #199e70; --nodo: #c4c3d6; }
+  }
+  :root[data-theme="dark"] { --hacia-ccd: #3987e5; --hacia-asesinato: #d95926; --hacia-restos: #199e70; --nodo: #c4c3d6; }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  .app { display: grid; grid-template-columns: minmax(0, 1fr) 400px; height: 100vh; }
+  .mapa-wrap { position: relative; min-height: 0; }
+  #mapa { position: absolute; inset: 0; background: var(--surface-2); }
+  .panel { background: var(--surface-1); border-left: 1px solid var(--border); overflow-y: auto; padding: 20px 22px 32px; }
+  @media (max-width: 860px) {
+    .app { grid-template-columns: 1fr; grid-template-rows: 62vh auto; height: auto; }
+    .mapa-wrap { height: 62vh; }
+    .panel { border-left: 0; border-top: 1px solid var(--border); padding: 16px; overflow: visible; }
+  }
+  p { margin: 0 0 10px; }
+  .bajada { color: var(--text-secondary); font-size: 14px; }
+  .muted { color: var(--text-muted); }
+  .num { font-variant-numeric: tabular-nums; }
+  .volver { font-size: 13px; display: inline-block; margin-bottom: 10px; }
+
+  .segmentado { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; background: var(--surface-2); padding: 4px; border-radius: 10px; }
+  .segmentado button { border: 0; background: transparent; color: var(--text-secondary); padding: 7px 8px; border-radius: 7px; font: inherit; font-size: 13px; line-height: 1.25; cursor: pointer; }
+  .segmentado button[aria-pressed="true"] { background: var(--surface-1); color: var(--text-primary); box-shadow: var(--shadow); font-weight: 600; }
+
+  /* Años: barras clicables con la cantidad de recorridos por año de secuestro */
+  .años { display: flex; align-items: flex-end; gap: 3px; height: 74px; margin-top: 6px; }
+  .año { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; border: 0; background: none; padding: 0; cursor: pointer; font: inherit; color: var(--text-muted); }
+  .año .barra { width: 100%; background: var(--accent); opacity: .35; border-radius: 4px 4px 0 0; min-height: 2px; }
+  .año .et { font-size: 10.5px; font-variant-numeric: tabular-nums; margin-top: 3px; }
+  .año[aria-pressed="true"] .barra { opacity: 1; }
+  .año[aria-pressed="true"] .et { color: var(--text-primary); font-weight: 600; }
+  .fila-años { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+  .btn-play { flex: none; width: 36px; height: 36px; border-radius: 50%; border: 0; cursor: pointer; background: var(--accent); color: var(--sobre-accent); display: grid; place-items: center; }
+  .btn-play svg { width: 15px; height: 15px; fill: currentColor; }
+  .chip { border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); border-radius: 999px; padding: 4px 11px; font: inherit; font-size: 12.5px; cursor: pointer; }
+  .chip[aria-pressed="true"] { background: var(--text-primary); color: var(--surface-1); border-color: var(--text-primary); }
+
+  .resumen { background: var(--surface-2); border-radius: 10px; padding: 12px 14px; margin-top: 14px; font-size: 13.5px; color: var(--text-secondary); }
+  .resumen b { color: var(--text-primary); }
+
+  .buscador { position: relative; }
+  .buscador input { width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-primary); font: inherit; font-size: 14px; }
+  .resultados { position: absolute; left: 0; right: 0; top: 100%; z-index: 5; background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow); margin-top: 4px; display: none; max-height: 260px; overflow-y: auto; }
+  .resultados button { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 7px 10px; font: inherit; font-size: 13.5px; color: var(--text-primary); cursor: pointer; }
+  .resultados button:hover, .resultados button:focus { background: var(--surface-2); }
+  .filtro { margin-top: 8px; padding: 9px 10px; border-radius: 8px; background: var(--surface-2); font-size: 13px; color: var(--text-secondary); }
+  .filtro b { color: var(--text-primary); }
+  .cerrar { float: right; border: 0; background: none; color: var(--text-muted); cursor: pointer; font-size: 18px; line-height: 1; margin-left: 8px; }
+
+  .recorridos { list-style: none; padding: 0; margin: 0; }
+  .recorridos li { border-bottom: 1px solid var(--border); }
+  .recorridos button { display: grid; grid-template-columns: 1fr auto; gap: 8px; width: 100%; text-align: left; border: 0; background: none; padding: 8px 2px; cursor: pointer; font: inherit; font-size: 13px; color: var(--text-primary); }
+  .recorridos button:hover { background: var(--surface-2); }
+  .recorridos button[aria-pressed="true"] { background: var(--surface-2); font-weight: 600; }
+  .recorridos .pasos { display: flex; flex-wrap: wrap; gap: 2px 4px; align-items: center; }
+  .recorridos .flecha { color: var(--text-muted); }
+  .recorridos .et { font-size: 10.5px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; margin-right: 2px; }
+  .recorridos .num { color: var(--text-secondary); }
+
+  .detalle { border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-top: 12px; display: none; font-size: 13px; }
+  .detalle h3 { margin: 0 0 6px; font-size: 15px; }
+  .detalle ul { margin: 6px 0 0; padding-left: 18px; max-height: 260px; overflow-y: auto; }
+  .detalle li { margin-bottom: 3px; }
+
+  .leyenda { display: grid; gap: 6px; font-size: 12.5px; color: var(--text-secondary); }
+  .leyenda .fila { display: flex; align-items: center; gap: 8px; }
+  .linea-ley { width: 28px; height: 4px; border-radius: 2px; flex: none; }
+  .leyenda label.fila { cursor: pointer; }
+  .leyenda label.fila input { margin: 0; flex: none; }
+  .leyenda label.fila:has(input:not(:checked)) { opacity: .45; }
+  .faltantes-panel { list-style: none; margin: 8px 0 0; padding: 0; font-size: 12.5px; }
+  .faltantes-panel li { margin-bottom: 2px; }
+  .nodo-ley { width: 11px; height: 11px; border-radius: 50%; border: 2px solid var(--nodo); background: var(--nodo); flex: none; }
+  .nodo-ley.zona { border-style: dashed; background: color-mix(in srgb, var(--nodo) 18%, transparent); width: 13px; height: 13px; }
+  .nodo-ley.aprox { border-style: dashed; }
+  .capas { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13.5px; align-items: center; }
+  .capas select { font: inherit; font-size: 13px; padding: 3px 6px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-primary); }
+  .capas label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+  details { margin-top: 18px; font-size: 13.5px; color: var(--text-secondary); }
+  details summary { cursor: pointer; color: var(--text-primary); font-weight: 600; }
+  details li { margin-bottom: 6px; }
+
+  .leaflet-container { font: inherit; background: var(--surface-2); }
+  .leaflet-control-attribution { font-size: 10.5px; }
+  /* Flujo: el trazo avanza en el sentido del recorrido. */
+  .flujo { stroke-dasharray: 7 9; animation: avanzar 1.4s linear infinite; }
+  .flujo.salto { stroke-dasharray: 1 7; }
+  .quieto .flujo { animation: none; stroke-dasharray: none; }
+  .quieto .flujo.salto { stroke-dasharray: 1 7; }
+  @keyframes avanzar { to { stroke-dashoffset: -16; } }
+  @media (prefers-reduced-motion: reduce) { .flujo { animation: none; stroke-dasharray: none; } .flujo.salto { stroke-dasharray: 1 7; } }
+  .rotulo {
+    position: absolute; left: 16px; bottom: 26px; z-index: 500; pointer-events: none;
+    background: color-mix(in srgb, var(--surface-1) 88%, transparent); border-radius: 10px; padding: 10px 14px; box-shadow: var(--shadow);
+  }
+  .rotulo .grande { font-size: 26px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .rotulo .chico { font-size: 13px; color: var(--text-secondary); }
+  .rotulo .faltantes { list-style: none; margin: 8px 0 0; padding: 8px 0 0; border-top: 1px solid var(--border); font-size: 12.5px; color: var(--text-secondary); max-width: 300px; }
+  .rotulo .faltantes li { margin-bottom: 2px; }
+  .sin-datos { padding: 40px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="mapa-wrap">
+    <div id="mapa" role="img" aria-label="Mapa de Argentina con los recorridos más frecuentes entre lugares de secuestro, centros clandestinos, asesinato y hallazgo de restos"></div>
+    <div class="rotulo" id="rotulo" aria-live="polite"></div>
+  </div>
+
+  <aside class="panel">
+    <div class="cabecera">
+    <a class="volver" href="recorridos.html">← Mapa animado de recorridos</a>
+    <h1>Recorridos frecuentes</h1>
+    <p class="bajada">Cada flecha une un lugar con el siguiente del recorrido de una persona; el grosor es la cantidad de personas que hicieron ese tramo. Los recorridos <b>similares</b> son los que pasan por los mismos lugares en las mismas etapas.</p>
+    <p class="bajada muted" style="font-size:13px">Secuestro, asesinato y hallazgo se agrupan por partido o departamento; los centros clandestinos y los cementerios del EAAF se muestran como sitios.</p>
+    </div>
+
+    <div class="segmentado" role="group" aria-label="Versión">
+      <button data-grupo="todas" aria-pressed="true">Todas</button>
+      <button data-grupo="A" aria-pressed="false">Restos hallados</button>
+      <button data-grupo="B" aria-pressed="false">Sin hallazgo registrado</button>
+    </div>
+
+    <h2>Año de secuestro</h2>
+    <div class="años" id="años" role="group" aria-label="Año de secuestro"></div>
+    <div class="fila-años">
+      <button class="btn-play" id="play" aria-label="Recorrer los años">
+        <svg viewBox="0 0 24 24" id="icono-play"><path d="M7 4.5v15l13-7.5z"/></svg>
+      </button>
+      <button class="chip" id="todos-años" aria-pressed="true">Todos los años</button>
+      <span class="muted" style="font-size:12.5px" id="sin-fecha"></span>
+    </div>
+
+    <div class="resumen" id="resumen" aria-live="polite"></div>
+
+    <h2>Seguir un lugar</h2>
+    <div class="buscador">
+      <input id="buscar" type="search" placeholder="Partido, CCD o cementerio (p. ej. ESMA, La Plata)" autocomplete="off" aria-label="Filtrar recorridos por un lugar">
+      <div class="resultados" id="resultados"></div>
+    </div>
+    <div class="filtro" id="filtro" hidden></div>
+
+    <h2>Recorridos más repetidos</h2>
+    <ol class="recorridos" id="recorridos"></ol>
+    <div class="detalle" id="detalle"></div>
+
+    <h2>Mapa</h2>
+    <div class="capas">
+      <label>Tramos con al menos
+        <select id="minimo">
+          <option value="1">1 persona</option>
+          <option value="2" selected>2 personas</option>
+          <option value="3">3 personas</option>
+          <option value="5">5 personas</option>
+        </select>
+      </label>
+      <label><input type="checkbox" id="movimiento" checked> Animar sentido</label>
+    </div>
+    <div class="capas" style="margin-top:10px;gap:6px">
+      <button class="chip" data-zoom="pais">Todo el país</button>
+      <button class="chip" data-zoom="amba">AMBA</button>
+      <button class="chip" data-zoom="laplata">La Plata</button>
+      <button class="chip" data-zoom="tucuman">Tucumán</button>
+      <button class="chip" data-zoom="cordoba">Córdoba</button>
+      <button class="chip" data-zoom="rosario">Rosario</button>
+    </div>
+    <div class="leyenda" style="margin-top:12px">
+      <p class="muted" style="font-size:12.5px;margin:0">Elegí qué tramos ver:</p>
+      <label class="fila"><input type="checkbox" data-destino="1" checked><span class="linea-ley" style="background:var(--hacia-ccd)"></span>hacia el centro clandestino o lugar de detención donde estuvieron detenidas</label>
+      <label class="fila"><input type="checkbox" data-destino="2" checked><span class="linea-ley" style="background:var(--hacia-asesinato)"></span>hacia donde las asesinaron</label>
+      <label class="fila"><input type="checkbox" data-destino="3" checked><span class="linea-ley" style="background:var(--hacia-restos)"></span>hacia donde aparecieron sus restos (cementerio, fosa o el lugar donde dejaron los cuerpos)</label>
+      <p class="muted" style="font-size:12.5px;margin:2px 0 0">Son dos datos distintos: dónde las mataron (ficha del Parque) y dónde se encontraron sus restos, muchas veces enterrados como NN (identificación del EAAF). Sólo 86 personas tienen los dos registrados; por ejemplo, asesinadas en Rosario y halladas en el Cementerio La Piedad.</p>
+      <div class="fila"><svg width="28" height="8" aria-hidden="true"><line x1="2" y1="4" x2="26" y2="4" stroke="var(--text-secondary)" stroke-width="3" stroke-linecap="round" stroke-dasharray="1 6"/></svg>punteado y tenue: salta etapas sin registro (no se sabe por dónde pasó en el medio)</div>
+      <div class="fila"><span class="nodo-ley zona"></span>zona: la fuente sólo dice el partido, la localidad o el barrio (o sólo "Capital Federal"); el punto es su centro, no una dirección</div>
+      <div class="fila"><span class="nodo-ley"></span>sitio específico: centro clandestino o sitio del EAAF con coordenadas propias</div>
+      <div class="fila"><span class="nodo-ley aprox"></span>centro clandestino sin coordenadas propias, en el centro de su localidad</div>
+    </div>
+
+    <details>
+      <summary>Qué muestra y qué no</summary>
+      <ul>
+        <li>Sólo entran las personas con al menos dos etapas ubicadas. Son pocas: la mayoría tiene un único lugar registrado (casi siempre el de secuestro).</li>
+        <li>Si alguien pasó por varios centros clandestinos, el orden entre ellos no se conoce: se dibuja un tramo desde el secuestro a cada uno, repartiendo a la persona entre todos.</li>
+        <li>No se dibujan los tramos dentro del mismo partido (por ejemplo, secuestro y asesinato en La Plata); esas personas siguen contando en los recorridos más repetidos.</li>
+        <li>El año es el del secuestro. El paso por un CCD no tiene fecha propia en las fuentes.</li>
+        <li>Los partidos son los de hoy (Georef): Malvinas Argentinas, José C. Paz, San Miguel, Hurlingham, Ituzaingó, Ezeiza o Presidente Perón no existían en los años setenta; en ese entonces eran parte de General Sarmiento, Morón, Esteban Echeverría y otros.</li>
+      </ul>
+      <p id="meta" class="muted" style="font-size:12.5px"></p>
+    </details>
+  </aside>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="datos/recorridos.js"></script>
+<script src="mapa_base.js"></script>
+<script>
+(() => {
+  "use strict";
+  const D = window.RECORRIDOS;
+  if (!D || !D.nodos || !window.L || !window.MapaBase) {
+    document.querySelector(".mapa-wrap").innerHTML =
+      '<p class="sin-datos">No se pudieron cargar los datos o el mapa. Regenerá <code>datos/recorridos.js</code> con <code>construir_datos.py</code> y abrí esta página con conexión a internet.</p>';
+    return;
+  }
+  const $ = (id) => document.getElementById(id);
+  const fmt = new Intl.NumberFormat("es-AR");
+  const cuantas = (n, uno, varios) => `${fmt.format(n)} ${n === 1 ? uno : varios}`;
+  const escapar = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const sinTildes = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  const ETAPA = ["secuestro", "CCD", "asesinato", "restos"];
+  // Un punto genérico (el centro de un partido, una localidad o un barrio) se
+  // oculta cuando el zoom lo haría pasar por una dirección. "Capital Federal"
+  // sin barrio cubre toda la ciudad y se oculta antes.
+  // Zona: el punto es el centro de un partido, una localidad o un barrio (o de
+  // toda CABA), no una dirección. Un CCD sin coordenadas propias es un sitio
+  // específico, pero su punto también es el centro de su localidad.
+  const ZONAS = new Set(["impreciso", "partido", "localidad", "barrio"]);
+  const precisionDe = new Map(D.lugares.map((l) => [l[5], l[4]]));
+  const esZona = (k) => ZONAS.has(D.nodos[k][3]);
+  const exacto = (k) => !esZona(k) && (D.nodos[k][3] !== "ccd" || precisionDe.get(k) === "sitio");
+  // Desde este zoom el rótulo lista las zonas que se ven.
+  const ZOOM_DETALLE = 10;
+  const DE_ETAPA = ["secuestro", "paso por CCD", "asesinato", "hallazgo"];
+  const DE_ETAPA_PL = ["secuestros", "pasos por CCD", "asesinatos", "hallazgos"];
+  const TIPO_NODO = { partido: "partido o departamento", barrio: "barrio de CABA",
+    impreciso: "lugar impreciso: la fuente sólo dice “Capital Federal”", ccd: "centro clandestino o lugar de detención",
+    cementerio: "cementerio (sitio del EAAF)", enterramiento: "enterramiento (sitio del EAAF)", localidad: "localidad" };
+  const HACIA = ["", "hacia el centro clandestino o lugar de detención", "hacia donde las asesinaron", "hacia donde aparecieron sus restos"];
+  const HACIA_UNA = ["", "hacia el centro clandestino o lugar de detención", "hacia donde la asesinaron", "hacia donde aparecieron sus restos"];
+  const COLOR_DESTINO = ["", "--hacia-ccd", "--hacia-asesinato", "--hacia-restos"];
+
+  // ------------------------------------------------------------------ datos
+  // Un recorrido es la lista de nodos (partido o sitio) de cada etapa.
+  const recorridos = [];
+  D.personas.forEach((p, i) => {
+    const nodos = p.e.map((lista) => [...new Set(lista.map((li) => D.lugares[li][5]))]);
+    if (nodos.filter((x) => x.length).length < 2) return;
+    const año = p.f ? +p.f.slice(0, 4) : null;
+    const firma = nodos.map((x, s) => (x.length ? `${s}:${[...x].sort((a, b) => a - b).join(",")}` : "")).filter(Boolean).join("|");
+    recorridos.push({ i, g: p.g, año, nodos, firma });
+  });
+  // Los años salen de los datos: un secuestro de 1971 no puede quedar afuera.
+  const conFecha = recorridos.map((r) => r.año).filter((a) => a !== null);
+  const AÑOS = [];
+  for (let a = Math.min(...conFecha); a <= Math.max(...conFecha); a++) AÑOS.push(a);
+
+  // ------------------------------------------------------------------ estado
+  const estado = { grupo: "todas", año: null, lugar: null, firma: null, minimo: 2, destinos: new Set([1, 2, 3]), reproduciendo: false };
+
+  const visibles = () => recorridos.filter((r) =>
+    (estado.grupo === "todas" || r.g === estado.grupo) &&
+    (estado.año === null || r.año === estado.año) &&
+    (estado.lugar === null || r.nodos.some((x) => x.includes(estado.lugar))) &&
+    (estado.firma === null || r.firma === estado.firma));
+
+  // Tramos entre etapas consecutivas conocidas, sumando personas.
+  function tramos(lista) {
+    const m = new Map();
+    for (const r of lista) {
+      let previa = -1;
+      for (let s = 0; s < 4; s++) {
+        if (!r.nodos[s].length) continue;
+        if (previa >= 0) {
+          const peso = 1 / (r.nodos[previa].length * r.nodos[s].length);
+          for (const a of r.nodos[previa]) for (const b of r.nodos[s]) {
+            if (a === b) continue;
+            // Un tramo que salta etapas sin registro (secuestro → restos sin CCD
+            // ni asesinato conocidos) no es un traslado directo: se dibuja aparte.
+            const k = `${a}>${b}>${previa}>${s}`;
+            const t = m.get(k) || { a, b, desde: previa, destino: s, salto: s - previa > 1, peso: 0, personas: [] };
+            t.peso += peso; t.personas.push(r.i); m.set(k, t);
+          }
+        }
+        previa = s;
+      }
+    }
+    return [...m.values()];
+  }
+
+  // ------------------------------------------------------------------ mapa
+  const mapa = L.map("mapa", { minZoom: 3, maxZoom: 13 }).fitBounds([[-55.2, -73.6], [-21.8, -53.6]]);
+  mapa.attributionControl.setPrefix(false);
+  const ponerTeselas = MapaBase.ponerEn(mapa);
+  // Moverse o hacer zoom cambia qué zonas cuenta el rótulo.
+  mapa.on("moveend", () => actualizarRotulo());
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { ponerTeselas(); dibujar(); });
+  const capaTramos = L.layerGroup().addTo(mapa);
+  const capaNodos = L.layerGroup().addTo(mapa);
+  const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+  // Arco entre dos nodos, siempre hacia la derecha del sentido de viaje:
+  // así A→B y B→A no se superponen.
+  function arco(a, b) {
+    const pa = mapa.project(L.latLng(a[0], a[1]), 0), pb = mapa.project(L.latLng(b[0], b[1]), 0);
+    const mx = (pa.x + pb.x) / 2, my = (pa.y + pb.y) / 2, dx = pb.x - pa.x, dy = pb.y - pa.y;
+    const cx = mx - dy * 0.2, cy = my + dx * 0.2, puntos = [];
+    for (let k = 0; k <= 28; k++) {
+      const f = k / 28, u = 1 - f;
+      puntos.push(mapa.unproject(L.point(u * u * pa.x + 2 * u * f * cx + f * f * pb.x, u * u * pa.y + 2 * u * f * cy + f * f * pb.y), 0));
+    }
+    return puntos;
+  }
+
+  function dibujar() {
+    const lista = visibles();
+    const todos = tramos(lista);
+    const elegidos = todos.filter((t) => estado.destinos.has(t.destino));
+    const mismoPunto = (t) => D.nodos[t.a][0] === D.nodos[t.b][0] && D.nodos[t.a][1] === D.nodos[t.b][1];
+    const conPeso = elegidos.filter((t) => t.personas.length >= estado.minimo);
+    const mostrados = conPeso.filter((t) => !mismoPunto(t)).sort((x, y) => x.peso - y.peso);
+    capaTramos.clearLayers(); capaNodos.clearLayers();
+    const max = Math.max(1, ...mostrados.map((t) => t.peso));
+    for (const t of mostrados) {
+      const a = D.nodos[t.a], b = D.nodos[t.b];
+      const opacidad = t.salto ? 0.4 : 0.75;
+      const linea = L.polyline(arco(a, b), {
+        color: css(COLOR_DESTINO[t.destino]), weight: 1.5 + 9 * Math.sqrt(t.peso / max),
+        opacity: opacidad, className: t.salto ? "flujo salto" : "flujo", lineCap: "round",
+      });
+      const n = t.personas.length;
+      const sinRegistro = ETAPA.slice(t.desde + 1, t.destino).join(" ni ");
+      linea.bindTooltip(`<b>${escapar(a[2])} → ${escapar(b[2])}</b><br>${fmt.format(n)} ${n === 1 ? "persona" : "personas"} · ${(n === 1 ? HACIA_UNA : HACIA)[t.destino]}` +
+        (t.salto ? `<br><i>Sin registro de ${sinRegistro} en el medio: no es un traslado directo.</i>` : ""), { sticky: true });
+      linea.on("click", () => mostrarDetalle(`${a[2]} → ${b[2]}`, t.personas));
+      linea.on("mouseover", () => linea.setStyle({ opacity: 1 }));
+      linea.on("mouseout", () => linea.setStyle({ opacity: opacidad }));
+      linea.addTo(capaTramos);
+    }
+    // Nodos: tamaño según las personas que pasan por ellos en lo que se ve.
+    // Las zonas van con borde punteado y relleno tenue; los sitios, rellenos.
+    const porNodo = new Map();
+    for (const r of lista) for (const k of new Set(r.nodos.flat())) porNodo.set(k, (porNodo.get(k) || 0) + 1);
+    const enTramos = new Set(conPeso.flatMap((t) => [t.a, t.b]));
+    const maxNodo = Math.max(1, ...porNodo.values());
+    for (const [k, v] of porNodo) {
+      if (!enTramos.has(k) && k !== estado.lugar) continue;
+      const [lat, lon, nombre, tipo] = D.nodos[k], zona = esZona(k);
+      const nota = zona ? "<br><i>Zona: el punto es su centro, no una dirección.</i>"
+        : !exacto(k) ? "<br><i>Sin coordenadas propias: está en el centro de su localidad.</i>" : "";
+      L.circleMarker([lat, lon], {
+        radius: 3 + 10 * Math.sqrt(v / maxNodo) + (zona ? 2 : 0), color: css("--nodo"), weight: 1.5,
+        dashArray: exacto(k) ? null : "3 3", fillColor: css("--nodo"), fillOpacity: zona ? 0.18 : 0.85,
+      }).bindTooltip(`<b>${escapar(nombre)}</b><br>${TIPO_NODO[tipo] || tipo} · ${fmt.format(v)} ${v === 1 ? "persona" : "personas"} en lo que se ve${nota}`)
+        .on("click", () => filtrarLugar(k)).addTo(capaNodos);
+    }
+    $("mapa").classList.toggle("quieto", !$("movimiento").checked);
+    ultimaLista = lista;
+    actualizarPanel(lista, elegidos, conPeso, mostrados);
+    actualizarRotulo();
+  }
+
+  // Abajo a la izquierda: cuántos recorridos y, con zoom, cuántas personas de
+  // las zonas que se ven no tienen una dirección más precisa.
+  let ultimaLista = [];
+  function actualizarRotulo() {
+    const lista = ultimaLista, z = mapa.getZoom(), vista = mapa.getBounds();
+    const ocultos = new Map();
+    for (const r of lista) for (let s = 0; s < 4; s++) for (const k of r.nodos[s]) {
+      if (z < ZOOM_DETALLE || exacto(k) || !vista.contains([D.nodos[k][0], D.nodos[k][1]])) continue;
+      const c = ocultos.get(k) || [0, 0, 0, 0];
+      c[s]++; ocultos.set(k, c);
+    }
+    const total = (c) => c.reduce((a, b) => a + b);
+    let detalle = "";
+    if (ocultos.size) {
+      const orden = [...ocultos].sort((x, y) => total(y[1]) - total(x[1]));
+      const filas = orden.slice(0, 6).map(([k, c]) => `<li><b>${escapar(D.nodos[k][2])}</b>: ` +
+        c.map((n, s) => (n ? `${fmt.format(n)} ${n === 1 ? DE_ETAPA[s] : DE_ETAPA_PL[s]}` : "")).filter(Boolean).join(" · ") + "</li>");
+      if (orden.length > 6) filas.push(`<li>y ${fmt.format(orden.length - 6)} lugares más</li>`);
+      detalle = `<ul class="faltantes"><li>Sin dirección exacta en la zona que se ve:</li>${filas.join("")}</ul>`;
+    }
+    $("rotulo").innerHTML = `<div class="grande">${fmt.format(lista.length)}</div><div class="chico">recorridos${estado.año ? ` · secuestros de ${estado.año}` : ""}</div>` + detalle;
+  }
+
+  // ------------------------------------------------------------------ panel
+  function etiquetaFirma(r) {
+    return r.nodos.map((x, s) => x.length
+      ? `<span><span class="et">${ETAPA[s]}</span>${x.map((k) => escapar(D.nodos[k][2])).join(" + ")}</span>` : "")
+      .filter(Boolean).join('<span class="flecha">→</span>');
+  }
+
+  function actualizarPanel(lista, elegidos, conPeso, mostrados) {
+    const base = recorridos.filter((r) => estado.grupo === "todas" || r.g === estado.grupo);
+    // Barras por año (sin el filtro de año, para poder compararlos).
+    const porAño = new Map(AÑOS.map((a) => [a, 0]));
+    for (const r of base) {
+      if ((estado.lugar === null || r.nodos.some((x) => x.includes(estado.lugar))) && porAño.has(r.año)) porAño.set(r.año, porAño.get(r.año) + 1);
+    }
+    const maxA = Math.max(1, ...porAño.values());
+    $("años").innerHTML = AÑOS.map((a) => `<button class="año" data-año="${a}" aria-pressed="${estado.año === a}" title="${a}: ${cuantas(porAño.get(a), "recorrido", "recorridos")}">
+      <span class="barra" style="height:${Math.max(2, 52 * porAño.get(a) / maxA)}px"></span><span class="et">${String(a).slice(2)}</span></button>`).join("");
+    $("años").querySelectorAll(".año").forEach((b) => b.onclick = () => { pausar(); elegirAño(+b.dataset.año === estado.año ? null : +b.dataset.año); });
+    $("todos-años").setAttribute("aria-pressed", String(estado.año === null));
+    const sinFecha = base.filter((r) => r.año === null).length;
+    $("sin-fecha").textContent = sinFecha ? `${fmt.format(sinFecha)} sin fecha de secuestro (sólo en "Todos")` : "";
+
+    const ocultos = elegidos.length - conPeso.length, enUnPunto = conPeso.length - mostrados.length;
+    const sin = (s) => lista.filter((r) => !r.nodos[s].length).length;
+    const faltan = [
+      [sin(0), "sin lugar de secuestro"],
+      [sin(1), "sin centro clandestino o lugar de detención registrado"],
+      [sin(2), "sin lugar de asesinato registrado"],
+      [sin(3), "sin hallazgo de restos registrado"],
+    ].filter(([n]) => n > 0);
+    $("resumen").innerHTML = `<b class="num">${fmt.format(lista.length)}</b> ${lista.length === 1 ? "recorrido" : "recorridos"} con dos etapas o más` +
+      `${estado.año ? ` de personas secuestradas en <b>${estado.año}</b>` : ""}. ` +
+      `Se ${mostrados.length === 1 ? "ve" : "ven"} <b class="num">${fmt.format(mostrados.length)}</b> ${mostrados.length === 1 ? "tramo" : "tramos"}` +
+      (ocultos ? `; ${cuantas(ocultos, "tramo", "tramos")} con menos de ${estado.minimo} personas ${ocultos === 1 ? "queda oculto" : "quedan ocultos"}` : "") +
+      (enUnPunto ? `; ${cuantas(enUnPunto, "tramo une", "tramos unen")} lugares que están en el mismo punto y no se ${enUnPunto === 1 ? "ve" : "ven"}.` : ".") +
+      (faltan.length ? `<ul class="faltantes-panel">${faltan.map(([n, t]) => `<li><b class="num">${fmt.format(n)}</b> ${t}</li>`).join("")}</ul>` : "");
+
+    // Recorridos similares: misma firma (mismos lugares en las mismas etapas).
+    const grupos = new Map();
+    for (const r of recorridos.filter((r) =>
+      (estado.grupo === "todas" || r.g === estado.grupo) && (estado.año === null || r.año === estado.año) &&
+      (estado.lugar === null || r.nodos.some((x) => x.includes(estado.lugar))))) {
+      const g = grupos.get(r.firma) || { ejemplo: r, personas: [] };
+      g.personas.push(r.i); grupos.set(r.firma, g);
+    }
+    const top = [...grupos.entries()].sort((a, b) => b[1].personas.length - a[1].personas.length).slice(0, 10);
+    $("recorridos").innerHTML = top.length ? top.map(([firma, g]) => `<li><button data-firma="${escapar(firma)}" aria-pressed="${estado.firma === firma}">
+      <span class="pasos">${etiquetaFirma(g.ejemplo)}</span><span class="num">${fmt.format(g.personas.length)}</span></button></li>`).join("")
+      : `<li class="muted" style="padding:8px 0;font-size:13px">Ningún recorrido con estos filtros.</li>`;
+    $("recorridos").querySelectorAll("button").forEach((b) => b.onclick = () => {
+      const firma = b.dataset.firma;
+      estado.firma = estado.firma === firma ? null : firma;
+      dibujar();
+      if (estado.firma) {
+        const g = grupos.get(firma);
+        mostrarDetalle("Recorridos iguales a este", g.personas);
+        encuadrar(visibles());
+      } else $("detalle").style.display = "none";
+    });
+  }
+
+  function mostrarDetalle(titulo, personas) {
+    const unicas = [...new Set(personas)].sort((a, b) => D.personas[a].n.localeCompare(D.personas[b].n, "es"));
+    $("detalle").style.display = "block";
+    $("detalle").innerHTML = `<button class="cerrar" aria-label="Cerrar">×</button><h3>${escapar(titulo)}</h3>
+      <div class="muted">${fmt.format(unicas.length)} ${unicas.length === 1 ? "persona" : "personas"}</div>
+      <ul>${unicas.map((i) => {
+        const p = D.personas[i], u = p.u.find(Boolean);
+        const nombre = u ? `<a href="${escapar(u)}" target="_blank" rel="noopener">${escapar(p.n)}</a>` : escapar(p.n);
+        return `<li>${nombre} <span class="muted">· ${p.f ? p.f.slice(0, 4) : "sin fecha"} · ${p.g === "A" ? "restos hallados" : "sin hallazgo registrado"}</span></li>`;
+      }).join("")}</ul>`;
+    $("detalle").querySelector(".cerrar").onclick = () => { $("detalle").style.display = "none"; };
+  }
+
+  function encuadrar(lista) {
+    const puntos = [];
+    for (const r of lista) for (const x of r.nodos) for (const k of x) puntos.push([D.nodos[k][0], D.nodos[k][1]]);
+    if (puntos.length) mapa.flyToBounds(L.latLngBounds(puntos).pad(0.2), { maxZoom: 10, duration: 0.8 });
+  }
+
+  // ------------------------------------------------------------------ filtros
+  document.querySelectorAll("[data-grupo]").forEach((b) => b.onclick = () => {
+    estado.grupo = b.dataset.grupo; estado.firma = null;
+    document.querySelectorAll("[data-grupo]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+    dibujar();
+  });
+  function elegirAño(a) { estado.año = a; estado.firma = null; dibujar(); }
+  $("todos-años").onclick = () => { pausar(); elegirAño(null); };
+  $("minimo").onchange = (e) => { estado.minimo = +e.target.value; dibujar(); };
+  $("movimiento").onchange = () => $("mapa").classList.toggle("quieto", !$("movimiento").checked);
+  document.querySelectorAll("[data-destino]").forEach((c) => c.onchange = () => {
+    estado.destinos[c.checked ? "add" : "delete"](+c.dataset.destino);
+    dibujar();
+  });
+  const ZOOMS = {
+    pais: [[-55.2, -73.6], [-21.8, -53.6]],
+    amba: [[-35.0, -58.95], [-34.3, -58.1]],
+    laplata: [[-35.1, -58.2], [-34.75, -57.75]],
+    tucuman: [[-27.6, -65.7], [-26.4, -64.8]],
+    cordoba: [[-31.7, -64.6], [-31.15, -63.9]],
+    rosario: [[-33.2, -61.0], [-32.65, -60.45]],
+  };
+  document.querySelectorAll("[data-zoom]").forEach((b) => b.onclick = () => mapa.flyToBounds(ZOOMS[b.dataset.zoom], { duration: 0.8 }));
+
+  // Recorrer los años de a uno.
+  let reloj = null;
+  function pausar() {
+    clearInterval(reloj); reloj = null; estado.reproduciendo = false;
+    $("icono-play").innerHTML = '<path d="M7 4.5v15l13-7.5z"/>'; $("play").setAttribute("aria-label", "Recorrer los años");
+  }
+  $("play").onclick = () => {
+    if (estado.reproduciendo) { pausar(); return; }
+    estado.reproduciendo = true;
+    $("icono-play").innerHTML = '<path d="M6 4h4v16H6zM14 4h4v16h-4z"/>'; $("play").setAttribute("aria-label", "Pausar");
+    let k = estado.año === null ? 0 : (AÑOS.indexOf(estado.año) + 1) % AÑOS.length;
+    elegirAño(AÑOS[k]);
+    reloj = setInterval(() => {
+      k++;
+      if (k >= AÑOS.length) { pausar(); return; }
+      elegirAño(AÑOS[k]);
+    }, 1800);
+  };
+
+  // Seguir un lugar: partido, CCD o sitio.
+  const usados = new Set(recorridos.flatMap((r) => r.nodos.flat()));
+  const indice = [...usados].map((k) => [sinTildes(D.nodos[k][2]), k]);
+  const cuenta = (k) => recorridos.filter((r) => r.nodos.some((x) => x.includes(k))).length;
+  $("buscar").addEventListener("input", (e) => {
+    const q = sinTildes(e.target.value).trim(), res = $("resultados");
+    if (q.length < 2) { res.style.display = "none"; return; }
+    const palabras = q.split(/\s+/);
+    const hallados = indice.filter(([n]) => palabras.every((w) => n.includes(w))).map(([, k]) => [k, cuenta(k)])
+      .sort((a, b) => b[1] - a[1]).slice(0, 12);
+    res.innerHTML = hallados.length ? hallados.map(([k, n]) => `<button data-k="${k}">${escapar(D.nodos[k][2])} <span class="muted">· ${cuantas(n, "recorrido", "recorridos")}</span></button>`).join("")
+      : `<div class="muted" style="padding:8px 10px;font-size:13px">Ningún lugar de los recorridos coincide.</div>`;
+    res.style.display = "block";
+    res.querySelectorAll("button").forEach((b) => b.onclick = () => { res.style.display = "none"; $("buscar").value = ""; filtrarLugar(+b.dataset.k); });
+  });
+  document.addEventListener("click", (e) => { if (!e.target.closest(".buscador")) $("resultados").style.display = "none"; });
+
+  function filtrarLugar(k) {
+    estado.lugar = k; estado.firma = null;
+    if (k === null) { $("filtro").hidden = true; dibujar(); return; }
+    $("filtro").hidden = false;
+    $("filtro").innerHTML = `<button class="cerrar" aria-label="Quitar el filtro">×</button>Sólo recorridos que pasan por <b>${escapar(D.nodos[k][2])}</b>.`;
+    $("filtro").querySelector(".cerrar").onclick = () => filtrarLugar(null);
+    dibujar();
+    encuadrar(visibles());
+  }
+
+  const total = recorridos.length;
+  $("meta").textContent = `Datos generados el ${D.generado}. ${fmt.format(total)} de ${fmt.format(D.personas.length)} personas del mapa tienen dos etapas o más ubicadas.`;
+  dibujar();
+})();
+</script>
+</body>
+</html>
