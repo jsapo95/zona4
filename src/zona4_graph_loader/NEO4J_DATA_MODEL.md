@@ -71,6 +71,14 @@
   propiedades. Requiere recargar con `--clean-project`: el loader sólo hace
   MERGE, y una recarga incremental conserva los nodos de MinJus que ahora se
   absorben.
+- Puente 12 es un solo `:Lugar` CCD (`lugar:CCD:670`, RUVTE). MinJus lo
+  nombra "División Cuatrerismo (Brigada “Güemes”) Puente 12" y el apodo final
+  impedía reconocerlo, así que el mismo centro quedaba en dos nodos (134 y 9
+  personas). `builders/minjus_ccds.py` agrega `EQUIVALENCIAS_RUVTE`, una
+  tabla revisada a mano de slug de MinJus a `id_ccd` de RUVTE. Medido sobre el
+  CDM de una carga completa: los nodos CCD pasan de 125 a 124 y el 670 queda
+  con 141 personas (2 estaban en los dos). No agrega labels ni propiedades.
+  Requiere recargar con `--clean-project`.
 - Fix 2026-11-16 (sin bump de versión): un país extranjero nombrado con
   detalle extra deja de caer en Argentina. `domain/place_norm.py` sólo
   reconocía el país si el texto era el país o terminaba en él; "Canelones,
