@@ -1,0 +1,106 @@
+/* Estilo común de las visualizaciones de recorridos.
+ *
+ * Inspirado en la web de Abuelas de Plaza de Mayo (tipografía Inter, violeta
+ * para títulos y bandas, naranja como acento), sin su logo ni su nombre: es
+ * una herramienta de ZONA4, no una publicación de Abuelas. Los colores de los
+ * datos (mapa de calor, flujos) siguen siendo la paleta validada para
+ * daltonismo de cada página; acá sólo va la interfaz.
+ */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+
+:root {
+  color-scheme: light;
+  --surface-0: #f3f3f3;
+  --surface-1: #ffffff;
+  --surface-2: #f2f2f6;
+  --border: #e1e1ea;
+  --text-primary: #2b2f36;
+  --text-secondary: #454b54;
+  --text-muted: #727a85;
+  --marca: #565887;          /* títulos, botones, banda de cabecera */
+  --marca-fondo: #565887;
+  --sobre-marca: #ffffff;
+  --naranja: #f59300;        /* acento: subrayados y detalles, nunca texto chico */
+  --accent: #565887;         /* controles: reproducir, línea de tiempo, enlaces */
+  --sobre-accent: #ffffff;
+  --highlight: #e98a00;      /* la persona seleccionada en el mapa */
+  --shadow: 0 1px 2px rgba(40, 40, 80, .06), 0 4px 16px rgba(40, 40, 80, .08);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --surface-0: #15151e;
+    --surface-1: #1d1d29;
+    --surface-2: #272736;
+    --border: #383850;
+    --text-primary: #eeeef4;
+    --text-secondary: #c4c3d6;
+    --text-muted: #9190a8;
+    --marca: #b7b3ea;
+    --marca-fondo: #3e3f6b;
+    --sobre-marca: #ffffff;
+    --naranja: #f59300;
+    --accent: #9c98da;
+    --sobre-accent: #15151e;
+    --highlight: #f59300;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 4px 16px rgba(0, 0, 0, .35);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface-0: #15151e;
+  --surface-1: #1d1d29;
+  --surface-2: #272736;
+  --border: #383850;
+  --text-primary: #eeeef4;
+  --text-secondary: #c4c3d6;
+  --text-muted: #9190a8;
+  --marca: #b7b3ea;
+  --marca-fondo: #3e3f6b;
+  --sobre-marca: #ffffff;
+  --naranja: #f59300;
+  --accent: #9c98da;
+  --sobre-accent: #15151e;
+  --highlight: #f59300;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 4px 16px rgba(0, 0, 0, .35);
+}
+
+body {
+  background: var(--surface-0);
+  color: var(--text-primary);
+  font: 15px/1.55 Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+/* Banda de cabecera del panel, como el bloque violeta de la web de Abuelas. */
+.cabecera {
+  background: var(--marca-fondo);
+  color: var(--sobre-marca);
+  margin: -20px -22px 18px;
+  padding: 22px 22px 18px;
+  border-bottom: 4px solid var(--naranja);
+}
+.cabecera h1 { color: var(--sobre-marca); }
+.cabecera .bajada, .cabecera .bajada.muted { color: rgba(255, 255, 255, .86); }
+.cabecera a { color: #ffd69a; }
+@media (max-width: 860px) {
+  .cabecera { margin: -16px -16px 16px; padding: 18px 16px 16px; }
+}
+
+/* Aviso de mapa_base.js cuando el servidor del IGN no responde. */
+.aviso-mapa-base {
+  background: var(--surface-1); color: var(--text-primary);
+  border: 1px solid var(--border); border-left: 3px solid var(--naranja);
+  border-radius: 8px; box-shadow: var(--shadow);
+  padding: 8px 10px; max-width: 260px; font-size: 12.5px; line-height: 1.4;
+}
+.aviso-mapa-base button {
+  display: block; margin-top: 6px; font: inherit; font-weight: 600; cursor: pointer;
+  background: var(--accent); color: var(--sobre-accent); border: 0; border-radius: 6px; padding: 4px 10px;
+}
+
+h1 { font-size: 24px; line-height: 1.2; margin: 0 0 8px; font-weight: 800; letter-spacing: -.01em; color: var(--marca); }
+h2 {
+  font-size: 12.5px; text-transform: uppercase; letter-spacing: .07em; font-weight: 700;
+  color: var(--marca); margin: 24px 0 8px; padding-left: 10px; border-left: 3px solid var(--naranja);
+}
+a { color: var(--marca); }
