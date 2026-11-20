@@ -71,6 +71,16 @@
   propiedades. Requiere recargar con `--clean-project`: el loader sólo hace
   MERGE, y una recarga incremental conserva los nodos de MinJus que ahora se
   absorben.
+- Un nombre de provincia a secas en el lugar de secuestro o de asesinato
+  ("CORDOBA", "San Juan", "Santa Fé") es la `:Lugar` PROVINCIA, no su capital
+  homónima: la fuente escribe la ciudad como "CORDOBA CAPITAL" y "TUCUMAN" o
+  "BUENOS AIRES" a secas ya iban a la provincia. En nacimiento no se toca,
+  porque ahí no se puede decidir (decisión del equipo, 2026-11-18;
+  `builders/lugares.py`, `provincia_si_es_solo_su_nombre`). Medido sobre el
+  CDM de una carga completa: 218 `SECUESTRADO_EN` y 122 `ASESINADO_EN` pasan
+  de la capital a la provincia (a provincia: 262 → 480 y 90 → 212); el resto
+  de los hechos, sin cambios. No agrega labels ni propiedades. Requiere
+  recargar con `--clean-project`.
 - Fix 2026-11-18 (sin bump de versión): un texto "LOCALIDAD. PROVINCIA" deja
   de caer en la capital homónima de la provincia. `domain/place_gazetteer.py`
   tomaba el nombre de la provincia, que el texto pone como pista ("METAN.

@@ -78,6 +78,37 @@ def expand_lugar_ancestors(
     return lugares, jerarquias
 
 
+def provincia_si_es_solo_su_nombre(place: Dict[str, Any] | None) -> Dict[str, Any] | None:
+    """La provincia, si el texto es sólo el nombre de la provincia y se resolvió
+    como su capital homónima.
+
+    En el lugar de secuestro o de asesinato, "CORDOBA" o "San Juan" a secas es
+    la provincia: la fuente escribe la ciudad como "CORDOBA CAPITAL" (474
+    veces) o "SANTA FE CAPITAL". El resolver, en cambio, prefiere la capital, y
+    "TUCUMAN" o "BUENOS AIRES" a secas ya iban a la provincia. Decisión del
+    equipo (2026-11-18): en secuestro y asesinato es la provincia; en
+    nacimiento no se toca, porque ahí no se puede decidir.
+    """
+    if not place or place.get("tipo") != "CIUDAD":
+        return place
+    clave = place["lugar_key"]
+    inicio = clave.find("lugar:PROVINCIA:")
+    if inicio < 0:
+        return place
+    provincia_key = clave[inicio:]
+    nombre = provincia_key.split("|", 1)[0].split(":", 2)[2].replace("_", " ").upper()
+    if place.get("alias_norm") != nombre:
+        return place
+    return {
+        **place,
+        "tipo": "PROVINCIA",
+        "nombre_canonico": nombre,
+        "lugar_key": provincia_key,
+        "parent_key": "lugar:PAIS:argentina",
+        "hierarchy_keys": [provincia_key, "lugar:PAIS:argentina"],
+    }
+
+
 def build_lugar_layer_rows(
     data: List[Dict[str, Any]],
     *,
@@ -226,13 +257,13 @@ def build_lugar_layer_rows(
         fecha_sec = validar_fecha_de_hecho(
             parse_ddmmyyyy(clean_text(detalle.get("descripcion_fecha_de_secuestro")))
         )
-        place_sec = resolve_place(
+        place_sec = provincia_si_es_solo_su_nombre(resolve_place(
             detalle.get("descripcion_lugar_de_secuestro"),
             use_georef=use_georef,
             georef_catalog_path=georef_catalog_path,
             georef_min_score=georef_min_score,
             georef_ambiguity_delta=georef_ambiguity_delta,
-        )
+        ))
         if place_sec:
             register_place(
                 place=place_sec,
@@ -264,13 +295,13 @@ def build_lugar_layer_rows(
         fecha_ase = validar_fecha_de_hecho(
             parse_ddmmyyyy(clean_text(detalle.get("descripcion_fecha_de_asesinato")))
         )
-        place_ase = resolve_place(
+        place_ase = provincia_si_es_solo_su_nombre(resolve_place(
             detalle.get("Lugar de asesinato"),
             use_georef=use_georef,
             georef_catalog_path=georef_catalog_path,
             georef_min_score=georef_min_score,
             georef_ambiguity_delta=georef_ambiguity_delta,
-        )
+        ))
         if place_ase:
             register_place(
                 place=place_ase,
