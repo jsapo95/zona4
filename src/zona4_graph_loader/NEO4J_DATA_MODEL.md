@@ -71,6 +71,34 @@
   propiedades. Requiere recargar con `--clean-project`: el loader sólo hace
   MERGE, y una recarga incremental conserva los nodos de MinJus que ahora se
   absorben.
+- Fix 2026-11-18 (sin bump de versión): un texto "LOCALIDAD. PROVINCIA" deja
+  de caer en la capital homónima de la provincia. `domain/place_gazetteer.py`
+  tomaba el nombre de la provincia, que el texto pone como pista ("METAN.
+  SALTA", "GOYA. CORRIENTES", "Domicilio (ROSARIO. SANTA FE)"), también como
+  la ciudad capital, y la capital ganaba por desempate o porque Georef no
+  tiene la localidad con ese nombre; las calles con nombre de provincia ("San
+  Luis 2535 ... Mar del Plata", "Entre Ríos y La Rioja (Quilmes)") hacían lo
+  mismo. Ahora ese nombre no puede ser además la ciudad: si el texto nombra
+  otro lugar de la provincia gana ése, si la localidad no está en Georef se
+  afirma sólo la provincia (`domain/place_norm.py`), y una calle o esquina con
+  nombre de provincia no restringe los candidatos. Metán, Orán y "Gdor." se
+  traducen al nombre de Georef. Los textos que nombran la capital ("SALTA",
+  "SALTA. SALTA", "SALTA CAPITAL", "SANTA FE · LA CAPITAL · SANTA FE") no
+  cambian. Medido sobre los 4.019 textos de lugar reales (Parque de la
+  Memoria y CCDs): cambian 158. En las aristas de `detalles_personas`, 65
+  `SECUESTRADO_EN`, 20 `ASESINADO_EN` y 57 `NACIO_EN` dejan la capital (por
+  ejemplo, ciudad de Salta: 56 → 36 secuestros y 22 → 12 asesinatos; ciudad
+  de Santa Fe: 52 → 44 y 52 → 47; ciudad de San Juan: 36 → 21 secuestros);
+  14 `SECUESTRADO_EN` pasan de CABA al barrio que la fuente nombra, y 1
+  `SECUESTRADO_EN` que no resolvía pasa a San Isidro. Las aristas a un
+  `:Lugar` PROVINCIA suben de 262 a 274 (`SECUESTRADO_EN`), de 90 a 99
+  (`ASESINADO_EN`) y de 229 a 243 (`NACIO_EN`). Hechos por tipo:
+  `SECUESTRADO_EN` 7.133 → 7.134, el resto sin cambios. No agrega labels ni
+  propiedades. Requiere recargar con `--clean-project`: una recarga
+  incremental conserva las aristas viejas hacia la capital. En el formato
+  "Localidad, Departamento, Provincia" con una localidad que el catálogo no
+  tiene ("Villa Luján, Goya, Corrientes"), se afirma el departamento y no su
+  ciudad homónima (`_departamento_si_es_calificador`; 7 textos).
 - Puente 12 es un solo `:Lugar` CCD (`lugar:CCD:670`, RUVTE). MinJus lo
   nombra "División Cuatrerismo (Brigada “Güemes”) Puente 12" y el apodo final
   impedía reconocerlo, así que el mismo centro quedaba en dos nodos (134 y 9
