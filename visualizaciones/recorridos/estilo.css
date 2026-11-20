@@ -86,6 +86,18 @@ body {
   .cabecera { margin: -16px -16px 16px; padding: 18px 16px 16px; }
 }
 
+/* Aviso de mapa_base.js cuando el servidor del IGN no responde. */
+.aviso-mapa-base {
+  background: var(--surface-1); color: var(--text-primary);
+  border: 1px solid var(--border); border-left: 3px solid var(--naranja);
+  border-radius: 8px; box-shadow: var(--shadow);
+  padding: 8px 10px; max-width: 260px; font-size: 12.5px; line-height: 1.4;
+}
+.aviso-mapa-base button {
+  display: block; margin-top: 6px; font: inherit; font-weight: 600; cursor: pointer;
+  background: var(--accent); color: var(--sobre-accent); border: 0; border-radius: 6px; padding: 4px 10px;
+}
+
 h1 { font-size: 24px; line-height: 1.2; margin: 0 0 8px; font-weight: 800; letter-spacing: -.01em; color: var(--marca); }
 h2 {
   font-size: 12.5px; text-transform: uppercase; letter-spacing: .07em; font-weight: 700;

@@ -30,9 +30,11 @@ murieron después, así que no se sabe si siguen desaparecidas.
 Abrir `recorridos.html` en el navegador (doble clic alcanza; no hace falta
 servidor). Necesita internet: Leaflet viene de cdnjs y el mapa base es
 [Argenmap](https://www.ign.gob.ar/AreaServicios/Argenmap/Introduccion), del IGN.
-Si el servidor del IGN no responde en 6 segundos, la página pasa sola a
-OpenStreetMap en gris y lo aclara en la atribución del mapa. Ojo: ese mapa no
-rotula Malvinas como Argenmap.
+Si el servidor del IGN no responde en 6 segundos, el mapa queda sin fondo (los
+datos se ven igual) con un aviso y un botón para reintentar. No hay mapa de
+respaldo a propósito: los otros mapas base públicos (OpenStreetMap, por
+ejemplo) rotulan las Islas Malvinas como "Falkland Islands", y ese rótulo
+viene dibujado en la imagen, así que no se puede corregir desde la página.
 
 - **Reproducir** (o barra espaciadora): recorre las cuatro etapas.
 - Los números 0–3 debajo de la barra, o las flechas, saltan a una etapa.
@@ -78,8 +80,8 @@ asesinato o hallazgo de restos).
 - El año es el del secuestro (arista del Parque o ficha de MinJus); 78 de esas
   1.178 no lo tienen y sólo aparecen con "Todos los años".
 
-`mapa_base.js` tiene el mapa base (Argenmap con respaldo en OpenStreetMap) que
-usan las dos páginas.
+`mapa_base.js` tiene el mapa base (Argenmap, sin respaldo) que usan las dos
+páginas.
 `estilo.css` tiene el estilo común de la interfaz, inspirado en la web de
 Abuelas de Plaza de Mayo (Inter, violeta y naranja), sin su logo ni su nombre.
 Los colores de los datos siguen siendo la paleta validada para daltonismo.

@@ -150,12 +150,6 @@
   .rotulo .chico { font-size: 13px; color: var(--text-secondary); }
   .leaflet-container { font: inherit; background: var(--surface-2); }
   .leaflet-control-attribution { font-size: 10.5px; }
-  /* OpenStreetMap de respaldo, en gris para que no compita con el calor. */
-  .teselas-respaldo { filter: grayscale(1) contrast(1.05) brightness(.97); }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) .teselas-respaldo { filter: grayscale(1) invert(1) brightness(.78) contrast(.9); }
-  }
-  :root[data-theme="dark"] .teselas-respaldo { filter: grayscale(1) invert(1) brightness(.78) contrast(.9); }
   .tooltip-mapa { position: absolute; z-index: 600; pointer-events: none; background: var(--surface-1); color: var(--text-primary); border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; font-size: 12.5px; box-shadow: var(--shadow); display: none; max-width: 260px; }
   .sin-datos { padding: 40px; }
 </style>

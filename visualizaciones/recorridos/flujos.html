@@ -103,11 +103,6 @@
 
   .leaflet-container { font: inherit; background: var(--surface-2); }
   .leaflet-control-attribution { font-size: 10.5px; }
-  .teselas-respaldo { filter: grayscale(1) contrast(1.05) brightness(.97); }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) .teselas-respaldo { filter: grayscale(1) invert(1) brightness(.78) contrast(.9); }
-  }
-  :root[data-theme="dark"] .teselas-respaldo { filter: grayscale(1) invert(1) brightness(.78) contrast(.9); }
   /* Flujo: el trazo avanza en el sentido del recorrido. */
   .flujo { stroke-dasharray: 7 9; animation: avanzar 1.4s linear infinite; }
   .flujo.salto { stroke-dasharray: 1 7; }
