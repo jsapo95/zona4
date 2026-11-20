@@ -184,7 +184,12 @@ RECHAZOS_ESPERADOS = {
     "Prov. de Bs As",
     "SE DESCONOCE (posiblemente Bs As)",
     "San Nicolas (Cangallo 1671, 2º C). MARTINEZ. BS. AS.",
-    "Santa Fé y Urquiza - Parada de colectivo (Acassuso - San isidro - Buenos Aires)",
+    # "Santa Fé y Urquiza - Parada de colectivo (Acassuso - San isidro -
+    # Buenos Aires)" estaba acá porque no resolvía (empate entre la ciudad de
+    # Santa Fe y San Isidro). Desde que la calle "Santa Fe" no puede ser
+    # además la capital homónima, resuelve a San Isidro, la ciudad que la
+    # fuente nombra: no es una ciudad fabricada a partir de prosa. Ver
+    # test_place_norm_localidad_no_capital.py.
     "Secuestrado en las cercanías de su lugar de trabajo, en Maipú y Corrientes (Capital Federal)",
 }
 

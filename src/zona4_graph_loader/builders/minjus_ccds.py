@@ -10,6 +10,17 @@ from zona4_graph_loader.domain.text_norm import clean_text, slugify_name, strip_
 FUENTE = "minjus_ccds"
 DEDUP_THRESHOLD = 0.93
 
+# CCD de MinJus que son un CCD de RUVTE pero cuyo nombre no alcanza para
+# reconocerlo: slug de MinJus -> id_ccd de RUVTE. Cada entrada se revisó a mano
+# contra las dos fuentes.
+EQUIVALENCIAS_RUVTE = {
+    # MinJus: "División Cuatrerismo (Brigada “Güemes”) Puente 12"; RUVTE 670:
+    # "DIVISIÓN CUATRERISMO (BRIGADA "GÜEMES")". Las dos dan las mismas otras
+    # denominaciones ("PUENTE 12" / "OMEGA" / "PROTO-BANCO" / AGRUPACIÓN
+    # "GÜEMES"). El apodo agregado al final hace que el score dé 0.
+    "100-division-cuatrerismo-brigada-guemes-puente-12": "670",
+}
+
 _DIGITS_RE = re.compile(r"\d+")
 
 
@@ -42,6 +53,15 @@ def _numeros_distintos(nombre_a: str, nombre_b: str) -> bool:
     numeros_a = set(_DIGITS_RE.findall(nombre_a))
     numeros_b = set(_DIGITS_RE.findall(nombre_b))
     return bool(numeros_a) and bool(numeros_b) and numeros_a != numeros_b
+
+
+def _equivalente_ruvte(slug: str, existing_ccds: Dict[str, str]) -> Optional[str]:
+    """lugar_key del CCD de RUVTE equivalente, si ya está cargado."""
+    id_ccd = EQUIVALENCIAS_RUVTE.get(slug)
+    if id_ccd is None:
+        return None
+    lugar_key = f"lugar:CCD:{slugify_name(id_ccd)}"
+    return lugar_key if lugar_key in existing_ccds.values() else None
 
 
 def _match_existente(nombre_upper: str, existing_ccds: Dict[str, str]) -> Optional[str]:
@@ -86,7 +106,7 @@ def build_minjus_ccds_rows(
             continue
 
         nombre_upper = titulo.upper()
-        reutilizada = _match_existente(nombre_upper, existing_ccds)
+        reutilizada = _equivalente_ruvte(slug, existing_ccds) or _match_existente(nombre_upper, existing_ccds)
         if reutilizada:
             key_by_slug[slug] = reutilizada
             continue
